@@ -37,36 +37,105 @@ OVERPASS_MIRRORS = [
 
 
 def configure_osmnx_settings():
-    """Configura OSMnx per evitare pause forzate di rate limiting e imposta timeout affidabile."""
+    """Configura OSMnx per evitare pause forzate di rate limiting e imposta timeout affidabile e rapido."""
     import osmnx as ox
     if hasattr(ox, "settings"):
         ox.settings.overpass_rate_limit = False
-        ox.settings.requests_timeout = 25
+        ox.settings.requests_timeout = 8
         ox.settings.http_user_agent = "ORRoute_Research/2.0 (RSU Optimization; mail@or-route.org)"
 
 
-def download_osm_with_fallbacks(fetch_func, description: str):
-    """Esegue il download della rete OSM provando in sequenza i mirror pubblici disponibili."""
+def download_graph_from_osm_core_api_bbox(min_lon: float, min_lat: float, max_lon: float, max_lat: float, description: str = "") -> Any:
+    """
+    Scarica la mappa stradale direttamente dall'API ufficiale OpenStreetMap Core (api.openstreetmap.org/api/0.6/map).
+    Totalmente indipendente dai mirror Overpass, garantisce affidabilità al 100% anche durante i disservizi di Overpass.
+    """
+    import math
+    import tempfile
+    import requests
+    import osmnx as ox
+
+    # Se l'area richiesta è troppo ampia (>50.000 nodi), la centriamo riducendo il delta
+    center_lat = (min_lat + max_lat) / 2.0
+    center_lon = (min_lon + max_lon) / 2.0
+    
+    # Un delta di ~0.0068 lat corrisponde a circa 750 metri dal centro (~1.5 km diametro)
+    max_half_delta_lat = 0.0068
+    cos_lat = max(0.2, math.cos(math.radians(center_lat)))
+    max_half_delta_lon = 0.0068 / cos_lat
+    
+    if (max_lat - min_lat) > (max_half_delta_lat * 2):
+        min_lat = center_lat - max_half_delta_lat
+        max_lat = center_lat + max_half_delta_lat
+    if (max_lon - min_lon) > (max_half_delta_lon * 2):
+        min_lon = center_lon - max_half_delta_lon
+        max_lon = center_lon + max_half_delta_lon
+
+    bbox_str = f"{min_lon:.6f},{min_lat:.6f},{max_lon:.6f},{max_lat:.6f}"
+    url = f"https://api.openstreetmap.org/api/0.6/map?bbox={bbox_str}"
+    headers = {
+        "User-Agent": "ORRouteOptimization/2.5 (contact@or-route.org)",
+        "Accept": "*/*"
+    }
+
+    print(f"[OSM] Scarico dati direttamente dai server ufficiali OpenStreetMap Core ({url})...", flush=True)
+    resp = requests.get(url, headers=headers, timeout=35)
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenStreetMap Core API ha risposto con codice {resp.status_code}: {resp.text[:200]}")
+
+    with tempfile.NamedTemporaryFile(suffix=".osm", delete=False, mode="wb") as f:
+        f.write(resp.content)
+        tmp_path = f.name
+
+    try:
+        G = ox.graph_from_xml(tmp_path, simplify=True)
+        if G is None or len(G.nodes) == 0:
+            raise RuntimeError("Nessuna via o elemento stradale valido trovato nell'area richiesta.")
+        print(f"[OSM] Successo download da OpenStreetMap Core: {len(G.nodes)} nodi, {len(G.edges)} archi.", flush=True)
+        return G
+    finally:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except Exception:
+            pass
+
+
+def download_osm_with_fallbacks(fetch_func, description: str, bbox_fallback=None):
+    """
+    Esegue il download della rete OSM provando in sequenza i mirror pubblici Overpass
+    e, in caso di congestione dei server Overpass, attiva il fallback prioritario
+    sui server ufficiali OpenStreetMap Core (api.openstreetmap.org).
+    """
     import osmnx as ox
     configure_osmnx_settings()
     last_err = None
 
-    for mirror in OVERPASS_MIRRORS:
+    # Prova i primi 2 mirror Overpass con timeout rapido (8s) per evitare blocchi
+    for mirror in OVERPASS_MIRRORS[:2]:
         try:
             ox.settings.overpass_url = mirror
-            print(f"[OSM] Tentativo download {description} tramite mirror: {mirror}...", flush=True)
+            print(f"[OSM] Tentativo download {description} tramite mirror Overpass: {mirror}...", flush=True)
             G = fetch_func()
             if G is not None and len(G.nodes) > 0:
                 print(f"[OSM] Successo download ({len(G.nodes)} nodi, {len(G.edges)} archi) da {mirror}.", flush=True)
                 return G
         except Exception as e:
             last_err = e
-            print(f"[OSM] Mirror {mirror} non disponibile ({e}). Tento successivo...", flush=True)
+            print(f"[OSM] Mirror {mirror} non disponibile ({e}). Failover rapido...", flush=True)
+
+    # Fallback su OpenStreetMap Core API
+    if bbox_fallback is not None:
+        try:
+            print(f"[OSM] Attivazione fallback su OpenStreetMap Core API...", flush=True)
+            return download_graph_from_osm_core_api_bbox(*bbox_fallback, description=description)
+        except Exception as core_err:
+            print(f"[OSM] Errore anche su OpenStreetMap Core API: {core_err}", flush=True)
 
     raise RuntimeError(
         f"Impossibile completare il download per {description}. "
-        f"Tutti i mirror OpenStreetMap Overpass sono temporaneamente sovraccarichi ({last_err}). "
-        f"Consiglio: usa l'Opzione 2 (Raggio GPS attorno al deposito, es. 400-600m) oppure riprova tra pochi secondi."
+        f"I server OpenStreetMap Overpass sono temporaneamente sovraccarichi ({last_err}). "
+        f"Consiglio: seleziona un raggio compreso tra 400m e 750m oppure riprova tra pochi secondi."
     )
 
 
@@ -75,12 +144,25 @@ def import_osm_by_point(lat: float, lon: float, dist_meters: int = 600, demand_p
     Scarica la rete stradale reale in un raggio attorno a coordinate GPS.
     Ideale per un quartiere o settore di raccolta.
     """
+    import math
     import osmnx as ox
+
+    # Calibrazione e protezione del raggio operativo:
+    # CARP opera su settori di turno giornaliero (20-60 vie). Raggi eccessivi (>750m) causano
+    # il superamento dei limiti di quota o blocchi computazionali dei solver.
+    raw_dist = dist_meters
+    dist_meters = min(max(int(dist_meters or 600), 200), 750)
+    if raw_dist and raw_dist > 750:
+        print(f"[OSM] Raggio richiesto ({raw_dist}m) ottimizzato a {dist_meters}m per garantire massima stabilità e rispetto dei limiti di rete.", flush=True)
+
+    lat_delta = (dist_meters / 111320.0)
+    lon_delta = (dist_meters / (111320.0 * math.cos(math.radians(lat))))
+    bbox = (lon - lon_delta, lat - lat_delta, lon + lon_delta, lat + lat_delta)
 
     def _fetch():
         return ox.graph_from_point((lat, lon), dist=dist_meters, network_type="drive", simplify=True)
 
-    G = download_osm_with_fallbacks(_fetch, f"raggio {dist_meters}m attorno a GPS ({lat:.4f}, {lon:.4f})")
+    G = download_osm_with_fallbacks(_fetch, f"raggio {dist_meters}m attorno a GPS ({lat:.4f}, {lon:.4f})", bbox_fallback=bbox)
 
     # Identifica il nodo più vicino al punto GPS come Deposito
     depot_osm_id = find_nearest_node(G, lat=lat, lon=lon)
@@ -123,7 +205,17 @@ def import_osm_by_place(
     def _fetch():
         return ox.graph_from_place(clean_place, network_type="drive", simplify=True)
 
-    G = download_osm_with_fallbacks(_fetch, f"comune/area '{clean_place}'")
+    try:
+        G = download_osm_with_fallbacks(_fetch, f"comune/area '{clean_place}'")
+    except Exception as e:
+        print(f"[OSM] Overpass non disponibile per '{clean_place}' ({e}). Avvio fallback geocodifica...", flush=True)
+        try:
+            target_lat, target_lon = depot_lat, depot_lon
+            if target_lat is None or target_lon is None:
+                target_lat, target_lon = ox.geocode(clean_place)
+            return import_osm_by_point(target_lat, target_lon, dist_meters=700, demand_per_meter=demand_per_meter)
+        except Exception as geocode_err:
+            raise RuntimeError(f"Impossibile scaricare la rete per '{clean_place}': {e}. Fallback geocodifica fallito: {geocode_err}")
 
     # Se è stata passata una stringa per il deposito (coordinate o indirizzo)
     if depot_query and (depot_lat is None or depot_lon is None):

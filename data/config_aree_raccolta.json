@@ -1,29 +1,561 @@
 {
   "depot_node": 0,
   "depot_info": {
-    "exact_lat": 45.667,
-    "exact_lon": 12.245,
-    "address": "Cantiere Deposito Centrale RSU Treviso"
+    "exact_lat": 45.8007265,
+    "exact_lon": 11.9142444,
+    "address": "GPS: 45.80073, 11.91424"
   },
   "nodes": [
-    {"id": 0, "name": "Deposito Centrale RSU", "lat": 45.6670, "lon": 12.2450},
-    {"id": 1, "name": "Incrocio 1 (Nord-Est)", "lat": 45.6695, "lon": 12.2480},
-    {"id": 2, "name": "Incrocio 2 (Via Roma / Garibaldi)", "lat": 45.6720, "lon": 12.2530},
-    {"id": 3, "name": "Incrocio 3 (Via Dante)", "lat": 45.6680, "lon": 12.2560},
-    {"id": 4, "name": "Incrocio 4 (Viale Europa)", "lat": 45.6645, "lon": 12.2490}
+    {
+      "id": 0,
+      "name": "Sede / Deposito Aziendale",
+      "lat": 45.8007265,
+      "lon": 11.9142444
+    },
+    {
+      "id": 1,
+      "name": "Incrocio_1",
+      "lat": 45.8007189,
+      "lon": 11.913965
+    },
+    {
+      "id": 2,
+      "name": "Incrocio_2",
+      "lat": 45.8005858,
+      "lon": 11.9141414
+    },
+    {
+      "id": 3,
+      "name": "Incrocio_3",
+      "lat": 45.8006419,
+      "lon": 11.913812
+    },
+    {
+      "id": 4,
+      "name": "Incrocio_4",
+      "lat": 45.80053,
+      "lon": 11.9144095
+    },
+    {
+      "id": 5,
+      "name": "Incrocio_5",
+      "lat": 45.8005881,
+      "lon": 11.9139143
+    },
+    {
+      "id": 6,
+      "name": "Incrocio_6",
+      "lat": 45.8007742,
+      "lon": 11.9141957
+    },
+    {
+      "id": 7,
+      "name": "Incrocio_7",
+      "lat": 45.8007571,
+      "lon": 11.9142467
+    },
+    {
+      "id": 8,
+      "name": "Incrocio_8",
+      "lat": 45.8005973,
+      "lon": 11.9137898
+    },
+    {
+      "id": 9,
+      "name": "Incrocio_9",
+      "lat": 45.8012651,
+      "lon": 11.9143419
+    },
+    {
+      "id": 10,
+      "name": "Incrocio_10",
+      "lat": 45.800887,
+      "lon": 11.9142771
+    },
+    {
+      "id": 11,
+      "name": "Incrocio_11",
+      "lat": 45.8006902,
+      "lon": 11.9141545
+    },
+    {
+      "id": 12,
+      "name": "Incrocio_12",
+      "lat": 45.8006566,
+      "lon": 11.9142885
+    },
+    {
+      "id": 13,
+      "name": "Incrocio_13",
+      "lat": 45.8005383,
+      "lon": 11.9141011
+    },
+    {
+      "id": 14,
+      "name": "Incrocio_14",
+      "lat": 45.8005448,
+      "lon": 11.9140764
+    },
+    {
+      "id": 15,
+      "name": "Incrocio_15",
+      "lat": 45.8008871,
+      "lon": 11.9142898
+    },
+    {
+      "id": 16,
+      "name": "Incrocio_16",
+      "lat": 45.8009516,
+      "lon": 11.9142904
+    },
+    {
+      "id": 17,
+      "name": "Incrocio_17",
+      "lat": 45.8006092,
+      "lon": 11.9146061
+    },
+    {
+      "id": 18,
+      "name": "Incrocio_18",
+      "lat": 45.8006831,
+      "lon": 11.9139545
+    },
+    {
+      "id": 19,
+      "name": "Incrocio_19",
+      "lat": 45.8005488,
+      "lon": 11.9140586
+    },
+    {
+      "id": 20,
+      "name": "Incrocio_20",
+      "lat": 45.8006413,
+      "lon": 11.9139373
+    },
+    {
+      "id": 21,
+      "name": "Incrocio_21",
+      "lat": 45.8006027,
+      "lon": 11.9140871
+    },
+    {
+      "id": 22,
+      "name": "Incrocio_22",
+      "lat": 45.8008884,
+      "lon": 11.914417
+    },
+    {
+      "id": 23,
+      "name": "Incrocio_23",
+      "lat": 45.8009548,
+      "lon": 11.9144139
+    },
+    {
+      "id": 24,
+      "name": "Incrocio_24",
+      "lat": 45.8004537,
+      "lon": 11.9140158
+    },
+    {
+      "id": 25,
+      "name": "Incrocio_25",
+      "lat": 45.8006303,
+      "lon": 11.9139329
+    },
+    {
+      "id": 26,
+      "name": "Incrocio_26",
+      "lat": 45.80095,
+      "lon": 11.9142779
+    },
+    {
+      "id": 27,
+      "name": "Incrocio_27",
+      "lat": 45.8007747,
+      "lon": 11.9142867
+    },
+    {
+      "id": 28,
+      "name": "Incrocio_28",
+      "lat": 45.801264,
+      "lon": 11.9143532
+    }
   ],
   "streets": [
-    {"id": "R1", "name": "Raccordo Deposito 1", "u": 0, "v": 1, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "description": "Raccordo cantiere nord (transito)"},
-    {"id": "R4", "name": "Raccordo Deposito 4", "u": 0, "v": 4, "transit_cost": 4.0, "service_cost": 4.0, "demand_kg": 0, "description": "Raccordo cantiere sud (transito)"},
-    {"id": "VR", "name": "Via Roma", "u": 1, "v": 2, "transit_cost": 2.5, "service_cost": 4.5, "demand_kg": 1800, "description": "Centro storico: raccolta porta a porta"},
-    {"id": "CG", "name": "Corso Garibaldi", "u": 2, "v": 3, "transit_cost": 3.0, "service_cost": 5.0, "demand_kg": 2200, "description": "Arteria commerciale ad alta densità"},
-    {"id": "VD", "name": "Via Dante", "u": 3, "v": 4, "transit_cost": 2.0, "service_cost": 4.0, "demand_kg": 1500, "description": "Zona residenziale est"},
-    {"id": "VE", "name": "Viale Europa", "u": 1, "v": 4, "transit_cost": 3.5, "service_cost": 6.0, "demand_kg": 2000, "description": "Quartiere residenziale ovest"},
-    {"id": "BT", "name": "Bretella di Transito", "u": 2, "v": 4, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "description": "Bretella di transito veloce"}
+    {
+      "id": "R0",
+      "name": "Raccordo Cantiere Deposito",
+      "u": 0,
+      "v": 7,
+      "transit_cost": 0.5,
+      "service_cost": 0.5,
+      "demand_kg": 0.0,
+      "description": "Raccordo viario tra deposito e rete comunale (0.00 km)"
+    },
+    {
+      "id": "S1",
+      "name": "Tratta_1_11",
+      "u": 1,
+      "v": 11,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S2",
+      "name": "Tratta_1_18",
+      "u": 1,
+      "v": 18,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S3",
+      "name": "Tratta_2_4",
+      "u": 2,
+      "v": 4,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 40.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S4",
+      "name": "Tratta_2_13",
+      "u": 2,
+      "v": 13,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S5",
+      "name": "Tratta_2_12",
+      "u": 2,
+      "v": 12,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 30.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S6",
+      "name": "Tratta_3_8",
+      "u": 3,
+      "v": 8,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S7",
+      "name": "Tratta_3_25",
+      "u": 3,
+      "v": 25,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S8",
+      "name": "Tratta_5_25",
+      "u": 5,
+      "v": 25,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S9",
+      "name": "Tratta_5_19",
+      "u": 5,
+      "v": 19,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S10",
+      "name": "Tratta_5_8",
+      "u": 5,
+      "v": 8,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S11",
+      "name": "Tratta_6_11",
+      "u": 6,
+      "v": 11,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S12",
+      "name": "Tratta_7_27",
+      "u": 7,
+      "v": 27,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (footway)"
+    },
+    {
+      "id": "S13",
+      "name": "Via Guglielmo Marconi",
+      "u": 7,
+      "v": 17,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 50.0,
+      "description": "Raccolta porta a porta (tertiary)"
+    },
+    {
+      "id": "S14",
+      "name": "Via Forestuzzo",
+      "u": 7,
+      "v": 14,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 40.0,
+      "description": "Raccolta porta a porta (tertiary)"
+    },
+    {
+      "id": "S15",
+      "name": "Tratta_9_28",
+      "u": 9,
+      "v": 28,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 0.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S16",
+      "name": "Tratta_9_26",
+      "u": 9,
+      "v": 26,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 50.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S17",
+      "name": "Tratta_10_15",
+      "u": 10,
+      "v": 15,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 0.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S18",
+      "name": "Tratta_10_26",
+      "u": 10,
+      "v": 26,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S19",
+      "name": "Tratta_10_27",
+      "u": 10,
+      "v": 27,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S20",
+      "name": "Tratta_11_21",
+      "u": 11,
+      "v": 21,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S21",
+      "name": "Tratta_13_14",
+      "u": 13,
+      "v": 14,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 0.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S22",
+      "name": "Via Forestuzzo",
+      "u": 14,
+      "v": 24,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (tertiary)"
+    },
+    {
+      "id": "S23",
+      "name": "Tratta_14_19",
+      "u": 14,
+      "v": 19,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 0.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S24",
+      "name": "Tratta_15_22",
+      "u": 15,
+      "v": 22,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S25",
+      "name": "Tratta_15_16",
+      "u": 15,
+      "v": 16,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (footway)"
+    },
+    {
+      "id": "S26",
+      "name": "Tratta_15_27",
+      "u": 15,
+      "v": 27,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (footway)"
+    },
+    {
+      "id": "S27",
+      "name": "Tratta_16_26",
+      "u": 16,
+      "v": 26,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 0.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S28",
+      "name": "Tratta_16_23",
+      "u": 16,
+      "v": 23,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S29",
+      "name": "Tratta_16_28",
+      "u": 16,
+      "v": 28,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 50.0,
+      "description": "Raccolta porta a porta (footway)"
+    },
+    {
+      "id": "S30",
+      "name": "Tratta_18_20",
+      "u": 18,
+      "v": 20,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S31",
+      "name": "Tratta_19_21",
+      "u": 19,
+      "v": 21,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S32",
+      "name": "Tratta_20_21",
+      "u": 20,
+      "v": 21,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 20.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S33",
+      "name": "Tratta_20_25",
+      "u": 20,
+      "v": 25,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 0.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S34",
+      "name": "Tratta_22_23",
+      "u": 22,
+      "v": 23,
+      "transit_cost": 0.5,
+      "service_cost": 0.9,
+      "demand_kg": 10.0,
+      "description": "Raccolta porta a porta (residential)"
+    },
+    {
+      "id": "S35",
+      "name": "Tratta_22_27",
+      "u": 22,
+      "v": 27,
+      "transit_cost": 1.34,
+      "service_cost": 2.41,
+      "demand_kg": 200.0,
+      "description": "Raccolta porta a porta (residential)"
+    }
   ],
   "vehicles": [
-    {"name": "Compattatore_1", "capacity_kg": 4500, "fixed_cost": 100.0, "description": "Mezzo pesante 2 assi per centro e assi primari"},
-    {"name": "Compattatore_2", "capacity_kg": 4500, "fixed_cost": 100.0, "description": "Mezzo satellite per completamento aree residenziali"}
+    {
+      "name": "Compattatore_1",
+      "capacity_kg": 4500,
+      "fixed_cost": 100.0,
+      "description": "Mezzo pesante 2 assi per centro e assi primari"
+    },
+    {
+      "name": "Compattatore_2",
+      "capacity_kg": 4500,
+      "fixed_cost": 100.0,
+      "description": "Mezzo satellite per completamento aree residenziali"
+    }
   ],
   "settings": {
     "deadhead_upper_bound": 5,
