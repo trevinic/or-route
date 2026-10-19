@@ -82,6 +82,7 @@ def solve_vrptw(
     veh_names = [v["name"] for v in vehicles]
     veh_caps = {v["name"]: float(v["capacity"]) for v in vehicles}
     veh_fixed = {v["name"]: float(v.get("fixed_cost", 60.0)) for v in vehicles}
+    veh_km_costs = {v["name"]: float(v.get("cost_per_km") if v.get("cost_per_km") is not None else cost_per_km) for v in vehicles}
 
     # Big M per linearizzazione finestre temporali
     max_horizon = max(due_times.values()) + 120.0
@@ -120,7 +121,7 @@ def solve_vrptw(
 
     # Funzione Obiettivo: Minimizzare km percorsi + costi fissi veicoli + (peso minore su tempo totale)
     total_dist_cost = pulp.lpSum(
-        dist[(i, j)] * cost_per_km * x[i, j, k]
+        dist[(i, j)] * veh_km_costs[k] * x[i, j, k]
         for i in node_ids
         for j in node_ids
         for k in veh_names
@@ -282,10 +283,11 @@ def solve_vrptw(
             "used": is_used,
             "capacity": veh_caps[k],
             "fixed_cost": veh_fixed[k],
+            "cost_per_km": veh_km_costs[k],
             "total_load": veh_load,
             "saturation_pct": round((veh_load / veh_caps[k]) * 100, 1) if veh_caps[k] > 0 else 0,
             "distance_km": round(veh_dist, 2),
-            "km_cost": round(veh_dist * cost_per_km, 2),
+            "km_cost": round(veh_dist * veh_km_costs[k], 2),
             "route_nodes": route_nodes,
             "stops": stops_detail
         }
@@ -308,9 +310,9 @@ def get_default_vrptw_scenario() -> Dict[str, Any]:
         "speed_kmh": 38.0,
         "cost_per_km": 1.25,
         "vehicles": [
-            {"name": "Furgone_Frigo_1", "capacity": 1000, "fixed_cost": 75.0},
-            {"name": "Furgone_Frigo_2", "capacity": 1000, "fixed_cost": 75.0},
-            {"name": "Furgone_Frigo_3", "capacity": 1500, "fixed_cost": 90.0}
+            {"name": "Furgone_Frigo_1", "capacity": 1000, "fixed_cost": 75.0, "cost_per_km": 1.25},
+            {"name": "Furgone_Frigo_2", "capacity": 1000, "fixed_cost": 75.0, "cost_per_km": 1.25},
+            {"name": "Furgone_Frigo_3", "capacity": 1500, "fixed_cost": 90.0, "cost_per_km": 1.35}
         ],
         "customers": [
             {"id": 1, "name": "Supermercato Pam (Centro)", "lat": 44.4940, "lon": 11.3430, "demand": 320, "ready_time": 30.0, "due_time": 120.0, "service_time": 20.0},     # 08:30 - 10:00

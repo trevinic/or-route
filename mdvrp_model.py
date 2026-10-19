@@ -57,6 +57,7 @@ def get_default_mdvrp_scenario() -> Dict[str, Any]:
             "home_depot": "DEP_NORD",
             "capacity": 1500.0,
             "fixed_cost": 80.0,
+            "cost_per_km": 1.20,
             "description": "Motrice assegnata a Cantiere Nord"
         },
         {
@@ -64,6 +65,7 @@ def get_default_mdvrp_scenario() -> Dict[str, Any]:
             "home_depot": "DEP_NORD",
             "capacity": 1500.0,
             "fixed_cost": 80.0,
+            "cost_per_km": 1.20,
             "description": "Motrice assegnata a Cantiere Nord"
         },
         {
@@ -71,6 +73,7 @@ def get_default_mdvrp_scenario() -> Dict[str, Any]:
             "home_depot": "DEP_SUD",
             "capacity": 1600.0,
             "fixed_cost": 85.0,
+            "cost_per_km": 1.20,
             "description": "Motrice assegnata a Cantiere Sud"
         },
         {
@@ -78,6 +81,7 @@ def get_default_mdvrp_scenario() -> Dict[str, Any]:
             "home_depot": "DEP_SUD",
             "capacity": 1600.0,
             "fixed_cost": 85.0,
+            "cost_per_km": 1.20,
             "description": "Motrice assegnata a Cantiere Sud"
         }
     ]
@@ -132,6 +136,7 @@ def solve_mdvrp(
     veh_names = [str(v["name"]) for v in vehicles]
     veh_caps = {str(v["name"]): float(v["capacity"]) for v in vehicles}
     veh_fixed = {str(v["name"]): float(v.get("fixed_cost", 70.0)) for v in vehicles}
+    veh_km_costs = {str(v["name"]): float(v.get("cost_per_km") if v.get("cost_per_km") is not None else cost_per_km) for v in vehicles}
     veh_depot = {str(v["name"]): str(v.get("home_depot", depot_ids[0])) for v in vehicles}
 
     # Modello PuLP
@@ -158,7 +163,7 @@ def solve_mdvrp(
     }
 
     # Funzione Obiettivo: Minimizzare km percorsi + costi fissi flotta
-    km_term = pulp.lpSum(dist[(i, j)] * cost_per_km * x[i, j, k] for i in all_node_ids for j in all_node_ids for k in veh_names if i != j)
+    km_term = pulp.lpSum(dist[(i, j)] * veh_km_costs[k] * x[i, j, k] for i in all_node_ids for j in all_node_ids for k in veh_names if i != j)
     fixed_term = pulp.lpSum(veh_fixed[k] * z[k] for k in veh_names)
     prob += km_term + fixed_term, "Costo_Totale_Operativo"
 
@@ -270,14 +275,15 @@ def solve_mdvrp(
                         "from_name": nodes_dict[u_n]["name"],
                         "to_name": nodes_dict[v_n]["name"],
                         "km": d_km,
-                        "cost": round(d_km * cost_per_km, 2),
+                        "cost": round(d_km * veh_km_costs[k], 2),
                         "load_after_kg": round(running_load, 1)
                     })
 
                 v_info["legs"] = legs
                 v_info["total_km"] = round(running_km, 2)
                 v_info["total_load_kg"] = round(running_load, 1)
-                v_info["travel_cost"] = round(running_km * cost_per_km, 2)
+                v_info["cost_per_km"] = veh_km_costs[k]
+                v_info["travel_cost"] = round(running_km * veh_km_costs[k], 2)
                 v_info["total_cost"] = round(veh_fixed[k] + v_info["travel_cost"], 2)
                 total_km_overall += running_km
 
@@ -290,6 +296,7 @@ def solve_mdvrp(
         v_copy = dict(v)
         v_copy["name"] = k
         v_copy["km"] = v["total_km"]
+        v_copy["cost_per_km"] = v.get("cost_per_km", veh_km_costs.get(k, cost_per_km))
         v_copy["km_cost"] = v["travel_cost"]
         v_copy["total_load"] = v["total_load_kg"]
         stops = []

@@ -458,7 +458,8 @@ function syncWizardFleetToModels() {
     State.cvrpConfig.vehicles = concreteVehicles.map(v => ({
       name: v.name,
       capacity: v.capacity,
-      fixed_cost: v.fixed_cost
+      fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km
     }));
     if (State.activeTab === 'tab-cvrp') renderCvrpTables();
   }
@@ -468,7 +469,8 @@ function syncWizardFleetToModels() {
     State.vrptwConfig.vehicles = concreteVehicles.map(v => ({
       name: v.name,
       capacity: v.capacity,
-      fixed_cost: v.fixed_cost
+      fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km
     }));
     if (State.activeTab === 'tab-vrptw') renderVrptwTables();
   }
@@ -501,6 +503,7 @@ function syncWizardFleetToModels() {
       name: v.name,
       capacity: v.capacity,
       fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km,
       description: v.category
     }));
     if (State.activeTab === 'tab-vrppd') renderVrppdTables();
@@ -513,7 +516,8 @@ function syncWizardFleetToModels() {
       name: v.name,
       home_depot: firstDep,
       capacity: v.capacity,
-      fixed_cost: v.fixed_cost
+      fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km
     }));
     if (State.activeTab === 'tab-mdvrp') renderMdvrpTables();
   }
@@ -607,6 +611,7 @@ async function applyWizardParametersToModel() {
         name: v.name,
         capacity: v.capacity,
         fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km,
         description: v.category
       }));
       State.vrppdConfig.cost_per_km = Math.round(avgKmCost * 100) / 100;
@@ -631,7 +636,8 @@ async function applyWizardParametersToModel() {
         name: v.name,
         home_depot: depots[idx % numDepots] ? depots[idx % numDepots].id : 'DEP_1',
         capacity: v.capacity,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km
       }));
       State.mdvrpConfig.cost_per_km = Math.round(avgKmCost * 100) / 100;
       try {
@@ -652,7 +658,8 @@ async function applyWizardParametersToModel() {
       State.vrptwConfig.vehicles = concreteVehicles.map(v => ({
         name: v.name,
         capacity: v.capacity,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km
       }));
       State.vrptwConfig.cost_per_km = Math.round(avgKmCost * 100) / 100;
       try {
@@ -695,7 +702,8 @@ async function applyWizardParametersToModel() {
       State.cvrpConfig.vehicles = concreteVehicles.map(v => ({
         name: v.name,
         capacity: v.capacity,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km
       }));
       State.cvrpConfig.cost_per_km = Math.round(avgKmCost * 100) / 100;
       try {
@@ -880,7 +888,8 @@ async function loadCvrpConfig() {
       vehicles: getWizardConcreteVehicles().map(v => ({
         name: v.name,
         capacity: v.capacity,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km
       }))
     };
     State.cvrpResult = null;
@@ -967,6 +976,7 @@ function renderCvrpTables() {
   if (vbody && State.cvrpConfig.vehicles) {
     vbody.innerHTML = '';
     State.cvrpConfig.vehicles.forEach((v, idx) => {
+      const kmCost = (v.cost_per_km !== undefined && v.cost_per_km !== null) ? v.cost_per_km : (State.cvrpConfig.cost_per_km || 1.15);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>🚐 ${v.name}</b></td>
@@ -977,6 +987,10 @@ function renderCvrpTables() {
         <td>
           <input type="number" class="cell-inp" min="0" step="5" value="${v.fixed_cost}" 
             onchange="updateCvrpVehicleCost(${idx}, this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" min="0.1" step="0.05" value="${kmCost}" 
+            onchange="updateCvrpVehicleKmCost(${idx}, this.value)">
         </td>
         <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi veicolo" onclick="removeCvrpVehicle(${idx})">&times;</button>
@@ -1066,6 +1080,12 @@ function updateCvrpVehicleCost(idx, val) {
   State.cvrpConfig.vehicles[idx].fixed_cost = parseFloat(val) || 50;
 }
 
+function updateCvrpVehicleKmCost(idx, val) {
+  if (State.cvrpConfig && State.cvrpConfig.vehicles && State.cvrpConfig.vehicles[idx]) {
+    State.cvrpConfig.vehicles[idx].cost_per_km = parseFloat(val) || 1.15;
+  }
+}
+
 function updateCvrpCostPerKm(val) {
   if (!State.cvrpConfig) return;
   State.cvrpConfig.cost_per_km = parseFloat(val) || 1.15;
@@ -1111,7 +1131,8 @@ function addCvrpVehicleRow() {
   State.cvrpConfig.vehicles.push({
     name: `Furgone_${nextNum}`,
     capacity: 1000,
-    fixed_cost: 60.0
+    fixed_cost: 60.0,
+    cost_per_km: State.cvrpConfig.cost_per_km || 1.15
   });
   renderCvrpTables();
   showToast(`Furgone_${nextNum} aggiunto alla flotta.`);
@@ -1144,7 +1165,8 @@ function autoScaleCvrpFleet(andSolve = false) {
     State.cvrpConfig.vehicles.push({
       name: `Furgone_Eco_${nextNum}`,
       capacity: stdCap,
-      fixed_cost: 65.0
+      fixed_cost: 65.0,
+      cost_per_km: State.cvrpConfig.cost_per_km || 1.15
     });
   }
   renderCvrpTables();
@@ -1317,7 +1339,8 @@ async function loadVrptwConfig() {
       vehicles: getWizardConcreteVehicles().map(v => ({
         name: v.name,
         capacity: v.capacity,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km
       }))
     };
     State.vrptwResult = null;
@@ -1425,6 +1448,7 @@ function renderVrptwTables() {
   if (vbody && State.vrptwConfig.vehicles) {
     vbody.innerHTML = '';
     State.vrptwConfig.vehicles.forEach((v, idx) => {
+      const kmCost = (v.cost_per_km !== undefined && v.cost_per_km !== null) ? v.cost_per_km : (State.vrptwConfig.cost_per_km || 1.25);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>🚚 ${v.name}</b></td>
@@ -1435,6 +1459,10 @@ function renderVrptwTables() {
         <td>
           <input type="number" class="cell-inp" min="0" step="5" value="${v.fixed_cost}" 
             onchange="updateVrptwVehicleCost(${idx}, this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" min="0.1" step="0.05" value="${kmCost}" 
+            onchange="updateVrptwVehicleKmCost(${idx}, this.value)">
         </td>
         <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi veicolo" onclick="removeVrptwVehicle(${idx})">&times;</button>
@@ -1520,6 +1548,12 @@ function updateVrptwVehicleCost(idx, val) {
   State.vrptwConfig.vehicles[idx].fixed_cost = parseFloat(val) || 70;
 }
 
+function updateVrptwVehicleKmCost(idx, val) {
+  if (State.vrptwConfig && State.vrptwConfig.vehicles && State.vrptwConfig.vehicles[idx]) {
+    State.vrptwConfig.vehicles[idx].cost_per_km = parseFloat(val) || 1.25;
+  }
+}
+
 function updateVrptwCostPerKm(val) {
   if (!State.vrptwConfig) return;
   State.vrptwConfig.cost_per_km = parseFloat(val) || 1.25;
@@ -1574,7 +1608,8 @@ function addVrptwVehicleRow() {
   State.vrptwConfig.vehicles.push({
     name: `Furgone_Frigo_${nextNum}`,
     capacity: 1500,
-    fixed_cost: 80.0
+    fixed_cost: 80.0,
+    cost_per_km: State.vrptwConfig.cost_per_km || 1.25
   });
   renderVrptwTables();
   showToast(`Furgone_Frigo_${nextNum} aggiunto alla flotta.`);
@@ -1645,7 +1680,8 @@ function autoScaleVrptwFleet(andSolve = false) {
     State.vrptwConfig.vehicles.push({
       name: `Furgone_Frigo_${nextNum}`,
       capacity: stdCap,
-      fixed_cost: 80.0
+      fixed_cost: 80.0,
+      cost_per_km: State.vrptwConfig.cost_per_km || 1.25
     });
   }
   renderVrptwTables();
@@ -3470,9 +3506,10 @@ async function loadVrppdConfig() {
         name: v.name,
         capacity: v.capacity,
         fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km || 1.25,
         description: v.category || 'Furgone'
       })) : [
-        { name: 'Furgone_Express_1', capacity: 900.0, fixed_cost: 85.0, description: 'Furgone per ritiri e consegne' }
+        { name: 'Furgone_Express_1', capacity: 900.0, fixed_cost: 85.0, cost_per_km: 1.25, description: 'Furgone per ritiri e consegne' }
       ]
     };
     State.vrppdResult = null;
@@ -3571,6 +3608,7 @@ function renderVrppdTables() {
     const vehs = State.vrppdConfig.vehicles || [];
 
     vehs.forEach((v, idx) => {
+      const kmCost = (v.cost_per_km !== undefined && v.cost_per_km !== null) ? v.cost_per_km : (State.vrppdConfig.cost_per_km || 1.25);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
@@ -3581,6 +3619,9 @@ function renderVrppdTables() {
         </td>
         <td>
           <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0" max="1000" step="5" value="${v.fixed_cost}" onchange="updateVrppdVehicle(${idx}, 'fixed_cost', parseFloat(this.value)||0)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0.1" max="10" step="0.05" value="${kmCost}" onchange="updateVrppdVehicle(${idx}, 'cost_per_km', parseFloat(this.value)||1.25)">
         </td>
         <td style="text-align: center;">
           <button class="btn-del" onclick="removeVrppdVehicle(${idx})" title="Rimuovi veicolo">✕</button>
@@ -3652,6 +3693,7 @@ function autoScaleVrppdFleet(andSolve = false) {
       name: `Furgone_Express_${nextNum}`,
       capacity: stdCap,
       fixed_cost: 85.0,
+      cost_per_km: State.vrppdConfig.cost_per_km || 1.25,
       description: 'Furgone VRPPD (Auto-scale)'
     });
   }
@@ -3790,6 +3832,7 @@ function addVrppdVehicleRow() {
     name: `Furgone_Express_${nextNum}`,
     capacity: 900.0,
     fixed_cost: 85.0,
+    cost_per_km: State.vrppdConfig.cost_per_km || 1.25,
     description: 'Furgone per ritiri e consegne congiunte'
   });
   renderVrppdTables();
@@ -4172,9 +4215,10 @@ async function loadMdvrpConfig() {
         name: v.name,
         home_depot: '',
         capacity: v.capacity,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km || 1.20
       })) : [
-        { name: 'Camion_MD_1', home_depot: '', capacity: 2500.0, fixed_cost: 80.0 }
+        { name: 'Camion_MD_1', home_depot: '', capacity: 2500.0, fixed_cost: 80.0, cost_per_km: 1.20 }
       ]
     };
     State.mdvrpResult = null;
@@ -4294,6 +4338,7 @@ function renderMdvrpTables() {
         depotOptions += `<option value="${d.id}" ${v.home_depot === d.id ? 'selected' : ''}>${d.name || d.id}</option>`;
       });
 
+      const kmCost = (v.cost_per_km !== undefined && v.cost_per_km !== null) ? v.cost_per_km : (State.mdvrpConfig.cost_per_km || 1.20);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
@@ -4309,6 +4354,9 @@ function renderMdvrpTables() {
         </td>
         <td>
           <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0" max="1000" step="5" value="${v.fixed_cost}" onchange="updateMdvrpVehicle(${idx}, 'fixed_cost', parseFloat(this.value)||0)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0.1" max="10" step="0.05" value="${kmCost}" onchange="updateMdvrpVehicle(${idx}, 'cost_per_km', parseFloat(this.value)||1.20)">
         </td>
         <td style="text-align: center;">
           <button class="btn-del" onclick="removeMdvrpVehicle(${idx})" title="Rimuovi veicolo">✕</button>
@@ -4382,7 +4430,8 @@ function autoScaleMdvrpFleet(andSolve = false) {
       name: `Camion_MD_${nextNum}`,
       home_depot: assignedDep,
       capacity: stdCap,
-      fixed_cost: 80.0
+      fixed_cost: 80.0,
+      cost_per_km: State.mdvrpConfig.cost_per_km || 1.20
     });
   }
   renderMdvrpTables();
@@ -4549,7 +4598,8 @@ function addMdvrpVehicleRow() {
     name: `Camion_MD_${nextNum}`,
     home_depot: defaultDep,
     capacity: 2500.0,
-    fixed_cost: 80.0
+    fixed_cost: 80.0,
+    cost_per_km: State.mdvrpConfig.cost_per_km || 1.20
   });
 
   renderMdvrpTables();

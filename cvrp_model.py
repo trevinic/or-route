@@ -62,6 +62,7 @@ def solve_cvrp(
     veh_names = [v["name"] for v in vehicles]
     veh_caps = {v["name"]: float(v["capacity"]) for v in vehicles}
     veh_fixed = {v["name"]: float(v.get("fixed_cost", 50.0)) for v in vehicles}
+    veh_km_costs = {v["name"]: float(v.get("cost_per_km") if v.get("cost_per_km") is not None else cost_per_km) for v in vehicles}
 
     # 2. Modello PuLP
     prob = pulp.LpProblem("OR_Route_CVRP_Optimization", pulp.LpMinimize)
@@ -91,7 +92,7 @@ def solve_cvrp(
 
     # 3. Funzione Obiettivo: Minimizzare (km percorsi * costo_km) + costi fissi accensione
     total_km_cost = pulp.lpSum(
-        dist[(i, j)] * cost_per_km * x[i, j, k]
+        dist[(i, j)] * veh_km_costs[k] * x[i, j, k]
         for i in node_ids
         for j in node_ids
         for k in veh_names
@@ -234,10 +235,11 @@ def solve_cvrp(
             "used": is_used,
             "capacity": veh_caps[k],
             "fixed_cost": veh_fixed[k],
+            "cost_per_km": veh_km_costs[k],
             "total_load": veh_load,
             "saturation_pct": round((veh_load / veh_caps[k]) * 100, 1) if veh_caps[k] > 0 else 0,
             "distance_km": round(veh_dist, 2),
-            "km_cost": round(veh_dist * cost_per_km, 2),
+            "km_cost": round(veh_dist * veh_km_costs[k], 2),
             "route_nodes": route_nodes,
             "stops": stops_detail
         }
@@ -257,8 +259,8 @@ def get_default_cvrp_scenario() -> Dict[str, Any]:
         },
         "cost_per_km": 1.15,
         "vehicles": [
-            {"name": "Furgone_EcoDaily_1", "capacity": 1200, "fixed_cost": 60.0},
-            {"name": "Furgone_EcoDaily_2", "capacity": 1200, "fixed_cost": 60.0}
+            {"name": "Furgone_EcoDaily_1", "capacity": 1200, "fixed_cost": 60.0, "cost_per_km": 1.15},
+            {"name": "Furgone_EcoDaily_2", "capacity": 1200, "fixed_cost": 60.0, "cost_per_km": 1.15}
         ],
         "customers": [
             {"id": 1, "name": "Supermercato Conad (Peschiera)", "lat": 45.4380, "lon": 10.6900, "demand": 380},

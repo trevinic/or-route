@@ -122,12 +122,14 @@ def get_default_vrppd_scenario() -> Dict[str, Any]:
             "name": "Furgone_Express_1",
             "capacity": 800.0,
             "fixed_cost": 75.0,
+            "cost_per_km": 1.25,
             "description": "Furgone compatto per ritiri/consegne rapide"
         },
         {
             "name": "Furgone_Express_2",
             "capacity": 900.0,
             "fixed_cost": 85.0,
+            "cost_per_km": 1.25,
             "description": "Furgone medio per ritiri e consegne voluminose"
         }
     ]
@@ -200,6 +202,7 @@ def solve_vrppd(
     veh_names = [str(v["name"]) for v in vehicles]
     veh_caps = {str(v["name"]): float(v["capacity"]) for v in vehicles}
     veh_fixed = {str(v["name"]): float(v.get("fixed_cost", 60.0)) for v in vehicles}
+    veh_km_costs = {str(v["name"]): float(v.get("cost_per_km") if v.get("cost_per_km") is not None else cost_per_km) for v in vehicles}
 
     # Modello PuLP
     prob = pulp.LpProblem("OR_Route_VRPPD_Optimization", pulp.LpMinimize)
@@ -232,7 +235,7 @@ def solve_vrppd(
     }
 
     # Funzione Obiettivo
-    km_cost_term = pulp.lpSum(dist[(i, j)] * cost_per_km * x[i, j, k] for i in all_node_ids for j in all_node_ids for k in veh_names if i != j)
+    km_cost_term = pulp.lpSum(dist[(i, j)] * veh_km_costs[k] * x[i, j, k] for i in all_node_ids for j in all_node_ids for k in veh_names if i != j)
     fixed_cost_term = pulp.lpSum(veh_fixed[k] * z[k] for k in veh_names)
     prob += km_cost_term + fixed_cost_term, "Costo_Totale_Operativo"
 
@@ -365,14 +368,15 @@ def solve_vrppd(
                         "from_name": nodes_dict[u]["name"],
                         "to_name": nodes_dict[v]["name"],
                         "km": d_km,
-                        "cost": round(d_km * cost_per_km, 2),
+                        "cost": round(d_km * veh_km_costs[k], 2),
                         "load_after_kg": round(running_load, 1),
                         "type": leg_type
                     })
 
                 v_info["legs"] = legs
                 v_info["total_km"] = round(running_km, 2)
-                v_info["travel_cost"] = round(running_km * cost_per_km, 2)
+                v_info["cost_per_km"] = veh_km_costs[k]
+                v_info["travel_cost"] = round(running_km * veh_km_costs[k], 2)
                 v_info["total_cost"] = round(veh_fixed[k] + v_info["travel_cost"], 2)
                 total_km_overall += running_km
 
@@ -385,6 +389,7 @@ def solve_vrppd(
         v_copy = dict(v)
         v_copy["name"] = k
         v_copy["km"] = v["total_km"]
+        v_copy["cost_per_km"] = v.get("cost_per_km", veh_km_costs.get(k, cost_per_km))
         v_copy["km_cost"] = v["travel_cost"]
         v_copy["max_load_carried"] = max([leg["load_after_kg"] for leg in v.get("legs", [])], default=0.0)
         detailed_stops = []
