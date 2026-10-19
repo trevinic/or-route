@@ -1,0 +1,110 @@
+{
+  "depot": {
+    "id": "D0",
+    "name": "Hub Centrale Smistamento (Treviso Nord)",
+    "lat": 45.68,
+    "lon": 12.24
+  },
+  "requests": [
+    {
+      "id": "REQ_1",
+      "name": "Pacco Ricambi Meccanici",
+      "demand_kg": 250.0,
+      "pickup": {
+        "id": "P1",
+        "name": "Officina Meccanica Rossi (P1)",
+        "lat": 45.695,
+        "lon": 12.215
+      },
+      "delivery": {
+        "id": "D1",
+        "name": "Concessionaria Auto Nord (D1)",
+        "lat": 45.71,
+        "lon": 12.26
+      }
+    },
+    {
+      "id": "REQ_2",
+      "name": "Scatole Materiale Elettrico",
+      "demand_kg": 400.0,
+      "pickup": {
+        "id": "P2",
+        "name": "Magazzino ElettroForniture (P2)",
+        "lat": 45.66,
+        "lon": 12.27
+      },
+      "delivery": {
+        "id": "D2",
+        "name": "Cantiere Impianti Sud (D2)",
+        "lat": 45.645,
+        "lon": 12.235
+      }
+    },
+    {
+      "id": "REQ_3",
+      "name": "Fornitura Tessile / Abbigliamento",
+      "demand_kg": 350.0,
+      "pickup": {
+        "id": "P3",
+        "name": "Laboratorio Sartoriale (P3)",
+        "lat": 45.672,
+        "lon": 12.19
+      },
+      "delivery": {
+        "id": "D3",
+        "name": "Boutique Centro Storico (D3)",
+        "lat": 45.666,
+        "lon": 12.245
+      }
+    },
+    {
+      "id": "REQ_4",
+      "name": "Campioni Laboratorio Analisi",
+      "demand_kg": 150.0,
+      "pickup": {
+        "id": "P4",
+        "name": "Clinica Diagnostica Est (P4)",
+        "lat": 45.685,
+        "lon": 12.285
+      },
+      "delivery": {
+        "id": "D4",
+        "name": "Laboratorio Ospedaliero Centrale (D4)",
+        "lat": 45.675,
+        "lon": 12.25
+      }
+    },
+    {
+      "id": "REQ_5",
+      "name": "Componenti Elettronici",
+      "demand_kg": 300.0,
+      "pickup": {
+        "id": "P5",
+        "name": "Produttore Schede PCB (P5)",
+        "lat": 45.655,
+        "lon": 12.205
+      },
+      "delivery": {
+        "id": "D5",
+        "name": "Assemblatore High-Tech (D5)",
+        "lat": 45.7,
+        "lon": 12.23
+      }
+    }
+  ],
+  "vehicles": [
+    {
+      "name": "Furgone_Express_1",
+      "capacity": 800.0,
+      "fixed_cost": 75.0,
+      "description": "Furgone compatto per ritiri/consegne rapide"
+    },
+    {
+      "name": "Furgone_Express_2",
+      "capacity": 900.0,
+      "fixed_cost": 85.0,
+      "description": "Furgone medio per ritiri e consegne voluminose"
+    }
+  ],
+  "cost_per_km": 1.25
+}

@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OptiFleet RO &mdash; Modelli di Ricerca Operativa per Flotte Aziendali</title>
+  <meta name="description" content="Piattaforma gratuita di Ricerca Operativa e algoritmi MILP per ottimizzare percorsi, costi carburante e pianificazione delle flotte aziendali (CVRP, VRPTW, CARP, EV-VRP).">
+  
+  <!-- Google Fonts: Outfit (UI) & JetBrains Mono (Math/Code) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Foglio di Stile Personalizzato -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- GOOGLE ADSENSE INTEGRATION (Sostituisci ca-pub-XXXXXXXXXXXXXXXX con il tuo ID Editore) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. HEADER DELLA PIATTAFORMA
+       ========================================================================= -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="logo-badge">📐</div>
+        <div class="logo-text">
+          <h1>OptiFleet <span class="highlight">RO</span></h1>
+          <div class="logo-sub">Ricerca Operativa & Algoritmi Matematici per Flotte Aziendali</div>
+        </div>
+      </div>
+      <div class="header-meta" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span class="badge-free">🚀 100% Gratuito & Open Tools</span>
+        <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON con tutte le impostazioni, costi e mappe della tua flotta">
+          📥 Esporta Backup (.json)
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importConfigFileInput').click()" title="Importa e ripristina un file JSON precedentemente salvato">
+          📤 Importa Backup
+        </button>
+        <input type="file" id="importConfigFileInput" accept=".json" style="display: none;" onchange="handleImportConfigFile(event)">
+        <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', document.getElementById('tabBtnRoi'))">
+          📊 Calcola Risparmio ROI
+        </button>
+        <button class="btn btn-warning btn-sm" onclick="switchMainTab('tab-faq', document.getElementById('tabBtnFaq'))" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600; cursor: pointer;">
+          📚 FAQ & Dispensa
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. BANNER PUBBLICITARIO GOOGLE ADSENSE (LEADERBOARD TOP)
+       ========================================================================= -->
+  <div class="main-wrapper" style="padding-bottom: 0;">
+    <div class="ad-container">
+      <span class="ad-label">Pubblicità / Annuncio Google AdSense</span>
+      <div class="ad-leaderboard">
+        <!-- Google AdSense Responsive Leaderboard Unit -->
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="1234567890"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+        <span style="font-size: 11.5px; color: var(--text-muted);">
+          [Slot Pubblicitario AdSense 728x90 Leaderboard &mdash; Visibile agli utenti del sito gratuito]
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. BARRA DI NAVIGAZIONE MODELLI & STRUMENTI
+       ========================================================================= -->
+  <nav class="nav-section">
+    <div class="nav-container">
+      <button id="tabBtnSelector" class="model-tab active primary" onclick="switchMainTab('tab-selector', this)">
+        🧭 Quale Modello Scegliere?
+      </button>
+      <button id="tabBtnCvrp" class="model-tab" onclick="switchMainTab('tab-cvrp', this)">
+        📦 1. CVRP (Consegne Merci & Corrieri)
+      </button>
+      <button id="tabBtnVrptw" class="model-tab" onclick="switchMainTab('tab-vrptw', this)">
+        ⏱️ 2. VRPTW (Finestre Orarie Tassative)
+      </button>
+      <button id="tabBtnCarp" class="model-tab" onclick="switchMainTab('tab-carp', this)">
+        🚛 3. CARP (Servizi Stradali & Rifiuti)
+      </button>
+      <button id="tabBtnIntermediate" class="model-tab" onclick="switchMainTab('tab-intermediate', this)">
+        🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)
+      </button>
+      <button id="tabBtnVrppd" class="model-tab" onclick="switchMainTab('tab-vrppd', this)">
+        📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)
+      </button>
+      <button id="tabBtnMdvrp" class="model-tab" onclick="switchMainTab('tab-mdvrp', this)">
+        🏢🏢 6. MDVRP (Multi-Deposito)
+      </button>
+      <button id="tabBtnRoi" class="model-tab" onclick="switchMainTab('tab-roi', this)">
+        💰 Calcolatore Risparmio ROI Flotta
+      </button>
+      <button id="tabBtnFaq" class="model-tab" onclick="switchMainTab('tab-faq', this)" style="border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.08); color: #fbbf24; font-weight: 700;">
+        📚 FAQ & Dispensa Teorica
+      </button>
+    </div>
+  </nav>
+
+  <!-- =========================================================================
+       4. CONTENUTO PRINCIPALE (SEZIONI MULTI-MODELLO)
+       ========================================================================= -->
+  <main class="main-wrapper">
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 0: WIZARD INTERATTIVO "TROVA IL TUO MODELLO"
+         --------------------------------------------------------------------- -->
+    <section id="tab-selector">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">🧭</span>
+            <span>Selettore Guidato & Configuratore Flotta Eterogenea</span>
+          </div>
+          <span class="badge-free">Consulenza Intelligente & Calibrazione Costi</span>
+        </div>
+
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          Ogni azienda di trasporti, logistica o igiene ambientale ha vincoli operativi e un parco mezzi eterogeneo. Rispondi alle domande per individuare il <b>modello matematico ottimale</b> e configura in <b>Parte 2</b> le <b>diverse tipologie di veicoli</b> (furgoni, medi 2 assi, bilici pesanti) con le rispettive <b>specifiche di costo fisso, personale e consumo chilometrico</b>.
+        </p>
+
+        <div class="wizard-box">
+          <div style="font-size: 13px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+            PARTE 1 &mdash; STRATEGIA OPERATIVA E TIPO DI SERVIZIO
+          </div>
+
+          <!-- Step 1 -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">1. Dove deve operare la tua flotta?</label>
+            <div class="wizard-options">
+              <div class="option-btn" onclick="selectWizardOption('type', 'points', this)">
+                <div class="option-title">📍 Presso singoli Clienti / Punti</div>
+                <div class="option-desc">Consegne a negozi, farmacie, e-commerce, supermercati o interventi tecnici a domicilio.</div>
+              </div>
+              <div class="option-btn selected" onclick="selectWizardOption('type', 'streets', this)">
+                <div class="option-title">🛣️ Lungo Intere Strade / Reti Viarie</div>
+                <div class="option-desc">Raccolta rifiuti porta a porta, spazzatrici stradali, sgombero neve, ispezione condotte.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Ritiri e Consegne Accoppiati (VRPPD) -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">2. I viaggi prevedono ritiri e consegne accoppiati (Pickup & Delivery) nello stesso itinerario?</label>
+            <div class="wizard-options">
+              <div class="option-btn selected" onclick="selectWizardOption('pickupDelivery', 'no', this)">
+                <div class="option-title">❌ No, solo consegne o solo ritiri</div>
+                <div class="option-desc">I mezzi partono dall'hub con tutto il carico da consegnare, oppure raccolgono e rientrano.</div>
+              </div>
+              <div class="option-btn" onclick="selectWizardOption('pickupDelivery', 'yes', this)">
+                <div class="option-title">📦🔄 Sì, Ritiro presso A e Consegna a B per lo stesso cliente</div>
+                <div class="option-desc">Corrieri espresso, noleggi con conducente merci, navette merci o ritiri ingombranti e recapito a cantiere.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Multi-Deposito (MDVRP) -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">3. L'azienda dispone di più magazzini, depositi o cantieri logistici sul territorio?</label>
+            <div class="wizard-options">
+              <div class="option-btn selected" onclick="selectWizardOption('multiDepot', 'no', this)">
+                <div class="option-title">🏢 Hub Singolo Centralizzato</div>
+                <div class="option-desc">Tutti i mezzi della flotta partono e tornano al medesimo magazzino centrale.</div>
+              </div>
+              <div class="option-btn" onclick="selectWizardOption('multiDepot', 'yes', this)">
+                <div class="option-title">🏢🏢 Più Hub / Magazzini Periferici (Multi-Deposito)</div>
+                <div class="option-desc">Ogni mezzo parte dal proprio cantiere di appartenenza; ciascun cliente deve essere assegnato al deposito più vicino.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Finestre Orarie (VRPTW) -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">4. Hai orari tassativi o finestre orarie di consegna rigide?</label>
+            <div class="wizard-options">
+              <div class="option-btn selected" onclick="selectWizardOption('timeWindows', 'no', this)">
+                <div class="option-title">🟢 Orari Flessibili / Entro la Giornata</div>
+                <div class="option-desc">La consegna o la raccolta può avvenire in qualunque momento del turno operativo.</div>
+              </div>
+              <div class="option-btn" onclick="selectWizardOption('timeWindows', 'yes', this)">
+                <div class="option-title">⏱️ Finestre Orarie Rigide (es. 09:00 - 10:30)</div>
+                <div class="option-desc">Baie di scarico prenotate, scadenze farmaci, freschi alimentari o appuntamenti orari con il cliente.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Soste Intermedie (EV / Scarichi) -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">5. I veicoli devono fermarsi a metà turno per svuotare o ricaricare?</label>
+            <div class="wizard-options">
+              <div class="option-btn selected" onclick="selectWizardOption('intermediate', 'no', this)">
+                <div class="option-title">❌ No, rientro diretto a fine turno</div>
+                <div class="option-desc">I mezzi partono dal deposito carico/vuoto e rientrano una sola volta a fine giornata.</div>
+              </div>
+              <div class="option-btn" onclick="selectWizardOption('intermediate', 'yes', this)">
+                <div class="option-title">🔄 Sì, Scarico in Discarica / Ricarica Elettrica</div>
+                <div class="option-desc">Svuotamento rifiuti in impianti TMB o ricarica rapida intermedia lungo il turno (flotte EV).</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- =========================================================================
+               PARTE 2: COSTRUTTORE FLOTTA ETEROGENEA MULTI-TIPOLOGIA
+               ========================================================================= -->
+          <div style="font-size: 13px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin: 32px 0 12px 0; padding-top: 20px; border-top: 1px dashed rgba(255,255,255,0.15);">
+            PARTE 2 &mdash; COMPOSIZIONE FLOTTA ETEROGENEA & SPECIFICHE DI COSTO PER TIPOLOGIA DI MEZZO
+          </div>
+
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+            Inserisci le diverse tipologie di mezzi presenti nella tua azienda. Per ciascuna puoi impostare <b>quantità, portata massima, equipaggio, costo orario autista, quota mezzo e costo al km</b>. Il sistema calcola automaticamente il <b>Costo Fisso per Turno</b> = (Costo Orario &times; Operatori &times; Ore Turno) + Quota Mezzo.
+          </p>
+
+          <!-- Preimpostazioni Rapide Flotta -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); align-self: center;">Carica Preset Rapido:</span>
+            <button class="btn btn-secondary btn-sm" onclick="loadWizardFleetPreset('rsu_mixed')">
+              🚛 Igiene Urbana RSU (Mix Furgoni + 2 Assi)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="loadWizardFleetPreset('express_delivery')">
+              📦 Corrieri Merci (City Van + Furgoni Medi)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="loadWizardFleetPreset('heavy_haul')">
+              🏢 Flotta Pesante Regionale (2 Assi + 3 Assi)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="loadWizardFleetPreset('single_type')">
+              🚐 Monotipo Standard
+            </button>
+          </div>
+
+          <!-- Tabella Costruttore Flotta Eterogenea -->
+          <div class="table-responsive" style="margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+            <table class="opt-table" id="wizardFleetTable">
+              <thead>
+                <tr>
+                  <th style="min-width: 170px;">Tipologia / Modello Mezzo</th>
+                  <th style="width: 70px;">Qtà</th>
+                  <th style="width: 105px;">Portata (kg)</th>
+                  <th style="width: 95px;">Autista (€/h)</th>
+                  <th style="width: 90px;">Operatori</th>
+                  <th style="width: 80px;">Turno (h)</th>
+                  <th style="width: 95px;">Mezzo (€/g)</th>
+                  <th style="width: 130px;">Costo Fisso Turno</th>
+                  <th style="width: 95px;">Costo (€/km)</th>
+                  <th style="width: 45px;"></th>
+                </tr>
+              </thead>
+              <tbody id="wizardFleetBody"></tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="addWizardFleetRow()">
+              + Aggiungi Nuova Tipologia di Mezzo
+            </button>
+            <span style="font-size: 12px; color: var(--text-muted);">
+              💡 Modifica direttamente i valori nelle celle: il costo fisso e i totali si aggiornano in tempo reale.
+            </span>
+          </div>
+
+          <!-- Box Riassunto Totale Flotta Eterogenea -->
+          <div class="kpi-row" style="margin-bottom: 18px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            <div class="kpi-card" style="padding: 12px 14px;">
+              <div class="kpi-label">Veicoli Totali Flotta</div>
+              <div class="kpi-val" id="wizTotalVehicles" style="font-size: 20px;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Mezzi pronti all'uscita</small>
+            </div>
+            <div class="kpi-card" style="padding: 12px 14px;">
+              <div class="kpi-label">Capacità Carico Totale</div>
+              <div class="kpi-val" id="wizTotalCapacity" style="font-size: 20px; color: #38bdf8;">-- kg</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Carico utile cumulato</small>
+            </div>
+            <div class="kpi-card" style="padding: 12px 14px;">
+              <div class="kpi-label">Costo Fisso Totale Flotta</div>
+              <div class="kpi-val green" id="wizTotalFixedCost" style="font-size: 20px;">-- €/turno</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Manodopera + Ammortamento</small>
+            </div>
+            <div class="kpi-card" style="padding: 12px 14px;">
+              <div class="kpi-label">Costo Medio al Km</div>
+              <div class="kpi-val amber" id="wizAvgCostKm" style="font-size: 20px;">-- €/km</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Ponderato sul parco mezzi</small>
+            </div>
+          </div>
+
+          <!-- Tempo di Sosta per Consegna / Via -->
+          <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <label style="font-weight: 700; font-size: 13.5px; display: block; margin-bottom: 2px;">Tempo Medio di Sosta per Consegna / Svuotamento Via:</label>
+              <small style="color: var(--text-muted); font-size: 11px;">Influisce sulla durata del giro operativo e sul rispetto delle finestre orarie</small>
+            </div>
+            <select id="wizStopMinutes" class="cell-inp" style="width: 280px;" onchange="evaluateWizard()">
+              <option value="0.5">30 secondi (Micro-raccolta continua a passo d'uomo)</option>
+              <option value="6" selected>5 - 8 minuti (Consegna colli / bolla / carico medio)</option>
+              <option value="18">15 - 20 minuti (Scarico pallet pesanti / compattamento intensivo)</option>
+            </select>
+          </div>
+
+          <!-- Risultato Wizard con Riepilogo Parametri e Iniezione Diretta -->
+          <div id="wizardResult" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 22px;">
+              <h3 id="wizardModelTitle" style="color: #34d399; font-size: 18.5px; margin-bottom: 8px;"></h3>
+              <p id="wizardModelDesc" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; max-width: 900px; line-height: 1.6;"></p>
+
+              <!-- Box Riepilogo Parametri Calibrati Flotta -->
+              <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 14px 18px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px;">
+                <div>
+                  <span style="font-size: 11.5px; color: var(--text-muted); display: block;">Composizione Flotta Calibrata</span>
+                  <div id="wizBadgeFleetSummary" style="font-size: 15px; font-weight: 700; color: #38bdf8;">--</div>
+                </div>
+                <div>
+                  <span style="font-size: 11.5px; color: var(--text-muted); display: block;">Portata Flotta Cumulata</span>
+                  <div id="wizBadgeCapacity" style="font-size: 15px; font-weight: 700; color: #38bdf8;">-- kg</div>
+                </div>
+                <div>
+                  <span style="font-size: 11.5px; color: var(--text-muted); display: block;">Costo Fisso Flotta Turno</span>
+                  <div id="wizBadgeFixedCost" style="font-size: 15px; font-weight: 700; color: #34d399;">-- €</div>
+                </div>
+                <div>
+                  <span style="font-size: 11.5px; color: var(--text-muted); display: block;">Tariffa Chilometrica Media</span>
+                  <div id="wizBadgeCostKm" style="font-size: 15px; font-weight: 700; color: #fbbf24;">-- €/km</div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <button id="wizardCtaBtn" class="btn btn-primary" onclick="applyWizardParametersToModel()" style="font-weight: 700; padding: 12px 22px; font-size: 14.5px;">
+                  ⚡ Inietta Questa Flotta nel Modello & Avvia Simulazione ➔
+                </button>
+                <button class="btn btn-secondary" onclick="exportPlatformSettings()" style="padding: 12px 18px;">
+                  💾 Salva Questi Parametri nel Backup Locale (.json)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matrice Comparativa dei Modelli Matematici -->
+        <h3 style="font-size: 16px; margin: 24px 0 14px 0; color: var(--text-main);">
+          📊 Matrice Comparativa dei Modelli di Ricerca Operativa per Fleet Management
+        </h3>
+        <div class="table-responsive">
+          <table class="opt-table">
+            <thead>
+              <tr>
+                <th>Modello Matematico</th>
+                <th>Target Aziendale Tipico</th>
+                <th>Elemento Servito</th>
+                <th>Vincoli Chiave</th>
+                <th>Risparmio Medio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>CVRP</b></td>
+                <td>Corrieri, Food & Beverage, Forniture B2B</td>
+                <td>Nodi discreti (Clienti)</td>
+                <td>Portata veicoli, sottogiri MTZ</td>
+                <td><span class="code-tag" style="color:#34d399;">18% - 24% km</span></td>
+              </tr>
+              <tr>
+                <td><b>VRPTW</b></td>
+                <td>GDO, Farmaceutico, Tecnici a Domicilio</td>
+                <td>Nodi discreti con orari</td>
+                <td>Finestre temporali [a_i, b_i], tempi sosta</td>
+                <td><span class="code-tag" style="color:#38bdf8;">22% - 30% tempi</span></td>
+              </tr>
+              <tr>
+                <td><b>CARP</b></td>
+                <td>Igiene Urbana RSU, Pulizia Strade, Neve</td>
+                <td>Archi / Tratte viarie</td>
+                <td>Eliminazione passaggi a vuoto, Single-Commodity Flow</td>
+                <td><span class="code-tag" style="color:#fbbf24;">25% - 35% deadhead</span></td>
+              </tr>
+              <tr>
+                <td><b>WCVRPTW-IF / EV-VRP</b></td>
+                <td>Smaltimento Rifiuti Pesanti, Flotte Elettriche</td>
+                <td>Nodi intermedi multipli</td>
+                <td>Ripristino portata/batteria agli impianti intermedi</td>
+                <td><span class="code-tag" style="color:#ec4899;">Ottimizzazione cicli</span></td>
+              </tr>
+              <tr>
+                <td><b>VRPPD</b></td>
+                <td>Corrieri Espresso, Ritiri & Consegne Accoppiati</td>
+                <td>Coppie Ritiro-Consegna</td>
+                <td>Precedenza P_i &rarr; D_i, accoppiamento veicolo, carico dinamico</td>
+                <td><span class="code-tag" style="color:#a78bfa;">25% - 40% km</span></td>
+              </tr>
+              <tr>
+                <td><b>MDVRP</b></td>
+                <td>Aziende con più Magazzini, Depositi Distribuiti</td>
+                <td>Clienti da più depositi</td>
+                <td>Partenza e rientro nello stesso Home Depot, clusterizzazione ottimale</td>
+                <td><span class="code-tag" style="color:#06b6d4;">20% - 30% km flotta</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 1: CVRP (CAPACITATED VEHICLE ROUTING PROBLEM)
+         --------------------------------------------------------------------- -->
+    <section id="tab-cvrp" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">📦</span>
+            <span>Modello CVRP &mdash; Ottimizzazione Consegne Merci & Corrieri</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="addCvrpCustomer()">+ Aggiungi Cliente</button>
+            <button id="btnSolveCvrp" class="btn btn-primary btn-sm" onclick="solveCvrp()">⚡ Risolvi & Ottimizza Flotta</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> Aziende di distribuzione merci, corrieri espresso, fornitori di bar/ristoranti e commercio all'ingrosso. 
+            <b>Obiettivo:</b> Minimizzare i chilometri totali percorsi partendo e tornando all'hub logistico centrale, garantendo che nessun furgone superi la portata massima utile in kg o colli.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Tabelle Clienti & Flotta -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">🏢 Clienti & Richiesta Merci (kg)</h4>
+              <span id="cvrpCustomerCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- clienti</span>
+            </div>
+            <div class="table-responsive" style="max-height: 230px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Cliente / Destinazione</th>
+                    <th>Coordinate</th>
+                    <th>Carico (kg)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="cvrpCustomersBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta CVRP: Portata & Costi Fissi/Variabili -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚐 Flotta Mezzi: Portata & Costi Fissi</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addCvrpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Veicolo</th>
+                    <th>Portata Max (kg)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="cvrpVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Parametri di Costo Chilometrico CVRP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+              <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 600;">Costo Chilometrico Carburante/Usura:</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input type="number" id="cvrpCostPerKm" class="cell-inp" step="0.05" min="0.4" max="5.0" value="1.15" style="width: 80px;" onchange="updateCvrpCostPerKm(this.value)">
+                <span style="font-size: 12px; color: var(--text-muted);">€ / km</span>
+              </div>
+            </div>
+
+            <!-- Bilancio Flotta: Capacità vs Domanda & Azioni Rapide -->
+            <div id="cvrpFleetCapacitySummary" style="font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); color: var(--text-secondary); margin-bottom: 14px;">
+              Capacità Flotta Totale: <b>-- kg</b> | Domanda Totale: <b>-- kg</b>
+            </div>
+
+            <!-- Formulazione Matematica Accordion -->
+            <div style="margin-top: 18px;">
+              <details style="background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                <summary style="cursor: pointer; font-weight: 600; font-size: 13px; color: var(--accent-blue);">
+                  📐 Visualizza Formulazione Matematica MILP (MTZ Subtour Elimination)
+                </summary>
+                <div class="math-box">
+                  min Z = ∑_k ∑_(i≠j) c_ij · x_ijk + ∑_k F_k · z_k<br><br>
+                  Vincoli Chiave:<br>
+                  1. ∑_k ∑_j x_ijk = 1  ∀i ∈ Clienti (Ogni cliente servito 1 volta)<br>
+                  2. ∑_i x_ipk - ∑_j x_pjk = 0  ∀p, ∀k (Conservazione del flusso)<br>
+                  3. u_jk ≥ u_ik + q_j - Q_k · (1 - x_ijk)  (Eliminazione sottogiri MTZ)<br>
+                  4. q_i ≤ u_ik ≤ Q_k (Rispetto portata massima veicolo)
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: KPI, Mappa Vettoriale e Report Veicoli -->
+          <div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Stato Solutore</div>
+                <div class="kpi-val green" id="cvrpStatus">Ottimale</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo Flotta</div>
+                <div class="kpi-val" id="cvrpCost">-- €</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Percorrenza Totale</div>
+                <div class="kpi-val amber" id="cvrpKm">-- km</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Carico Trasportato</div>
+                <div class="kpi-val" id="cvrpDemand">-- kg</div>
+              </div>
+            </div>
+
+            <!-- Canvas Interattivo dei Percorsi -->
+            <div class="card" style="padding: 12px; margin-bottom: 14px;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>🗺️ Visualizzazione Vettoriale Tratte Ottimizzate</span>
+                <span style="font-size: 11px; color: var(--text-muted);">Hub Centrale &rarr; Clienti</span>
+              </div>
+              <div class="canvas-holder">
+                <canvas id="cvrpCanvas" class="map-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Report Dettaglio Mezzi -->
+            <div id="cvrpReportList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 2: VRPTW (VEHICLE ROUTING WITH TIME WINDOWS)
+         --------------------------------------------------------------------- -->
+    <section id="tab-vrptw" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">⏱️</span>
+            <span>Modello VRPTW &mdash; Consegne con Finestre Orarie Tassative</span>
+          </div>
+          <button id="btnSolveVrptw" class="btn btn-primary btn-sm" onclick="solveVrptw()">
+            ⚡ Risolvi VRPTW con Finestre Orarie
+          </button>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">⏰</span>
+          <div>
+            <b>A chi serve:</b> Distribuzione farmaceutica ad ospedali/farmacie, consegne freschi a supermercati con slot di scarico prefissati, tecnici di assistenza su appuntamento.
+            <b>Obiettivo:</b> Calcolare orari esatti di arrivo e inizio servizio al minuto per ogni cliente, eliminando tempi morti e ritardi penali.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Configurazione Clienti & Finestre -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">📍 Destinazioni, Finestre Temporali & Tempi Sosta</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addVrptwCustomerRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Destinazione
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 230px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Punto Consegna</th>
+                    <th>Carico (kg)</th>
+                    <th>Finestra Oraria [a, b]</th>
+                    <th>Tempo Scarico</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="vrptwCustomersBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta VRPTW: Portata & Costi Fissi/Variabili -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚚 Flotta Mezzi Refrigerati: Portata & Costi Fissi</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addVrptwVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Veicolo</th>
+                    <th>Portata Max (kg)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="vrptwVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Parametri VRPTW: Costo al km e Velocità Media -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 12px;">
+              <div>
+                <span style="color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Costo Chilometrico:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="number" id="vrptwCostPerKm" class="cell-inp" step="0.05" min="0.5" max="5.0" value="1.25" style="width: 75px;" onchange="updateVrptwCostPerKm(this.value)">
+                  <span style="color: var(--text-muted);">€ / km</span>
+                </div>
+              </div>
+              <div>
+                <span style="color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Velocità Flotta Urbana:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="number" id="vrptwSpeedKmh" class="cell-inp" step="1" min="15" max="90" value="38" style="width: 75px;" onchange="updateVrptwSpeedKmh(this.value)">
+                  <span style="color: var(--text-muted);">km/h</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bilancio Flotta VRPTW: Capacità vs Domanda & Azioni Rapide -->
+            <div id="vrptwFleetCapacitySummary" style="font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); color: var(--text-secondary); margin-bottom: 14px;">
+              Capacità Flotta Totale: <b>-- kg</b> | Richiesta Merci: <b>-- kg</b>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <details style="background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                <summary style="cursor: pointer; font-weight: 600; font-size: 13px; color: var(--accent-blue);">
+                  📐 Formulazione Matematica con Vincolo Big-M Temporale
+                </summary>
+                <div class="math-box">
+                  min Z = ∑_k ∑_(i≠j) c_ij · x_ijk + Costi_Fissi<br><br>
+                  Propagazione Orari & Rispetto Fasce:<br>
+                  1. w_jk ≥ w_ik + s_i + t_ij - M · (1 - x_ijk)  (Arrivo compatibile con viaggio)<br>
+                  2. a_i ≤ w_ik ≤ b_i  (Servizio tassativamente dentro la finestra)<br>
+                  3. w_0k ≥ Orario_Apertura_Deposito
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: Timeline Cronologica & Mappa Canvas -->
+          <div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Stato Solutore</div>
+                <div class="kpi-val green" id="vrptwStatus">Ottimale</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo Flotta</div>
+                <div class="kpi-val" id="vrptwCost">-- €</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Chilometri</div>
+                <div class="kpi-val amber" id="vrptwKm">-- km</div>
+              </div>
+            </div>
+
+            <!-- Canvas VRPTW -->
+            <div class="card" style="padding: 12px; margin-bottom: 14px;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">
+                🗺️ Tracciato Itinerari con Sequenza Oraria
+              </div>
+              <div class="canvas-holder">
+                <canvas id="vrptwCanvas" class="map-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Report Mezzi Refrigerati Utilizzati & Dettaglio Costi -->
+            <div style="margin-bottom: 16px;">
+              <h4 style="font-size: 14px; margin-bottom: 8px; color: #38bdf8;">
+                📋 Elenco Mezzi Refrigerati Utilizzati & Specifiche di Costo
+              </h4>
+              <div id="vrptwReportList"></div>
+            </div>
+
+            <!-- Timeline Oraria per ciascun mezzo -->
+            <h4 style="font-size: 14px; margin-bottom: 8px; color: #34d399;">🕒 Tabella di Marcia Cronologica (Orari di Arrivo)</h4>
+            <div id="vrptwTimelineList" class="timeline-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 3: CARP (CAPACITATED ARC ROUTING PROBLEM)
+         --------------------------------------------------------------------- -->
+    <section id="tab-carp" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">🚛</span>
+            <span>Modello CARP &mdash; Raccolta Rifiuti Porta a Porta & Servizi Stradali</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-warning btn-sm" onclick="switchMainTab('tab-faq', document.getElementById('tabBtnFaq'))" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600;">
+              📚 FAQ & Dispensa
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openImportModal()">🌍 Importa da OpenStreetMap</button>
+            <button id="btnSolveCarp" class="btn btn-primary btn-sm" onclick="solveCarp()">⚡ Risolvi & Aggiorna Mappa GIS</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">♻️</span>
+          <div>
+            <b>A chi serve:</b> Aziende municipali di igiene urbana, consorzi rifiuti, ditte di pulizia e spazzamento strade, manutenzione rete gas/idrica.
+            <b>Obiettivo:</b> Percorrere tutte le strade con rifiuti o necessità di spazzamento minimizzando i chilometri a vuoto (<i>deadheading</i>) grazie alla formulazione matematica <b>Single-Commodity Flow</b>.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Tabella Strade & Tabella Flotta Compattatori -->
+          <div>
+            <!-- Intestazione Strade con Filtro di Ricerca -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">🛣️ Rete Stradale & Domanda Rifiuti (kg)</h4>
+              <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <input type="text" id="carpStreetSearch" class="cell-inp" style="width: 100%; max-width: 100%; font-size: 12px; padding: 6px 10px;" 
+                     placeholder="🔍 Cerca via per nome o nodo..." oninput="filterCarpStreets(this.value)">
+            </div>
+
+            <div class="table-responsive" style="max-height: 290px; overflow-y: auto; margin-bottom: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table" id="carpStreetsTable">
+                <thead>
+                  <tr>
+                    <th>Nome Strada</th>
+                    <th>Nodi</th>
+                    <th>Domanda (kg)</th>
+                    <th>Costo Transito</th>
+                  </tr>
+                </thead>
+                <tbody id="carpStreetsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta Compattatori RSU (Specifiche & Costi) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 14px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addCarpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Compattatore
+              </button>
+            </div>
+
+            <div class="table-responsive" style="max-height: 220px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Compattatore</th>
+                    <th>Portata Max (kg)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="carpVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Selettore Rapido & Controlli di Riduzione / Partizionamento Area -->
+            <div style="margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">🌐 Partiziona Settore / Grandi Aree:</span>
+                <select id="carpQuickSectorSelect" style="background:#080d19; border:1px solid #283959; color:#38bdf8; padding:4px 8px; border-radius:6px; font-size:12px;" onchange="applyCarpSectorSize(this.value)">
+                  <option value="keep" selected>Dimensione Attuale Rete</option>
+                  <option value="0">🌐 Tutto il comune (copertura 100%)</option>
+                  <option value="120">120 vie (~6-8 compattatori)</option>
+                  <option value="80">80 vie (~4-5 compattatori)</option>
+                  <option value="60">60 vie (~3-4 compattatori)</option>
+                  <option value="45">45 vie (~2-3 compattatori)</option>
+                  <option value="30">30 vie (~1-2 compattatori)</option>
+                </select>
+              </div>
+              <small style="color: var(--text-muted); font-size: 11px; display: block; line-height: 1.4;">
+                Permette di partizionare l'area urbana in settori operativi gestibili con meno veicoli o estenderla all'intero comune.
+              </small>
+            </div>
+
+            <!-- Riepilogo Bilancio Flotta: Capacità vs Domanda -->
+            <div id="carpFleetCapacitySummary" style="font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); color: var(--text-secondary);">
+              Capacità Flotta Totale: <b>-- kg</b> | Domanda Rete: <b>-- kg</b>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: Mappa Folium GIS Embedded & Report Dettaglio Mezzi -->
+          <div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Stato CARP</div>
+                <div class="kpi-val green" id="carpStatus">Pronto</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo Totale Flotta</div>
+                <div class="kpi-val" id="carpCost">-- €</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Rifiuti Raccolti</div>
+                <div class="kpi-val amber" id="carpDemand">-- kg</div>
+              </div>
+            </div>
+
+            <!-- Iframe Mappa Folium GIS reale -->
+            <div class="card" style="padding: 12px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;">
+                <b>🗺️ Mappa GIS Interattiva (OpenStreetMap / Folium)</b>
+                <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--primary); text-decoration: none;">Schermo Intero &nearr;</a>
+              </div>
+              <iframe id="carpMapIframe" src="/output/percorso_raccolta.html" style="width: 100%; height: 380px; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18;"></iframe>
+            </div>
+
+            <!-- Report Dettaglio Mezzi Utilizzati & Specifiche di Costo -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="font-size: 14px; color: #38bdf8;">
+                  📋 Elenco Mezzi Utilizzati & Dettaglio Costi
+                </h4>
+                <span style="font-size: 11.5px; color: var(--text-muted);">Formulazione Single-Commodity Flow</span>
+              </div>
+              <div id="carpVehiclesReport"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 4: MODELLO WCVRPTW-IF & EV-VRP (SCARICHI INTERMEDI & ELETTRICO)
+         --------------------------------------------------------------------- -->
+    <section id="tab-intermediate" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">🔋</span>
+            <span>Modello EV-VRP & WCVRPTW-IF &mdash; Flotte Elettriche & Scarichi Intermedi</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="addEvFacilityRow()">+ Impianto/Colonnina</button>
+            <button class="btn btn-secondary btn-sm" onclick="addEvCustomerRow()">+ Cliente</button>
+            <button id="btnSolveEv" class="btn btn-primary btn-sm" onclick="solveEvVrp()">⚡ Risolvi Flotta Elettrica</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">⚡</span>
+          <div>
+            <b>A chi serve:</b> Aziende con <b>flotte commerciali elettriche (EV)</b> o servizi pesanti che necessitano di svuotamento intermedio presso discariche/impianti TMB o soste di ricarica rapida DC lungo il turno per azzerare l'ansia da autonomia.
+            <b>Obiettivo:</b> Ottimizzare tragitti e programmare soste agli impianti intermedi senza rientrare al deposito centrale.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Tabelle Destinazioni, Impianti e Flotta EV -->
+          <div>
+            <!-- Tabella Destinazioni / Punti Raccolta -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">🏢 Clienti / Punti Servizio</h4>
+              <span id="evCustomerCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- clienti</span>
+            </div>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Destinazione</th>
+                    <th>Domanda (kg)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="evCustomersBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Impianti Intermedi & Colonnine DC -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #fbbf24;">⚡ Impianti Intermedi & Stazioni Ricarica Rapida</h4>
+            </div>
+            <div class="table-responsive" style="max-height: 140px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Impianto / Colonnina</th>
+                    <th>Tipologia Servizio</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="evFacilitiesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta Veicoli Elettrici EV -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🔋 Flotta Veicoli Elettrici: Portata & Batteria</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addEvVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo EV
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Veicolo EV</th>
+                    <th>Portata (kg)</th>
+                    <th>Batteria (kWh)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="evVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Parametri Costo Energetico EV -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 12px;">
+              <div>
+                <span style="color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Costo Energia Ricarica:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="number" id="evKwhCost" class="cell-inp" step="0.02" min="0.1" max="1.5" value="0.38" style="width: 75px;" onchange="updateEvKwhCost(this.value)">
+                  <span style="color: var(--text-muted);">€ / kWh</span>
+                </div>
+              </div>
+              <div>
+                <span style="color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Consumo Specifico Veicolo:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="number" id="evKwhPerKm" class="cell-inp" step="0.05" min="0.1" max="2.0" value="0.45" style="width: 75px;" onchange="updateEvKwhPerKm(this.value)">
+                  <span style="color: var(--text-muted);">kWh / km</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bilancio Flotta EV: Capacità & Autonomia -->
+            <div id="evFleetCapacitySummary" style="font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); color: var(--text-secondary); margin-bottom: 14px;">
+              Capacità Flotta Totale: <b>-- kg</b> | Domanda: <b>-- kg</b>
+            </div>
+
+            <!-- Formulazione Matematica Accordion -->
+            <div style="margin-top: 10px;">
+              <details style="background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                <summary style="cursor: pointer; font-weight: 600; font-size: 13px; color: var(--accent-blue);">
+                  📐 Formulazione Matematica WCVRPTW-IF (Dinamica Ricarica/Scarico)
+                </summary>
+                <div class="math-box">
+                  min Z = ∑_k F_k · z_k + Costo_Energia · ∑_k kWh_k<br><br>
+                  Ripristino agli Impianti Intermedi:<br>
+                  1. u_jk ≥ u_ik + q_j - Q_k · (1 - x_ijk)  ∀i,j ∈ Clienti<br>
+                  2. u_jk ≥ q_j - Q_k · (1 - x_djk)        ∀d ∈ Impianti Intermedi, ∀j ∈ Clienti<br>
+                  3. b_jk ≤ b_ik - c_ij + B_k · (1 - x_ijk) (Consumo batteria lungo la tratta)<br>
+                  4. b_dk = B_k (Ricarica al 100% della batteria all'impianto)
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: KPI, Canvas Mappa e Report Veicoli EV -->
+          <div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Stato Solutore</div>
+                <div class="kpi-val green" id="evStatus">Ottimale</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo Flotta EV</div>
+                <div class="kpi-val" id="evCost">-- €</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Energia Flotta</div>
+                <div class="kpi-val amber" id="evKwh">-- kWh</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Chilometri</div>
+                <div class="kpi-val" id="evKm">-- km</div>
+              </div>
+            </div>
+
+            <!-- Canvas Tracciato Mappa EV -->
+            <div class="card" style="padding: 12px; margin-bottom: 14px;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>🗺️ Tracciato Itinerari con Impianti di Ricarica/Scarico</span>
+                <span style="font-size: 11px; color: var(--text-muted);">Hub Centrale &rarr; Impianti ⚡ &rarr; Clienti</span>
+              </div>
+              <div class="canvas-holder">
+                <canvas id="evCanvas" class="map-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Report Mezzi Elettrici & Costi -->
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #34d399;">
+              📋 Elenco Mezzi Elettrici Utilizzati & Specifiche di Costo
+            </h4>
+            <div id="evReportList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 5: MODELLO VRPPD (PICKUP AND DELIVERY PROBLEM)
+         --------------------------------------------------------------------- -->
+    <section id="tab-vrppd" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">📦🔄</span>
+            <span>Modello VRPPD &mdash; Vehicle Routing with Pickup and Delivery (PDP)</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="addVrppdRequestRow()">+ Richiesta Ritiro/Consegna</button>
+            <button class="btn btn-secondary btn-sm" onclick="addVrppdVehicleRow()">+ Aggiungi Veicolo</button>
+            <button id="btnSolveVrppd" class="btn btn-primary btn-sm" onclick="solveVrppd()">⚡ Risolvi VRPPD Accoppiato</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> Corrieri espressi per ritiri e consegne congiunte, trasporti a chiamata, movimentazione inter-aziendale e navette merci.
+            <b>Funzionamento:</b> Ogni richiesta specifica un mittente (Ritiro $P_i$) e un destinatario (Consegna $D_i$) con un carico in kg. Il modello MILP garantisce che lo <b>stesso veicolo</b> effettui il ritiro prima della consegna ($P_i \prec D_i$) monitorando il carico a bordo a ogni fermata affinché non superi la portata massima.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Tabelle Richieste & Flotta -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">📦 Richieste Accoppiate di Ritiro & Consegna</h4>
+              <span id="vrppdReqCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- richieste</span>
+            </div>
+            <div class="table-responsive" style="max-height: 250px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Richiesta / Merce</th>
+                    <th>Carico (kg)</th>
+                    <th>Punto Ritiro (P)</th>
+                    <th>Punto Consegna (D)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="vrppdRequestsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta VRPPD -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚐 Flotta Mezzi VRPPD</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addVrppdVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 190px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Veicolo</th>
+                    <th>Portata Max (kg)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="vrppdVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Costo Chilometrico -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+              <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 600;">Costo Chilometrico Carburante/Usura:</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input type="number" id="vrppdCostPerKm" class="cell-inp" step="0.05" min="0.4" max="5.0" value="1.25" style="width: 80px;" onchange="updateVrppdCostPerKm(this.value)">
+                <span style="font-size: 12px; color: var(--text-muted);">€ / km</span>
+              </div>
+            </div>
+
+            <div id="vrppdFleetCapacitySummary" style="font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); color: var(--text-secondary); margin-bottom: 14px;">
+              Capacità Flotta Totale: <b>-- kg</b> | Richieste Totali: <b>-- kg</b>
+            </div>
+
+            <!-- Formulazione Matematica Accordion -->
+            <div>
+              <details style="background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                <summary style="cursor: pointer; font-weight: 600; font-size: 13px; color: var(--accent-blue);">
+                  📐 Visualizza Formulazione Matematica MILP (Pickup & Delivery con Precedenza)
+                </summary>
+                <div class="math-box">
+                  min Z = ∑_k ∑_(i≠j) c_ij · x_ijk + ∑_k F_k · y_k<br><br>
+                  Vincoli Chiave PDP:<br>
+                  1. ∑_k y_ik = 1  ∀r ∈ Richieste (Ogni ritiro e consegna assegnati a 1 solo mezzo)<br>
+                  2. y_P(r),k = y_D(r),k  ∀r, ∀k (Stesso veicolo per ritiro e consegna)<br>
+                  3. u_D(r) ≥ u_P(r) + 1  (Precedenza temporale: il ritiro precede la consegna)<br>
+                  4. L_j ≥ L_i + q_j - M · (1 - x_ijk)  (Tracciamento continuo del carico a bordo)<br>
+                  5. 0 ≤ L_i ≤ Q_k  (Rispetto costante della capacità massima del veicolo)
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: KPI, Canvas Mappa e Report Veicoli VRPPD -->
+          <div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Stato VRPPD</div>
+                <div class="kpi-val green" id="vrppdStatus">Pronto</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo Totale Flotta</div>
+                <div class="kpi-val" id="vrppdCost">-- €</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Richieste Soddisfatte</div>
+                <div class="kpi-val amber" id="vrppdServed">--</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Chilometri Totali</div>
+                <div class="kpi-val" id="vrppdKm">-- km</div>
+              </div>
+            </div>
+
+            <!-- Canvas Tracciato Mappa VRPPD -->
+            <div class="card" style="padding: 12px; margin-bottom: 14px;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>🗺️ Tracciato Itinerari con Coppie Ritiro (P) ➔ Consegna (D)</span>
+                <span style="font-size: 11px; color: var(--text-muted);">🟢 Ritiro &rarr; 🟠 Consegna</span>
+              </div>
+              <div class="canvas-holder">
+                <canvas id="vrppdCanvas" class="map-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Report Mezzi VRPPD -->
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #34d399;">
+              📋 Elenco Mezzi Utilizzati & Sequenza Ritiri/Consegne
+            </h4>
+            <div id="vrppdReportList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 6: MODELLO MDVRP (MULTI-DEPOT VEHICLE ROUTING PROBLEM)
+         --------------------------------------------------------------------- -->
+    <section id="tab-mdvrp" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">🏢🏢</span>
+            <span>Modello MDVRP &mdash; Multi-Depot Vehicle Routing Problem</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="addMdvrpDepotRow()">+ Nuovo Deposito</button>
+            <button class="btn btn-secondary btn-sm" onclick="addMdvrpCustomerRow()">+ Aggiungi Cliente</button>
+            <button class="btn btn-secondary btn-sm" onclick="addMdvrpVehicleRow()">+ Aggiungi Veicolo</button>
+            <button id="btnSolveMdvrp" class="btn btn-primary btn-sm" onclick="solveMdvrp()">⚡ Risolvi MDVRP Multi-Sito</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> Aziende strutturate con più magazzini territoriali, aziende di smaltimento con diversi cantieri operativi o consorzi intercomunali.
+            <b>Funzionamento:</b> Ciascun veicolo è assegnato al proprio <b>Home Depot</b> di partenza e rientro. L'ottimizzatore risolve congiuntamente l'assegnazione dei clienti al deposito più conveniente e la pianificazione dei tour per azzerare le sovrapposizioni logistiche.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Tabelle Depositi, Clienti & Flotta -->
+          <div>
+            <!-- Tabella Depositi / Magazzini -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">🏢 Depositi & Magazzini di Base (Home Depots)</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addMdvrpDepotRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Deposito
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Nome Deposito</th>
+                    <th>Coordinate</th>
+                    <th>Colore</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="mdvrpDepotsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Clienti MDVRP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #a78bfa;">📍 Clienti & Domanda Merci (kg)</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addMdvrpCustomerRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Cliente
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Cliente / Indirizzo</th>
+                    <th>Coordinate</th>
+                    <th>Carico (kg)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="mdvrpCustomersBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta MDVRP Assegnata ai Depositi -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚚 Flotta Mezzi per Deposito</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addMdvrpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Veicolo</th>
+                    <th>Home Depot Base</th>
+                    <th>Portata Max (kg)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="mdvrpVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Costo Chilometrico MDVRP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+              <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 600;">Costo Chilometrico Carburante/Usura:</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <input type="number" id="mdvrpCostPerKm" class="cell-inp" step="0.05" min="0.4" max="5.0" value="1.20" style="width: 80px;" onchange="updateMdvrpCostPerKm(this.value)">
+                <span style="font-size: 12px; color: var(--text-muted);">€ / km</span>
+              </div>
+            </div>
+
+            <div id="mdvrpFleetCapacitySummary" style="font-size: 12px; padding: 8px 12px; border-radius: 6px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); color: var(--text-secondary); margin-bottom: 14px;">
+              Capacità Flotta Totale: <b>-- kg</b> | Domanda Clienti: <b>-- kg</b>
+            </div>
+
+            <!-- Formulazione Matematica Accordion -->
+            <div>
+              <details style="background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                <summary style="cursor: pointer; font-weight: 600; font-size: 13px; color: var(--accent-blue);">
+                  📐 Visualizza Formulazione Matematica MILP (Multi-Depot VRP con Home Depots)
+                </summary>
+                <div class="math-box">
+                  min Z = ∑_k ∑_(i≠j) c_ij · x_ijk + ∑_k F_k · y_k<br><br>
+                  Vincoli Chiave MDVRP:<br>
+                  1. ∑_j x_{h(k), j, k} = y_k  (Il veicolo k parte dal rispettivo Home Depot h(k))<br>
+                  2. ∑_i x_{i, h(k), k} = y_k  (Il veicolo k rientra nel proprio Home Depot h(k))<br>
+                  3. ∑_k ∑_j x_ijk = 1  ∀i ∈ Clienti (Ogni cliente servito da 1 solo mezzo)<br>
+                  4. ∑_i x_ipk - ∑_j x_pjk = 0  ∀p ∈ Clienti, ∀k (Conservazione del flusso)<br>
+                  5. u_jk ≥ u_ik + q_j - Q_k · (1 - x_ijk)  (Eliminazione sottogiri MTZ)
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: KPI, Canvas Mappa e Report Veicoli MDVRP -->
+          <div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Stato MDVRP</div>
+                <div class="kpi-val green" id="mdvrpStatus">Pronto</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo Totale Flotta</div>
+                <div class="kpi-val" id="mdvrpCost">-- €</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Depositi Attivi</div>
+                <div class="kpi-val amber" id="mdvrpDepotsCount">--</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Chilometri Totali</div>
+                <div class="kpi-val" id="mdvrpKm">-- km</div>
+              </div>
+            </div>
+
+            <!-- Canvas Tracciato Mappa MDVRP -->
+            <div class="card" style="padding: 12px; margin-bottom: 14px;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>🗺️ Tracciato Itinerari Multi-Polo</span>
+                <span style="font-size: 11px; color: var(--text-muted);">Depositi 🏢 &rarr; Clienti 📍</span>
+              </div>
+              <div class="canvas-holder">
+                <canvas id="mdvrpCanvas" class="map-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Report Mezzi MDVRP -->
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #34d399;">
+              📋 Elenco Mezzi Utilizzati & Report per Deposito di Base
+            </h4>
+            <div id="mdvrpReportList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 7: CALCOLATORE ROI & RIDUZIONE EMISSIONI CO2
+         --------------------------------------------------------------------- -->
+    <section id="tab-roi" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">💰</span>
+            <span>Calcolatore di Risparmio ROI & Riduzione Emissioni CO2</span>
+          </div>
+          <span class="badge-free">Analisi di Convenienza Flotta</span>
+        </div>
+
+        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 22px;">
+          Inserisci i parametri operativi della tua flotta aziendale. I modelli di Ricerca Operativa garantiscono in media una <b>riduzione del 18% dei chilometri percorsi</b>, con abbattimento diretto dei costi di carburante, pneumatici e straordinari:
+        </p>
+
+        <div class="grid-2col">
+          <!-- Parametri di Input Flotta -->
+          <div style="background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 12px; padding: 22px;">
+            <h4 style="font-size: 15px; margin-bottom: 16px; color: #38bdf8;">⚙️ Parametri Flotta Aziendale</h4>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Numero Veicoli in Flotta:</label>
+              <input type="number" id="roiVehicles" value="10" min="1" max="500" class="cell-inp" style="max-width: 100%;" oninput="calculateRoi()">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Chilometri Medi Giornalieri per Mezzo:</label>
+              <input type="number" id="roiKm" value="180" min="20" max="1000" class="cell-inp" style="max-width: 100%;" oninput="calculateRoi()">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Consumo Medio Veicolo (litri / 100 km):</label>
+              <input type="number" id="roiConsumption" value="11.5" step="0.5" min="5" max="40" class="cell-inp" style="max-width: 100%;" oninput="calculateRoi()">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Costo Carburante (€ / litro):</label>
+              <input type="number" id="roiFuelCost" value="1.82" step="0.01" min="1.0" max="3.0" class="cell-inp" style="max-width: 100%;" oninput="calculateRoi()">
+            </div>
+          </div>
+
+          <!-- Risultati Risparmio Annuale -->
+          <div style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="kpi-row" style="grid-template-columns: repeat(2, 1fr);">
+              <div class="kpi-card">
+                <div class="kpi-label">Risparmio Economico Diretto</div>
+                <div class="kpi-val green" id="resMoneySaved">-- €/anno</div>
+                <small style="color: var(--text-muted); font-size: 11px;">Carburante + usura componenti</small>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Chilometri Evitati</div>
+                <div class="kpi-val" id="resKmSaved">-- km</div>
+                <small style="color: var(--text-muted); font-size: 11px;">Meno traffico e minor usura</small>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Litri Gasolio Risparmiati</div>
+                <div class="kpi-val amber" id="resLitersSaved">-- litri</div>
+                <small style="color: var(--text-muted); font-size: 11px;">Meno rifornimenti al mese</small>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Riduzione Emissioni CO2</div>
+                <div class="kpi-val" id="resCo2Saved">-- t CO2</div>
+                <small style="color: var(--text-muted); font-size: 11px;">Bilancio di sostenibilità ESG</small>
+              </div>
+            </div>
+
+            <!-- Call to Action Affiliazione Carta Carburante -->
+            <div style="background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(16,185,129,0.15) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px; margin-top: 10px;">
+              <h4 style="font-size: 14.5px; color: #38bdf8; margin-bottom: 6px;">💳 Massimizza il Risparmio con una Carta Carburante Flotta</h4>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px;">
+                Abbina l'ottimizzazione dei percorsi con le convenzioni carburante dedicate alle aziende: sconti sul prezzo alla pompa e recupero dell'IVA con fatturazione elettronica automatica.
+              </p>
+              <a href="#partner-section" class="btn btn-primary btn-sm">Scopri le Offerte Partner Flotta ➔</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE FAQ & DISPENSA TEORICA DI RICERCA OPERATIVA
+         --------------------------------------------------------------------- -->
+    <section id="tab-faq" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">📚</span>
+            <span>FAQ & Dispensa Teorica di Ricerca Operativa</span>
+          </div>
+          <span class="badge-free">Formulazioni Matematiche & Letteratura Scientifica</span>
+        </div>
+
+        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 13.5px; line-height: 1.6;">
+          Benvenuto nella sezione scientifica e divulgativa di <b>OptiFleet RO</b>. Qui trovi le risposte alle domande più critiche sulla pianificazione delle flotte aziendali, la <b>dispensa teorica</b> con le <b>formulazioni matematiche MILP (Mixed-Integer Linear Programming)</b> dei modelli implementati nel software, e la <b>bibliografia accademica ufficiale</b> con i paper scientifici e gli strumenti open-source che rendono possibile l'ottimizzazione combinatoria avanzata.
+        </p>
+
+        <!-- Barra di Filtraggio Categorie -->
+        <div class="faq-filter-bar">
+          <button class="faq-filter-btn active" onclick="filterFaqGroup('all', this)">📋 Tutti gli Argomenti</button>
+          <button class="faq-filter-btn" onclick="filterFaqGroup('guide', this)" style="border-color: #38bdf8; color: #38bdf8;">📘 Guida Pratica & Manuale d'Uso</button>
+          <button class="faq-filter-btn" onclick="filterFaqGroup('faq', this)">❓ FAQ Operative & Strategiche</button>
+          <button class="faq-filter-btn" onclick="filterFaqGroup('milp', this)">📐 Dispensa Matematica (MILP)</button>
+          <button class="faq-filter-btn" onclick="filterFaqGroup('biblio', this)">📖 Bibliografia & Tool Open-Source</button>
+        </div>
+
+        <!-- Toolbar Strumenti Rapidi -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; margin-bottom: 22px;">
+          <button class="btn btn-secondary btn-sm" onclick="toggleAllFaq(true)">📖 Espandi Tutte le FAQ</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleAllFaq(false)">📕 Comprimi Tutte</button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()" style="background: #2563eb;">🖨️ Stampa / Salva Guida in PDF</button>
+        </div>
+
+        <!-- =================================================================
+             GRUPPO 0: GUIDA PRATICA PASSO-PASSO ALL'USO DELLA PIATTAFORMA
+             ================================================================= -->
+        <div class="faq-group" data-category="guide">
+          <div class="faq-group-title" style="color: #38bdf8;">
+            <span>📘</span> Guida Operativa Passo-Passo: Manuale d'Uso di OptiFleet RO
+          </div>
+
+          <p style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6; margin-bottom: 18px;">
+            Questa guida pratica ti accompagna nell'utilizzo quotidiano della piattaforma, illustrando come impostare i dati aziendali, scegliere il modello matematico corretto, importare le mappe geografiche e leggere i risultati ottimi.
+          </p>
+
+          <!-- Step 1 Card -->
+          <div class="citation-card" style="border-left-color: #38bdf8; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 1</span>
+              <span style="font-size: 12px; color: var(--text-muted);">Questionario & Selezione Modello</span>
+            </div>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">🧭 1. Come Trovare il Modello Adatto alla Tua Azienda</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 8px;">
+              Dalla schermata <b>"🧭 Quale Modello Scegliere?"</b>, rispondi al questionario iniziale in 5 punti:
+            </p>
+            <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
+              <li><b>1. Tipologia di Servizio</b>: seleziona <i>"Punti discreti"</i> per consegne e-commerce, merci e logistica (CVRP/VRPTW). Seleziona <i>"Strade/Archi"</i> per servizi a rete continua come raccolta rifiuti porta a porta, spazzamento stradale, sgombero neve (CARP).</li>
+              <li><b>2. Ritiri e Consegne Nello Stesso Turno</b>: se i beni vengono prelevati da un fornitore e recapitati direttamente a un destinatario accoppiato nello stesso viaggio, il sistema ti assegnerà il modello <b>VRPPD</b>.</li>
+              <li><b>3. Presenza di Più Depositi o Rimesse</b>: se la flotta parte da magazzini o depositi multipli territoriali, il sistema attiverà il modello <b>MDVRP</b>.</li>
+              <li><b>4. Fasce Orarie e ZTL Tassative</b>: se i clienti hanno orari contrattuali rigidi di apertura o scarico, il modello raccomandato sarà <b>VRPTW</b>.</li>
+              <li><b>5. Tappe Intermedie</b>: se i mezzi necessitano di scaricare a impianti intermedi (TMB, inceneritori) o di ricaricare le batterie a stazioni DC, verrà attivato <b>WCVRPTW-IF / EV-VRP</b>.</li>
+            </ul>
+          </div>
+
+          <!-- Step 2 Card -->
+          <div class="citation-card" style="border-left-color: #34d399; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="background: rgba(52, 211, 153, 0.2); color: #34d399; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 2</span>
+              <span style="font-size: 12px; color: var(--text-muted);">Composizione Parco Mezzi & Costi</span>
+            </div>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">🚛 2. Configurazione della Flotta Eterogenea & Calcolo Costi</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 8px;">
+              Nella <b>Parte 2 del Questionario</b> puoi definire la composizione del tuo parco veicoli reale:
+            </p>
+            <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
+              <li><b>Aggiunta Categorie</b>: puoi inserire furgoni leggeri patente B, motrici 2 assi, compattatori pesanti a 3 assi con voltacassonetti o furgoni elettrici.</li>
+              <li><b>Portata Utile (kg)</b>: specifica il peso massimo caricabile per ciascun mezzo.</li>
+              <li><b>Costo Fisso Giornaliero (€/giorno)</b>: viene determinato automaticamente con il calcolatore integrato sommando il costo del personale (tariffa oraria dell'autista per ore di turno, più eventuale equipaggio ausiliario per raccolta manuale) e il costo giornaliero del veicolo (rata di leasing/noleggio, assicurazione e manutenzione ordinaria).</li>
+              <li><b>Costo Chilometrico (€/km)</b>: carburante effettivo al litro (o kWh), consumo medio ponderato e pneumatici.</li>
+              <li><b>Pulsante "🚀 Applica Flotta e Risolvi"</b>: trasferisce istantaneamente tutti i veicoli al modello prescelto e avvia l'ottimizzazione matematica globale.</li>
+            </ul>
+          </div>
+
+          <!-- Step 3 Card -->
+          <div class="citation-card" style="border-left-color: #f59e0b; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 3</span>
+              <span style="font-size: 12px; color: var(--text-muted);">OpenStreetMap & Gestione Aree</span>
+            </div>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">🌍 3. Importazione Mappe Geografiche Reali da OpenStreetMap (CARP RSU)</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 8px;">
+              Nella scheda del modello CARP (Raccolta Rifiuti Porta a Porta) puoi scaricare la rete stradale reale di qualsiasi comune:
+            </p>
+            <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
+              <li>Clicca su <b>"🌍 Importa da OpenStreetMap"</b>.</li>
+              <li><b>Validità per Tutti i Paesi Europei e Mondiali</b>: il motore non è limitato all'Italia. Puoi inserire toponimi di qualsiasi nazione europea (es. <code>Nice, France</code>, <code>München, Germany</code>, <code>Valencia, Spain</code>, <code>Lugano, Switzerland</code>, <code>Innsbruck, Austria</code>, <code>Gent, Belgium</code>) oppure coordinate GPS mondiali (lat, lon). OpenStreetMap carica automaticamente sensi unici e viabilità conformi al codice della strada locale.</li>
+              <li><b>Comune o Quartiere</b>: inserisci il nome della città indicando sempre la nazione (es. <code>Treviso, Italy</code> o <code>Lyon, France</code>) oppure seleziona la modalità coordinate GPS per qualsiasi punto geografico.</li>
+              <li><b>Posizione Cantiere / Deposito</b>: puoi inserire l'indirizzo della sede aziendale oppure le coordinate GPS esatte (es. <code>45.6670, 12.2450</code>). Il solver collocherà il deposito al nodo 0 e collegherà le partenze e i rientri di tutti i mezzi.</li>
+              <li><b>Gestione Grandi Aree</b>: per città estese con centinaia di vie, usa il selettore <i>"🌐 Partiziona Settore / Grandi Aree"</i> per dividere il comune in macro-settori operativi servibili da 2 a 8 mezzi, oppure premi <i>"✂️ Riduci Area per Flotta Attuale"</i> per ritagliare automaticamente il settore stradale su misura per la portata dei compattatori attivi.</li>
+            </ul>
+          </div>
+
+          <!-- Step 4 Card -->
+          <div class="citation-card" style="border-left-color: #8b5cf6; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 4</span>
+              <span style="font-size: 12px; color: var(--text-muted);">Calcolo & Mappa Interattiva</span>
+            </div>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">⚡ 4. Esecuzione del Modello & Lettura della Mappa GIS</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 8px;">
+              Premendo <b>"⚡ Risolvi Modello"</b> (o <b>"⚡ Risolvi & Aggiorna Mappa GIS"</b> nel CARP):
+            </p>
+            <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
+              <li><b>Stato di Risoluzione</b>: verifica che lo stato sia <code>Optimal</code> con l'indicazione del Costo Totale Minimo (€).</li>
+              <li><b>Report dei Singoli Mezzi</b>: consulta il carico complessivo raccolto/consegnato, la percentuale di saturazione della portata (es. 89% di capienza) e l'elenco delle tratte di servizio vs transiti a vuoto.</li>
+              <li><b>Mappa Interattiva GIS</b>: visualizza le rotte tracciate a colori differenti per ciascun veicolo, con frecce direzionali e indicazione delle fermate. Nel controllo strati in alto a destra puoi isolare singoli percorsi o passare alla cartografia satellitare.</li>
+              <li><b>Timeline Oraria (VRPTW)</b>: visualizza la sequenza cronologica con gli orari di arrivo previsti, i tempi di attesa e l'inizio scarico per ciascun punto di consegna.</li>
+            </ul>
+          </div>
+
+          <!-- Step 5 Card -->
+          <div class="citation-card" style="border-left-color: #ec4899; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="background: rgba(236, 72, 153, 0.2); color: #f472b6; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 5</span>
+              <span style="font-size: 12px; color: var(--text-muted);">Salvataggio Backup & Report ROI</span>
+            </div>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">💾 5. Esportazione Dati, Backup Locale & Calcolo ROI Flotta</h4>
+            <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
+              <li><b>Esporta Backup (.json)</b>: clicca in alto a destra su <i>"📥 Esporta Backup (.json)"</i> per scaricare sul tuo disco locale il file con tutti i nodi, i clienti, i veicoli e le tariffe configurate.</li>
+              <li><b>Importa Backup</b>: in qualsiasi momento puoi ricaricare il file salvato con <i>"📤 Importa Backup"</i> per riprendere la sessione di lavoro.</li>
+              <li><b>Calcolatore Risparmio ROI</b>: apri la scheda <b>"💰 Calcolatore Risparmio ROI Flotta"</b> per stimare la riduzione annua del consumo carburante, il risparmio economico complessivo (€/anno) e le tonnellate di CO2 evitate certificate secondo gli standard ESG Scope 1.</li>
+              <li><b>Salvataggio in PDF</b>: premi il pulsante <i>"🖨️ Stampa / Salva Guida in PDF"</i> per stampare o archiviare l'intero manuale operativo e la dispensa scientifica.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             GRUPPO 1: DOMANDE FREQUENTI (FAQ)
+             ================================================================= -->
+        <div class="faq-group" data-category="faq">
+          <div class="faq-group-title">
+            <span>❓</span> Domande Frequenti & Best Practice Operative per Flotte
+          </div>
+
+          <!-- FAQ 1 -->
+          <details class="faq-item" open>
+            <summary class="faq-question">
+              <span>1. Cos'è l'Ottimizzazione Combinatoria nei trasporti e perché la pianificazione manuale è fallimentare?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              La pianificazione delle rotte appartiene alla classe dei problemi di <b>ottimizzazione combinatoria NP-difficili (NP-hard)</b>. In un problema con $N$ punti di consegna e un solo veicolo (Traveling Salesperson Problem), il numero di sequenze teoricamente possibili è pari a $(N-1)! / 2$. Con sole 10 tappe le combinazioni sono circa <b>181.440</b>; con 20 tappe superano <b>$6 \times 10^{16}$</b>; con 50 tappe e più veicoli con capacità limitata, il numero di piani possibili supera il numero di atomi nell'universo osservabile.<br><br>
+              L'operatore umano (anche il più esperto fleet dispatcher) si affida inevitabilmente a <i>euristiche visive e intuitive</i> ("visito prima i clienti vicini"), cadendo sistematicamente in trappole di miopia locale che generano tra il <b>15% e il 35% di chilometri a vuoto in eccesso</b>, ritardi orari e sottoutilizzo della cubatura. I modelli matematici della Ricerca Operativa (Operations Research) convertono l'intero problema in un sistema di equazioni lineari a variabili intere miste (MILP), esplorando lo spazio delle soluzioni globali tramite algoritmi esatti (Branch-and-Cut) ed euristiche avanzate per trovare la combinazione a costo minimo globale certificabile.
+            </div>
+          </details>
+
+          <!-- FAQ 2 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>2. Qual è la differenza fondamentale tra problemi "Node Routing" (CVRP, VRPTW) e "Arc Routing" (CARP)?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              La distinzione fondamentale riguarda <b>dove si trova la richiesta di servizio</b> nella rete stradale:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Node Routing (Routing su Vertici - CVRP, VRPTW, VRPPD, MDVRP)</b>: la domanda è concentrata in singoli punti geografici discreti (magazzini clienti, supermercati, cassonetti intelligenti con sensore volumetrico, sedi B2B, indirizzi di consegna e-commerce). Gli archi stradali fungono unicamente da percorsi di transito tra una fermata e l'altra e vengono scelti cercando il cammino minimo (Shortest Path).</li>
+                <li><b>Arc Routing (Routing su Archi - CARP)</b>: la domanda è <i>distribuita in modo continuo lungo l'intera lunghezza delle strade</i>. Il veicolo deve operare percorrendo l'intero segmento viario a velocità operativa ridotta. Esempi tipici: raccolta rifiuti RSU porta-a-porta, spazzamento meccanico stradale, sgombero neve e spargimento sale, lavaggio caditoie, ispezione reti idriche, posa fibra ottica.</li>
+              </ul>
+              In CARP, attraversare una strada senza operare o ripercorrerla dopo averla già servita genera <i>deadheading</i> (transito a vuoto), che il modello matematico minimizza garantendo la chiusura euleriana del circuito.
+            </div>
+          </details>
+
+          <!-- FAQ 3 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>3. Come si bilanciano il "Costo Fisso di Ingaggio Mezzo" e il "Costo Chilometrico (€/km)"?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Ogni veicolo mobilitato comporta due categorie di costo matematicamente contrapposte nella funzione obiettivo:
+              <div class="math-box">
+                Minimizza Costo Totale = <b>∑ (Costo_Fisso_k × y_k)</b> + <b>∑ (Costo_km_k × x_ijk × d_ij)</b>
+              </div>
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Costo Fisso (€/giorno)</b>: include la retribuzione giornaliera dell'autista/equipaggio, l'ammortamento della rata di leasing o noleggio del mezzo, il bollo, la quota giornaliera dell'assicurazione e i costi di apertura turno. Tipicamente oscilla tra <b>100€ e 280€/giorno</b> a seconda della tipologia di veicolo.</li>
+                <li><b>Costo Chilometrico (€/km)</b>: include il carburante effettivo alla pompa (o kWh di energia elettrica), l'usura chilometrica dei pneumatici, la manutenzione proporzionale e i pedaggi autostradali. Tipicamente oscilla tra <b>0.30€ e 1.20€/km</b>.</li>
+              </ul>
+              <b>Impatto Algoritmico</b>: se il Costo Fisso è elevato rispetto al costo chilometrico, il solver matematico concentrerà le consegne su un numero minore di mezzi (anche accettando percorsi con qualche chilometro in più), massimizzando la saturazione di carico. Viceversa, se il Costo Fisso è modesto o nullo, il solver sdoppierà le rotte su più veicoli per minimizzare drasticamente i chilometri percorsi complessivi.
+            </div>
+          </details>
+
+          <!-- FAQ 4 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>4. Cosa sono le Finestre Temporali (Time Windows) e come influenzano la fattibilità del percorso?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Una <b>Finestra Temporale</b> $[a_i, b_i]$ definisce l'intervallo orario inderogabile entro cui il cliente $i$ accetta di essere servito (es. ZTL centro storico 07:00-10:00, orario apertura baie di carico 06:00-09:00, slot concordato di consegna 14:00-16:00).<br><br>
+              Il modello VRPTW (Solomon, 1987) gestisce due dinamiche chiave:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Early Arrival (Arrivo Anticipato, $t_i < a_i$)</b>: se l'autista giunge al nodo prima dell'apertura della finestra, non può iniziare l'attività. Il mezzo entra in stato di attesa forzata (<i>Waiting Time</i> $= a_i - t_i$), che non costa carburante ma consuma ore-lavoro disponibili.</li>
+                <li><b>Late Arrival (Arrivo in Ritardo, $t_i > b_i$)</b>: nella formulazione con <b>Hard Time Windows</b> implementata nel nostro motore, superare anche di un solo minuto $b_i$ rende la soluzione matematicamente <b>inammissibile</b>. Il solver ha il compito di riordinare la sequenza o impiegare un mezzo aggiuntivo pur di garantire la puntualità contrattuale al 100%.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- FAQ 5 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>5. In cosa differisce il VRP con Ritiri e Consegne Accoppiati (VRPPD) rispetto al normale CVRP?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nel CVRP standard tutti i colli partono dal deposito centrale e vengono distribuiti ai clienti (flusso convergente o divergente puro), oppure vengono tutti caricati per strada e riportati a fine giornata al deposito. Il carico a bordo è quindi monotòno.<br><br>
+              Nel <b>VRPPD (Pickup and Delivery)</b>, le merci o i passeggeri vengono prelevati a un'origine $P_r$ e devono essere recapitati a una specifica destinazione $D_r$. Questo impone due vincoli matematici rigorosi:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Accoppiamento (Coupling)</b>: lo stesso identico veicolo che effettua il ritiro a $P_r$ deve essere colui che effettua la consegna a $D_r$. Non è ammesso che due mezzi diversi si scambino il collo a metà strada senza trasbordo.</li>
+                <li><b>Precedenza Temporale</b>: la visita al nodo di ritiro deve precedere strettamente la visita al nodo di consegna: $t(P_r) + s(P_r) + \tau(P_r, D_r) \le t(D_r)$.</li>
+                <li><b>Capacità Dinamica Istantanea</b>: il volume o peso presente a bordo fluttua continuamente durante il turno (sale ai ritiri, scende alle consegne) e non deve mai superare la portata massima $Q$ in nessun istante della rotta.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- FAQ 6 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>6. Quando è indispensabile utilizzare il modello Multi-Deposito (MDVRP)?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Il modello <b>MDVRP</b> è indispensabile quando l'azienda possiede <b>due o più sedi logistiche, rimesse o autoparchi territoriali</b> (es. Deposito Nord Milano, Deposito Sud Melegnano, Hub Interportuale).<br><br>
+              <b>Il grave errore del partizionamento manuale a priori</b>: moltissimi responsabili logistica dividono la mappa tracciando confini comunali rigidi ed assegnando ciascun comune al deposito più vicino "in linea d'aria". Questo approccio è gravemente sub-ottimale perché ignora i clienti di confine (<i>borderline customers</i>) e l'orientamento dei flussi di traffico. Il solver MDVRP decide <i>contemporaneamente</i> sia l'assegnazione ottimale cliente-deposito sia il sequenziamento dei percorsi, garantendo che ogni veicolo parta e rientri rigorosamente alla propria rimessa nativa, ottenendo risparmi del 12-20% rispetto alla pianificazione disgiunta.
+            </div>
+          </details>
+
+          <!-- FAQ 7 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>7. Cos'è il "Deadheading" (percorrenza a vuoto) e in che modo il modello CARP lo abbatte?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nei servizi a rete (raccolta rifiuti RSU porta-a-porta, spazzamento meccanizzato, salatura strade), il costo del carburante e il tempo vengono spesi in due modalità:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Tratti Serviti</b>: strade in cui il compattatore o la spazzatrice sta attivamente operando (raccogliendo mastelli o spazzando il manto stradale).</li>
+                <li><b>Deadheading (Transito a Vuoto)</b>: strade percorse a velocità di trasferimento per spostarsi tra un quartiere e l'altro, inversioni di marcia o rientri al deposito.</li>
+              </ul>
+              Il modello CARP modella la viabilità come un grafo misto con sensi unici e applica la teoria euleriana: calcola la matrice di cammino minimo (Shortest Path di Dijkstra) tra tutti i segmenti stradali e costruisce rotte continue bilanciate che riducono a zero o al valore minimo teorico i transiti a vuoto, risparmiando centinaia di ore e migliaia di litri di gasolio all'anno per ogni squadra operativa.
+            </div>
+          </details>
+
+          <!-- FAQ 8 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>8. Come funzionano le Strutture Intermedie (Landfill / Ricariche Elettriche DC) in WCVRPTW-IF ed EV-VRP?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nei contesti di raccolta rifiuti pesanti o di transizione verso veicoli commerciali elettrici (e-Van, e-Truck), la capacità volumetrica del cassone o l'autonomia della batteria (kWh) non sono sufficienti per coprire un intero turno lavorativo di 8 ore con un solo carico o con una sola carica.<br><br>
+              Il modello con <b>Intermediate Facilities (IF)</b> estende il VRPTW introducendo nodi intermedi speciali:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Impianti di Trattamento / Discariche / Termovalorizzatori (TMB)</b>: il compattatore, quando prossimo al 100% della capienza, devia verso l'impianto intermedio più conveniente, scarica i rifiuti azzerando il carico a bordo ($L_k = 0$), e riparte immediatamente per raccogliere ulteriori strade senza dover tornare al deposito centrale.</li>
+                <li><b>Stazioni di Ricarica Rapida DC Fast Charger</b>: il veicolo elettrico programma una sosta intermedia di 30-45 minuti per ripristinare il <i>State of Charge</i> (SoC) all'80-100%, tenendo conto del consumo energetico chilometrico stimato in base a velocità e carico.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- FAQ 9 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>9. Algoritmi Esatti (Branch-and-Cut / CBC) vs Euristiche (Clarke-Wright, ALNS, Tabu Search): quando usare l'uno o l'altro?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nella Ricerca Operativa non esiste una soluzione unica per tutte le taglie di problema:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Algoritmi Esatti (Branch-and-Cut / Simplex Duale con COIN-OR CBC)</b>: esplorano l'albero delle soluzioni intere tagliando rami inammissibili tramite piani di taglio (Gomory cuts, clique cuts). <b>Vantaggio</b>: garantiscono l'ottimo globale matematico provato o un gap certificato (es. $Gap < 0.5\%$). <b>Ideali per</b>: cluster operativi da 10 a 60 nodi/archi con vincoli temporali stringenti.</li>
+                <li><b>Euristiche e Meta-euristiche (Clarke-Wright Savings, ALNS - Adaptive Large Neighborhood Search, Tabu Search)</b>: metodi stocastici e costruttivi rapidi. <b>Vantaggio</b>: calcolano soluzioni eccellenti (entro il 2-4% dall'ottimo) in frazioni di secondo anche per problemi con 1.000 o 5.000 fermate.</li>
+              </ul>
+              <b>L'approccio ibrido di OptiFleet</b>: la nostra architettura combina decomposizione spaziale e geografica per partizionare grandi aree territoriali, affidando poi al solver esatto CBC la rischedulazione ottima all'interno di ciascun macro-settore.
+            </div>
+          </details>
+
+          <!-- FAQ 10 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>10. Qual è il ritorno economico (ROI) reale e l'impatto sul bilancio di sostenibilità ESG (Scope 1)?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              I dati storici verificati sul campo da flotte commerciali e aziende di igiene urbana evidenziano:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Riduzione chilometri percorsi</b>: tra il <b>14% e il 25%</b> di km in meno all'anno.</li>
+                <li><b>Risparmio carburante diretto</b>: tra il <b>16% e il 24%</b> sui litri di gasolio o metri cubi di metano consumati.</li>
+                <li><b>Ottimizzazione del parco mezzi</b>: riduzione del <b>10-15% del numero di veicoli attivi</b> necessari per servire lo stesso territorio, azzerando canoni di noleggio e costi fissi di personale.</li>
+                <li><b>Impatto ESG & Decarbonizzazione (Scope 1)</b>: in base agli standard internazionali <i>GHG Protocol / DEFRA</i>, la combustione di 1 litro di gasolio autotrazione rilascia in atmosfera <b>2,65 kg di $CO_2$ equivalente</b>. Una flotta media di 10 veicoli che risparmia 50.000 km/anno evita l'emissione di oltre <b>35-45 tonnellate di $CO_2$</b>, dato certificabile nel Bilancio di Sostenibilità aziendale (CSRD) e valorizzabile nei bandi di gara pubblici.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- FAQ 11 -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>11. Le mappe geografiche e il download delle reti stradali valgono solo per l'Italia o anche per altri Paesi europei e mondiali?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Le mappe geografiche e il motore di importazione viaria <b>valgono per tutti i Paesi europei e per qualsiasi territorio nel mondo</b>, senza alcuna limitazione geografica.<br><br>
+              L'infrastruttura GIS di OptiFleet si basa sullo standard cartografico aperto <b>OpenStreetMap (OSM)</b>, tramite le librerie <b>OSMnx</b> e <b>Folium/Leaflet</b>. Questo assicura:
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Ricerca Internazionale per Toponimo</b>: nel modulo di importazione è possibile digitare qualsiasi comune o dipartimento europeo specificando la nazione (es. <code>Nice, France</code>, <code>München, Germany</code>, <code>Valencia, Spain</code>, <code>Lugano, Switzerland</code>, <code>Innsbruck, Austria</code>, <code>Gent, Belgium</code>). Il geocodificatore internazionale Nominatim individuerà i confini amministrativi corretti.</li>
+                <li><b>Coordinate GPS Universali</b>: selezionando l'opzione con coordinate (latitudine e longitudine, es. <code>43.7102, 7.2620</code>) e raggio metrico (es. 800m, 1500m), il sistema estrae la viabilità stradale esatta in qualunque punto della terra indipendentemente dalla lingua o dai confini amministrativi.</li>
+                <li><b>Sensi Unici e Regole Stradali Locali</b>: il grafo acquisisce automaticamente i vincoli del codice della strada del Paese d'interesse (sensi unici <i>oneway</i>, rotatorie, svolte obbligate e limitazioni per mezzi pesanti).</li>
+                <li><b>Cartografia di Sfondo Mondiale</b>: i layer di visualizzazione selezionabili nella mappa interattiva (OpenStreetMap standard, CartoDB Voyager, Esri WorldStreetMap e immagini satellitari ortofoto) dispongono di copertura globale ad altissima risoluzione.</li>
+                <li><b>Unità di Misura & Costi</b>: le distanze sono sempre calcolate in metri/chilometri reali e i costi sono parametrabili in Euro (€) o valuta locale per chilometro e per mezzo.</li>
+              </ul>
+            </div>
+          </details>
+        </div>
+
+        <!-- =================================================================
+             GRUPPO 2: DISPENSA TEORICA (FORMULAZIONI MATEMATICHE MILP)
+             ================================================================= -->
+        <div class="faq-group" data-category="milp">
+          <div class="faq-group-title">
+            <span>📐</span> Dispensa Teorica: Formulazioni Matematiche Lineari Intere Miste (MILP)
+          </div>
+
+          <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 16px;">
+            In questa sezione presentiamo la formulazione formale dei modelli di Vehicle Routing secondo gli standard della Ricerca Operativa. Ciascun modello è formulato come un problema di <b>Programmazione Lineare Intera Mista (Mixed-Integer Linear Programming - MILP)</b>, risolvibile con algoritmi Branch-and-Cut tramite il motore <b>COIN-OR CBC</b>.
+          </p>
+
+          <!-- Modello 1: CVRP con MTZ -->
+          <div class="citation-card" style="border-left-color: #3b82f6;">
+            <div class="citation-title">1. CVRP - Capacitated Vehicle Routing Problem (Miller, Tucker & Zemlin, 1960)</div>
+            <div class="citation-desc">
+              Sia $G = (V, A)$ un grafo completo con vertici $V = \{0\} \cup C$, dove il nodo $0$ rappresenta il deposito centrale e $C = \{1, \dots, n\}$ l'insieme dei clienti. Ogni cliente $i \in C$ ha una domanda nota $q_i > 0$ con $q_0 = 0$. Una flotta di $K$ veicoli identici di portata massima $Q$ è allocata al deposito.
+              <br><br>
+              <b>Variabili Decisionali:</b>
+              <ul style="margin: 6px 0 6px 20px;">
+                <li>$x_{ijk} \in \{0, 1\}$: vale 1 se il veicolo $k$ percorre l'arco orientato $(i, j)$, 0 altrimenti.</li>
+                <li>$y_k \in \{0, 1\}$: vale 1 se il veicolo $k$ viene attivato/ingaggiato nel turno, 0 altrimenti.</li>
+                <li>$u_{ik} \ge 0$: variabile continua ausiliaria che rappresenta il carico cumulato dal veicolo $k$ dopo aver visitato il nodo $i$ (eliminazione dei sottogiri isolati - MTZ).</li>
+              </ul>
+
+              <div class="math-box">
+<b>Funzione Obiettivo (Minimizzazione Costo Fisso + Costo Percorrenza):</b>
+min Z = ∑_{k=1}^K [ c_f^k · y_k ] + ∑_{k=1}^K ∑_{i ∈ V} ∑_{j ∈ V, j ≠ i} [ c_{ij} · x_{ijk} ]
+
+<b>Soggetto ai Vincoli:</b>
+(1) Visita Univoca Cliente:
+    ∑_{k=1}^K ∑_{j ∈ V, j ≠ i} x_{ijk} = 1,                 ∀ i ∈ C
+
+(2) Flusso di Partenza dal Deposito:
+    ∑_{j ∈ C} x_{0jk} = y_k,                               ∀ k ∈ {1, ..., K}
+
+(3) Flusso di Rientro al Deposito:
+    ∑_{i ∈ C} x_{i0k} = y_k,                               ∀ k ∈ {1, ..., K}
+
+(4) Conservazione del Flusso ai Nodi Intermedi:
+    ∑_{i ∈ V, i ≠ p} x_{ipk} - ∑_{j ∈ V, j ≠ p} x_{pjk} = 0, ∀ p ∈ C, ∀ k ∈ {1, ..., K}
+
+(5) Eliminazione Sottogiri e Bilancio di Carico MTZ (Miller-Tucker-Zemlin):
+    u_{ik} - u_{jk} + Q · x_{ijk} ≤ Q - q_j,               ∀ i, j ∈ C, i ≠ j, ∀ k
+    q_i ≤ u_{ik} ≤ Q,                                      ∀ i ∈ C, ∀ k
+              </div>
+              <div class="math-note">
+                💡 <b>Proprietà Matematica dei tagli MTZ</b>: I vincoli (5) impediscono la formazione di cicli chiusi disconnessi dal deposito (subtour), imponendo un incremento del valore $u_{jk} \ge u_{ik} + q_j$ ogni volta che l'arco $(i, j)$ viene percorso ($x_{ijk} = 1$). Richiedono solo $O(n^2)$ vincoli, a differenza delle formulazioni di Danztig-Fulkerson-Johnson che ne richiedono $2^n$.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modello 2: VRPTW -->
+          <div class="citation-card" style="border-left-color: #10b981;">
+            <div class="citation-title">2. VRPTW - Vehicle Routing with Time Windows (Solomon, 1987)</div>
+            <div class="citation-desc">
+              Estende il CVRP introducendo orizzonti temporali. A ciascun cliente $i \in C$ è associata una finestra di servizio $[a_i, b_i]$ e una durata operativa $s_i \ge 0$. Il deposito ha finestra operativa globale $[a_0, b_0]$. Il tempo di transito tra $i$ e $j$ è $\tau_{ij}$.
+              <br><br>
+              <b>Variabili Aggiuntive:</b>
+              <ul style="margin: 6px 0 6px 20px;">
+                <li>$t_{ik} \ge 0$: istante temporale continuo di inizio servizio del veicolo $k$ presso il nodo $i$.</li>
+              </ul>
+
+              <div class="math-box">
+<b>Vincoli Temporali di Propagazione e Finestre Orarie (Big-M formulation):</b>
+(6) Propagazione Temporale Lungo l'Arco di Servizio:
+    t_{ik} + s_i + τ_{ij} - M · (1 - x_{ijk}) ≤ t_{jk},    ∀ i ∈ V, ∀ j ∈ C, i ≠ j, ∀ k
+
+(7) Rispetto della Finestra Oraria Tassativa (Hard Time Window):
+    a_i ≤ t_{ik} ≤ b_i,                                    ∀ i ∈ V, ∀ k ∈ {1, ..., K}
+
+(8) Rientro al Deposito entro la Chiusura del Turno:
+    t_{ik} + s_i + τ_{i0} - M · (1 - x_{i0k}) ≤ b_0,       ∀ i ∈ C, ∀ k
+              </div>
+              <div class="math-note">
+                💡 <b>Costante Big-M</b>: il parametro $M$ è impostato pari a $\max(b_i + s_i + \tau_{ij} - a_j, 0)$. Se $x_{ijk} = 0$, il vincolo diventa banale e non vincola $t_{jk}$; se $x_{ijk} = 1$, impone la rigorosa consecutività cronologica includendo l'eventuale tempo di attesa se si arriva prima di $a_j$.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modello 3: CARP -->
+          <div class="citation-card" style="border-left-color: #f59e0b;">
+            <div class="citation-title">3. CARP - Capacitated Arc Routing Problem (Golden & Wong, 1981)</div>
+            <div class="citation-desc">
+              Sia $G = (V, E)$ un grafo viario. Un sottoinsieme di archi $R \subseteq E$ richiede servizio di raccolta (domanda $q_e > 0$, costo operativo di percorrenza $c_e^s$). Gli archi non richiesti $E \setminus R$ hanno domanda nulla e fungono da transiti a vuoto con costo $c_e^t$.
+              <br><br>
+              <b>Variabili Decisionali:</b>
+              <ul style="margin: 6px 0 6px 20px;">
+                <li>$x_{e, k} \in \{0, 1\}$: vale 1 se l'arco richiesto $e \in R$ è servito dal veicolo $k$.</li>
+                <li>$w_{uv, k} \in \mathbb{N}$: numero intero di volte in cui l'arco orientato $(u, v)$ viene attraversato a vuoto (deadheading) dal veicolo $k$.</li>
+              </ul>
+
+              <div class="math-box">
+<b>Funzione Obiettivo (Minimizzazione Servizio + Transiti a Vuoto Deadheading):</b>
+min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^t · w_{uv,k} ]
+
+<b>Soggetto ai Vincoli:</b>
+(9) Servizio Completo di Ciascun Segmento Stradale:
+    ∑_{k=1}^K x_{e,k} = 1,                                  ∀ e ∈ R
+
+(10) Portata Massima del Compattatore:
+    ∑_{e ∈ R} q_e · x_{e,k} ≤ Q_k,                         ∀ k ∈ {1, ..., K}
+
+(11) Grado Pari / Conservazione del Flusso Euleriano per Nodo:
+    ∑_{u:(u,v) ∈ E} (x_{uv,k} + w_{uv,k}) - ∑_{w:(v,w) ∈ E} (x_{vw,k} + w_{vw,k}) = 0, ∀ v ∈ V, ∀ k
+              </div>
+              <div class="math-note">
+                💡 <b>Condizione di Eulerianità</b>: Il vincolo (11) garantisce che per ogni nodo del reticolo viario il numero totale di ingressi coincida con il numero totale di uscite per ciascun veicolo, trasformando la rete servita in un multigrafo euleriano a costo di deadheading minimo.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modello 4: VRPPD -->
+          <div class="citation-card" style="border-left-color: #8b5cf6;">
+            <div class="citation-title">4. VRPPD - Vehicle Routing with Pickup and Delivery (Savelsbergh & Sol, 1995)</div>
+            <div class="citation-desc">
+              Si considerano $m$ richieste di trasporto indipendenti. Ciascuna richiesta $r \in \{1, \dots, m\}$ è definita da una coppia ordinata di vertici: un nodo di prelievo (pickup) $p_r \in P$ e un nodo di rilascio (delivery) $d_r \in D$, con una quantità trasportata $q_r > 0$.
+              <br><br>
+              <b>Variabili Decisionali:</b>
+              <ul style="margin: 6px 0 6px 20px;">
+                <li>$x_{ijk} \in \{0, 1\}$: instradamento del veicolo $k$ sull'arco $(i, j)$.</li>
+                <li>$z_{rk} \in \{0, 1\}$: vale 1 se la richiesta accoppiata $r$ viene assegnata al veicolo $k$.</li>
+                <li>$L_{ik} \ge 0$: carico istantaneo a bordo del veicolo $k$ all'uscita dal nodo $i$.</li>
+              </ul>
+
+              <div class="math-box">
+<b>Vincoli di Accoppiamento, Precedenza e Conservazione Carico a Bordo:</b>
+(12) Accoppiamento Rigido Veicolo (Stesso Mezzo per Prelievo e Scarico):
+    ∑_{j ∈ V} x_{p_r, j, k} = z_{rk},                      ∀ r, ∀ k
+    ∑_{j ∈ V} x_{d_r, j, k} = z_{rk},                      ∀ r, ∀ k
+    ∑_{k=1}^K z_{rk} = 1,                                  ∀ r ∈ {1, ..., m}
+
+(13) Precedenza Temporale Univoca:
+    t_{p_r, k} + s_{p_r} + τ_{p_r, d_r} ≤ t_{d_r, k},      ∀ r, ∀ k
+
+(14) Dinamica di Fluttuazione del Carico Istantaneo:
+    L_{jk} ≥ L_{ik} + q_j - M · (1 - x_{ijk}),             ∀ i, j ∈ V, ∀ k
+    0 ≤ L_{ik} ≤ Q_k,                                      ∀ i ∈ V, ∀ k
+    (con q_{p_r} = +q_r  e  q_{d_r} = -q_r)
+              </div>
+              <div class="math-note">
+                💡 <b>Carico Istantaneo</b>: Il vincolo (14) è un'equazione di conservazione della massa in movimento: il carico sale in corrispondenza dei nodi $P$ e scende nei nodi $D$. Non è mai ammesso che $L_{ik} > Q_k$ lungo nessun tratto, impedendo sovraccarichi anche temporanei.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modello 5: MDVRP -->
+          <div class="citation-card" style="border-left-color: #06b6d4;">
+            <div class="citation-title">5. MDVRP - Multi-Depot Vehicle Routing Problem (Renaud et al., 1996)</div>
+            <div class="citation-desc">
+              Si considerano più depositi territoriali $D = \{d_1, \dots, d_p\}$ e un insieme di clienti $C = \{1, \dots, n\}$. Ciascun deposito $d \in D$ ospita una specifica flotta $K_d$ di automezzi. I clienti devono essere serviti partendo da un deposito e rientrando obbligatoriamente al medesimo deposito di origine.
+
+              <div class="math-box">
+<b>Vincoli di Origine-Destinazione Deposito & Conservazione:</b>
+(15) Visita di Ciascun Cliente da Parte di un Solo Veicolo:
+    ∑_{k ∈ K} ∑_{j ∈ V, j ≠ i} x_{ijk} = 1,                 ∀ i ∈ C
+
+(16) Partenza e Ritorno Obbligati al Deposito Nativo:
+    ∑_{j ∈ C} x_{d, j, k} = ∑_{i ∈ C} x_{i, d, k} ≤ 1,     ∀ d ∈ D, ∀ k ∈ K_d
+
+(17) Divieto di Interconnessione Diretta tra Depositi Diversi:
+    x_{d_1, d_2, k} = 0,                                   ∀ d_1, d_2 ∈ D, ∀ k
+              </div>
+              <div class="math-note">
+                💡 <b>Assegnazione Endogena</b>: Nel modello MDVRP integrato, non è l'utente a stabilire a quale deposito appartenga ciascun cliente; il solver ottimizza simultaneamente sia l'assegnazione spaziale del cliente al magazzino ideale sia la forma della rotta.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modello 6: WCVRPTW-IF / EV-VRP -->
+          <div class="citation-card" style="border-left-color: #ec4899;">
+            <div class="citation-title">6. WCVRPTW-IF / EV-VRP - Intermediate Facilities & Electric Fleet (Schneider et al., 2014)</div>
+            <div class="citation-desc">
+              Introduce un insieme di strutture intermedie $F = \{f_1, \dots, f_m\}$ lungo la rete stradale (discariche, impianti di trattamento rifiuti TMB, o colonnine di ricarica rapida DC ad alta potenza).
+              <br><br>
+              <b>Dinamica di Rigenerazione Stato:</b>
+              <div class="math-box">
+(18) Reset del Carico Rifiuti (Waste Dump all'Impianto TMB):
+    L_{fk} = 0,                                            ∀ f ∈ F, ∀ k
+
+(19) Ripristino Carica Batteria (Electric Vehicle DC Recharging):
+    SoC_{fk} = B_max,                                      ∀ f ∈ F, ∀ k
+
+(20) Tempo di Stazionamento Operativo per Svuotamento o Ricarica:
+    t_{fk} + s_f + τ_{fj} - M · (1 - x_{fjk}) ≤ t_{jk},    ∀ f ∈ F, ∀ j ∈ C, ∀ k
+              </div>
+              <div class="math-note">
+                💡 <b>Svolgimento Multi-Viaggio</b>: Le strutture intermedie permettono a un singolo veicolo di eseguire più cicli di raccolta/consegna nell'arco dello stesso turno di servizio di 8 ore, abbattendo la necessità di acquistare ulteriori costosi autocarri.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             GRUPPO 3: BIBLIOGRAFIA SCIENTIFICA & STRUMENTI SOFTWARE
+             ================================================================= -->
+        <div class="faq-group" data-category="biblio">
+          <div class="faq-group-title">
+            <span>📖</span> Bibliografia Accademica Ufficiale & Strumenti Software Utilizzati
+          </div>
+
+          <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 16px;">
+            I modelli matematici di <b>OptiFleet RO</b> poggiano su oltre 60 anni di letteratura scientifica internazionale nel campo della Ricerca Operativa, dell'Ingegneria dei Sistemi di Trasporto e della Matematica Applicata. Di seguito sono riportati i paper seminali originali e i motori computazionali impiegati:
+          </p>
+
+          <!-- Paper 1 -->
+          <div class="citation-card">
+            <div class="citation-title">Dantzig, G. B., & Ramser, J. H. (1959)</div>
+            <div class="citation-meta">
+              <b>"The Truck Dispatching Problem"</b> — <i>Management Science</i>, Vol. 6, No. 1, pp. 80-91. DOI: 10.1287/mnsc.6.1.80
+            </div>
+            <div class="citation-desc">
+              L'articolo fondatore mondiale del Vehicle Routing Problem (VRP). George Dantzig (l'inventore dell'algoritmo del Simplesso) e John Ramser formularono per la prima volta il problema dell'instradamento di una flotta di autocisterne di benzina da una raffineria a una rete di distributori, introducendo i primi concetti di programmazione lineare applicata ai trasporti.
+            </div>
+          </div>
+
+          <!-- Paper 2 -->
+          <div class="citation-card">
+            <div class="citation-title">Clarke, G., & Wright, J. W. (1964)</div>
+            <div class="citation-meta">
+              <b>"Scheduling of Vehicles from a Central Depot to a Number of Delivery Points"</b> — <i>Operations Research</i>, Vol. 12, No. 4, pp. 568-581. DOI: 10.1287/opre.12.4.568
+            </div>
+            <div class="citation-desc">
+              Introduce il celeberrimo <b>Algoritmo dei Risparmi (Savings Algorithm)</b> basato sul principio $s_{ij} = c_{0i} + c_{0j} - c_{ij}$. È ancora oggi la tecnica di costruzione di rotte iniziali più utilizzata al mondo per la sua velocità computazionale ($O(n^2 \log n)$) e robustezza nei software commerciali.
+            </div>
+          </div>
+
+          <!-- Paper 3 -->
+          <div class="citation-card">
+            <div class="citation-title">Miller, C. E., Tucker, A. W., & Zemlin, R. A. (1960)</div>
+            <div class="citation-meta">
+              <b>"Integer Programming Formulation of Traveling Salesman Problems"</b> — <i>Journal of the ACM</i>, Vol. 7, No. 4, pp. 326-329. DOI: 10.1145/321043.321046
+            </div>
+            <div class="citation-desc">
+              Paper fondamentale in cui vengono formalizzati i <b>vincoli MTZ (Miller-Tucker-Zemlin)</b> per l'eliminazione dei sottogiri disconnessi. L'introduzione di variabili ausiliarie di potenziale $u_i$ ha permesso di rappresentare il problema con un numero polinomiale di vincoli ($O(n^2)$ anziché $2^n$), rendendo possibile la risoluzione con normali solver lineari generici.
+            </div>
+          </div>
+
+          <!-- Paper 4 -->
+          <div class="citation-card">
+            <div class="citation-title">Golden, B. L., & Wong, R. T. (1981)</div>
+            <div class="citation-meta">
+              <b>"Capacitated Arc Routing Problems"</b> — <i>Networks</i>, Vol. 11, No. 3, pp. 305-315. DOI: 10.1002/net.3230110308
+            </div>
+            <div class="citation-desc">
+              La formulazione classica del <b>Capacitated Arc Routing Problem (CARP)</b> per servizi municipali su reti stradali (raccolta rifiuti e pulizia strade). Dimostra che il CARP è fortemente NP-completo anche su grafi planari e definisce le euristiche di clustering e tour building per problemi urbani complessi.
+            </div>
+          </div>
+
+          <!-- Paper 5 -->
+          <div class="citation-card">
+            <div class="citation-title">Solomon, Marius M. (1987)</div>
+            <div class="citation-meta">
+              <b>"Algorithms for the Vehicle Routing and Scheduling Problems with Time Window Constraints"</b> — <i>Operations Research</i>, Vol. 35, No. 2, pp. 254-265. DOI: 10.1287/opre.35.2.254
+            </div>
+            <div class="citation-desc">
+              Pietra miliare per i problemi di <b>VRPTW</b>. Solomon non solo ha formulato le equazioni di propagazione temporale e tempo di attesa, ma ha anche creato le 56 istanze di test standard mondiali (famiglie C1, C2, R1, R2, RC1, RC2), usate da oltre 35 anni dalla comunità scientifica internazionale per misurare la bontà dei solver.
+            </div>
+          </div>
+
+          <!-- Paper 6 -->
+          <div class="citation-card">
+            <div class="citation-title">Savelsbergh, M. W. P., & Sol, M. (1995)</div>
+            <div class="citation-meta">
+              <b>"The General Pickup and Delivery Problem"</b> — <i>Transportation Science</i>, Vol. 29, No. 1, pp. 17-29. DOI: 10.1287/trsc.29.1.17
+            </div>
+            <div class="citation-desc">
+              Trattato enciclopedico sui problemi <b>Pickup and Delivery (PDP / VRPPD)</b> e Dial-a-Ride. Formalizza la combinazione tra vincoli di accoppiamento (coupling), precedenze temporali e conservazione dinamica del carico volumetrico a bordo dei veicoli per trasporti intermodali ed espresso.
+            </div>
+          </div>
+
+          <!-- Paper 7 -->
+          <div class="citation-card">
+            <div class="citation-title">Renaud, J., Laporte, G., & Boctor, F. F. (1996)</div>
+            <div class="citation-meta">
+              <b>"A Tabu Search Heuristic for the Multi-Depot Vehicle Routing Problem"</b> — <i>Computers & Operations Research</i>, Vol. 23, No. 3, pp. 229-235. DOI: 10.1016/0305-0548(95)00026-N
+            </div>
+            <div class="citation-desc">
+              Studio di riferimento per il <b>Multi-Depot VRP (MDVRP)</b>. Formalizza le strategie di assegnazione integrata cliente-deposito e le procedure di scambio inter-deposito mediante algoritmi Tabu Search e decomposizione lagrangiana.
+            </div>
+          </div>
+
+          <!-- Paper 8 -->
+          <div class="citation-card">
+            <div class="citation-title">Schneider, M., Stenger, A., & Goeke, D. (2014)</div>
+            <div class="citation-meta">
+              <b>"The Electric Vehicle-Routing Problem with Time Windows and Recharging Stations"</b> — <i>Transportation Science</i>, Vol. 48, No. 4, pp. 500-520. DOI: 10.1287/trsc.2013.0490
+            </div>
+            <div class="citation-desc">
+              Il lavoro scientifico più influente per l'ottimizzazione di flotte elettriche (EV-VRP). Formalizza il consumo energetico in funzione della topologia di percorso e le fermate strategiche presso colonnine di ricarica intermedia con vincoli di tempo e capacità di batteria.
+            </div>
+          </div>
+
+          <!-- Paper 9 -->
+          <div class="citation-card">
+            <div class="citation-title">Toth, Paolo, & Vigo, Daniele (2014)</div>
+            <div class="citation-meta">
+              <b>"Vehicle Routing: Problems, Methods, and Applications"</b> (2nd Edition) — <i>MOS-SIAM Series on Optimization</i>, SIAM, Philadelphia. ISBN: 978-1-611973-58-7
+            </div>
+            <div class="citation-desc">
+              Il trattato enciclopedico di riferimento mondiale della Ricerca Operativa. Redatto dai massimi esperti mondiali (Università di Bologna), raccoglie in oltre 450 pagine la classificazione completa dei modelli esatti, branch-and-cut, column generation e meta-euristiche per ogni tipologia di routing industriale.
+            </div>
+          </div>
+
+          <!-- Strumenti Software & Motori Open Source -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; margin-top: 24px;">
+            <h4 style="font-size: 15px; color: #38bdf8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>⚙️</span> Motori Matematici & Framework Software Impiegati in OptiFleet
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <div style="background: rgba(2, 6, 23, 0.5); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="font-weight: 700; font-size: 13px; color: #f8fafc; margin-bottom: 4px;">
+                  <span class="tool-badge">SOLVER MILP</span> COIN-OR CBC
+                </div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                  Solver open-source ad alte prestazioni in C++ sviluppato dalla <i>Computational Infrastructure for Operations Research</i>. Utilizza Branch-and-Cut, piani di taglio Gomory e Knapsack, e Simplesso Duale.
+                </p>
+              </div>
+
+              <div style="background: rgba(2, 6, 23, 0.5); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="font-weight: 700; font-size: 13px; color: #f8fafc; margin-bottom: 4px;">
+                  <span class="tool-badge">MODELLATORE</span> PuLP (Python)
+                </div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                  Framework di modellazione algebrica lineare intera in Python. Traduce le espressioni simboliche matematiche in formati standard MPS/LP per il motore di calcolo esatto.
+                </p>
+              </div>
+
+              <div style="background: rgba(2, 6, 23, 0.5); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="font-weight: 700; font-size: 13px; color: #f8fafc; margin-bottom: 4px;">
+                  <span class="tool-badge">GRAFI STRADALI</span> OSMnx & NetworkX
+                </div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                  Estrazione della topologia viaria reale da OpenStreetMap, preservando sensi unici, rotonde, velocità di percorrenza e calcolo delle matrici di distanza reale con algoritmi di Dijkstra.
+                </p>
+              </div>
+
+              <div style="background: rgba(2, 6, 23, 0.5); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                <div style="font-weight: 700; font-size: 13px; color: #f8fafc; margin-bottom: 4px;">
+                  <span class="tool-badge">CARTOGRAFIA GIS</span> OpenStreetMap & Leaflet.js
+                </div>
+                <p style="font-size: 12px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                  Rendering cartografico vettoriale georeferenziato, animazione interattiva dei percorsi di flotta con waypoint cronologici, tappe numerate e perimetri territoriali.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         5. SEZIONE COMMERCIALI & PROMOZIONI DI AFFILIAZIONE (MONETIZZAZIONE)
+         ========================================================================= -->
+    <section id="partner-section" class="affiliate-section">
+      <span class="affiliate-badge">🔥 Offerte & Promozioni Partner per la Tua Flotta</span>
+      
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">
+          Strumenti e Convenzioni Selezionate per la Gestione Flotte
+        </h2>
+        <p style="color: var(--text-muted); font-size: 13.5px;">
+          OptiFleet collabora con i leader di settore della mobilità aziendale per offrirti sconti esclusivi, canoni agevolati e prove gratuite:
+        </p>
+      </div>
+
+      <div class="grid-3col">
+        <!-- Partner 1: Carte Carburante Aziendali -->
+        <div class="partner-card">
+          <div>
+            <div class="partner-header">
+              <div class="partner-icon">💳</div>
+              <div>
+                <b style="font-size: 15px;">Carte Carburante Multimarca</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">DKV Mobility / Edenred / Eni</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+              Fattura unica mensile per il recupero IVA al 100%, pagamento pedaggi autostradali e ricarica flotta elettrica in oltre 68.000 stazioni in Europa.
+            </p>
+            <div class="partner-deal">🎁 Promo Partner: Canone gratuito primi 6 mesi</div>
+          </div>
+          <div style="margin-top: 18px;">
+            <a href="https://www.dkv-mobility.com" target="_blank" rel="noopener sponsored" class="btn btn-blue btn-sm" style="width: 100%; justify-content: center;">
+              Richiedi Convenzione Flotta &nearr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Partner 2: Telematica & GPS Tracker -->
+        <div class="partner-card">
+          <div>
+            <div class="partner-header">
+              <div class="partner-icon">🛰️</div>
+              <div>
+                <b style="font-size: 15px;">Telematica & GPS Avanzato</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Samsara / Verizon Connect / Webfleet</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+              Localizzazione GPS in tempo reale, scarico tachigrafo digitale da remoto, monitoraggio stile di guida e riduzione sinistri fino al 23%.
+            </p>
+            <div class="partner-deal">🎁 Promo Partner: Demo gratuita + Dispositivo di prova</div>
+          </div>
+          <div style="margin-top: 18px;">
+            <a href="https://www.samsara.com" target="_blank" rel="noopener sponsored" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+              Attiva Demo Gratuita 30 Giorni &nearr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Partner 3: Manutenzione & Pneumatici Flotta -->
+        <div class="partner-card">
+          <div>
+            <div class="partner-header">
+              <div class="partner-icon">🔧</div>
+              <div>
+                <b style="font-size: 15px;">Pneumatici & Officina Flotte</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Euromaster / Norauto Pro</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+              Prezzi bloccati per treni gomme, check-up di sicurezza gratuiti, cambio gomme stagionale prioritario per evitare fermi mezzo prolungati.
+            </p>
+            <div class="partner-deal">🎁 Promo Partner: Sconto 15% sul listino pneumatici</div>
+          </div>
+          <div style="margin-top: 18px;">
+            <a href="https://www.euromaster-pneumatici.it" target="_blank" rel="noopener sponsored" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;">
+              Scarica Coupon Sconto Flotta &nearr;
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Banner Pubblicitario Footer -->
+    <div class="ad-container" style="margin-top: 30px;">
+      <span class="ad-label">Pubblicità / Annuncio Google AdSense</span>
+      <div class="ad-leaderboard">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="9876543210"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+        <span style="font-size: 11.5px; color: var(--text-muted);">
+          [Slot Pubblicitario AdSense 728x90 In-Article &mdash; Alta visualizzazione]
+        </span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- =========================================================================
+       6. MODAL IMPORTAZIONE OPENSTREETMAP (CON PUNTO DI PARTENZA / DEPOSITO)
+       ========================================================================= -->
+  <div id="importModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <h3 style="font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <span>🌍</span> Importa Mappa Stradale Reale (OpenStreetMap)
+        </h3>
+        <button onclick="closeImportModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:24px; cursor:pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- TABS MODALITA' IMPORTAZIONE -->
+      <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+        <button type="button" id="tabOsmOpt1" class="btn btn-secondary btn-sm" style="flex: 1; justify-content: center; background: rgba(59, 130, 246, 0.2); border-color: var(--accent-blue); color: #38bdf8;" onclick="setOsmModalMode('place')">
+          📍 Opzione 1: Città / Quartiere + Deposito
+        </button>
+        <button type="button" id="tabOsmOpt2" class="btn btn-secondary btn-sm" style="flex: 1; justify-content: center;" onclick="setOsmModalMode('gps')">
+          🎯 Opzione 2: Raggio GPS attorno al Deposito
+        </button>
+      </div>
+
+      <!-- OPZIONE 1: CITTA + DEPOSITO -->
+      <div id="modalSecPlace">
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            1. Nome Comune o Quartiere:
+          </label>
+          <input type="text" id="inpOsmPlace" value="Asolo, Italy" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. Asolo, Italy oppure Treviso, Centro Storico, Italy">
+          <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
+            Scarica l'effettiva rete stradale da OpenStreetMap.
+          </small>
+        </div>
+
+        <div style="margin-bottom: 14px; background: rgba(14, 22, 38, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+            2. Punto di Partenza dei Mezzi / Cantiere Deposito (Nodo 0):
+          </label>
+          <input type="text" id="inpOsmDepot" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.8030, 11.9120 oppure 'Via Cantiere 1, Asolo'">
+          <small style="color: var(--text-secondary); font-size: 11.5px; display: block; margin-top: 6px; line-height: 1.5;">
+            📍 <b>Posizione Deposito:</b> inserisci le <b>coordinate GPS (lat, lon)</b> o un <b>indirizzo reale</b> del cantiere aziendale. L'incrocio stradale più vicino diventerà il <b>Nodo 0 (Deposito)</b> da cui tutti i mezzi partiranno e rientreranno. Se lasciato vuoto, verrà impostato automaticamente il baricentro dell'area.
+          </small>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            3. Dimensione Settore Operativo (Numero Vie):
+          </label>
+          <select id="inpOsmMaxStreets" style="background:#080d19; border:1px solid #283959; color:#38bdf8; padding:8px 10px; border-radius:6px; font-size:13px; width:100%;">
+            <option value="0">🌐 Tutto il comune (copertura totale di tutte le vie)</option>
+            <option value="120">120 vie (~6-8 compattatori, intero centro urbano)</option>
+            <option value="80">80 vie (~4-5 compattatori, settore esteso)</option>
+            <option value="60">60 vie (~3-4 compattatori, settore grande)</option>
+            <option value="45">45 vie (~2-3 compattatori, settore medio)</option>
+            <option value="30" selected>30 vie (~1-2 compattatori, rapido in ~1 sec) [Consigliato]</option>
+          </select>
+          <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
+            I modelli esatti MILP ottimizzano i settori operativi giornalieri per turno.
+          </small>
+        </div>
+      </div>
+
+      <!-- OPZIONE 2: RAGGIO GPS ATTORNO AL DEPOSITO -->
+      <div id="modalSecGps" style="display: none;">
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            Coordinate GPS Deposito di Partenza (Lat, Lon):
+          </label>
+          <input type="text" id="inpOsmGpsCoords" value="45.6670, 12.2450" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.6670, 12.2450">
+          <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
+            Il nodo stradale più vicino a queste coordinate sarà il Deposito (Nodo 0).
+          </small>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+            Raggio di Raccolta (Metri attorno al Deposito):
+          </label>
+          <input type="number" id="inpOsmGpsDist" min="200" max="2500" step="50" value="600" class="cell-inp" style="max-width: 100%; width: 100%;">
+          <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
+            Consigliato: 400 - 800 metri per un settore operativo di circa 20-40 vie.
+          </small>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button class="btn btn-secondary" onclick="closeImportModal()">Annulla</button>
+        <button class="btn btn-primary" id="btnOsmConfirm" onclick="submitOsmImport()">🚀 Scarica Rete con Deposito & Calcola</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GESTIONE ERRORI CON PULSANTE COPIA -->
+  <div id="errorModal" class="modal-overlay" style="display: none; z-index: 10000;">
+    <div class="modal-card" style="max-width: 580px; border-left: 4px solid #ef4444;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <h3 id="errorModalTitle" style="font-size: 16.5px; font-weight: 700; color: #f87171; display: flex; align-items: center; gap: 8px; margin: 0;">
+          <span>⚠️</span> Segnalazione Errore
+        </h3>
+        <button onclick="closeErrorModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:24px; cursor:pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <p id="errorModalMessage" style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;"></p>
+
+      <div style="margin-bottom: 14px;">
+        <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;">Dettaglio Tecnico dell'Errore / Log:</span>
+        <div id="errorModalDetails" class="math-box" style="color: #fca5a5; font-size: 11.5px; max-height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin: 0; user-select: all;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button id="btnCopyError" class="btn btn-primary" onclick="copyErrorToClipboard()" style="background: #2563eb;">
+          📋 Copia Errore negli Appunti
+        </button>
+        <button class="btn btn-secondary" onclick="closeErrorModal()">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifiche -->
+  <div id="toastNotification" class="status-toast">Messaggio di stato</div>
+
+  <!-- =========================================================================
+       7. FOOTER CON NOTE SCIENTIFICHE & DISCLAIMER
+       ========================================================================= -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+          <span style="font-size: 20px;">📐</span>
+          <b style="font-size: 16px; color: var(--text-main);">OptiFleet RO</b>
+        </div>
+        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6;">
+          Piattaforma gratuita e aperta dedicata all'applicazione della Ricerca Operativa industriale (Operational Research & MILP Solvers) per la riduzione dei costi e delle emissioni delle flotte aziendali.
+        </p>
+      </div>
+      <div>
+        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Modelli Disponibili</h4>
+        <ul style="list-style: none; font-size: 12.5px; line-height: 1.8;">
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-cvrp', document.getElementById('tabBtnCvrp'))" style="color:var(--text-muted); text-decoration:none;">CVRP (Logistica Merci)</a></li>
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-vrptw', document.getElementById('tabBtnVrptw'))" style="color:var(--text-muted); text-decoration:none;">VRPTW (Finestre Orarie)</a></li>
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-carp', document.getElementById('tabBtnCarp'))" style="color:var(--text-muted); text-decoration:none;">CARP (Servizi Stradali)</a></li>
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-intermediate', document.getElementById('tabBtnIntermediate'))" style="color:var(--text-muted); text-decoration:none;">EV-VRP (Flotte Elettriche)</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Motori & Risorse</h4>
+        <ul style="list-style: none; font-size: 12.5px; line-height: 1.8;">
+          <li>PuLP & COIN-OR CBC Solver</li>
+          <li>OpenStreetMap & OSMnx</li>
+          <li>SIAM Vehicle Routing Literature</li>
+          <li><a href="#partner-section" style="color:#38bdf8; text-decoration:none;">Partner e Affiliazioni Flotta</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>&copy; 2026 OptiFleet RO &mdash; Modelli Gratuiti di Ricerca Operativa per Flotte Aziendali.</div>
+      <div>Monetizzazione etica: Google AdSense & Affiliazioni di settore.</div>
+    </div>
+  </footer>
+
+  <!-- Script Funzionalità -->
+  <script src="app.js"></script>
+
+  <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
+  <script>
+    let currentOsmMode = 'place';
+
+    function openImportModal() {
+      document.getElementById('importModal').style.display = 'flex';
+    }
+
+    function closeImportModal() {
+      document.getElementById('importModal').style.display = 'none';
+    }
+
+    function setOsmModalMode(mode) {
+      currentOsmMode = mode;
+      const btn1 = document.getElementById('tabOsmOpt1');
+      const btn2 = document.getElementById('tabOsmOpt2');
+      const sec1 = document.getElementById('modalSecPlace');
+      const sec2 = document.getElementById('modalSecGps');
+
+      if (mode === 'place') {
+        btn1.style.background = 'rgba(59, 130, 246, 0.2)';
+        btn1.style.borderColor = 'var(--accent-blue)';
+        btn1.style.color = '#38bdf8';
+
+        btn2.style.background = '#1b263d';
+        btn2.style.borderColor = 'var(--border-color)';
+        btn2.style.color = 'var(--text-main)';
+
+        sec1.style.display = 'block';
+        sec2.style.display = 'none';
+      } else {
+        btn2.style.background = 'rgba(59, 130, 246, 0.2)';
+        btn2.style.borderColor = 'var(--accent-blue)';
+        btn2.style.color = '#38bdf8';
+
+        btn1.style.background = '#1b263d';
+        btn1.style.borderColor = 'var(--border-color)';
+        btn1.style.color = 'var(--text-main)';
+
+        sec1.style.display = 'none';
+        sec2.style.display = 'block';
+      }
+    }
+
+    async function submitOsmImport() {
+      const btn = document.getElementById('btnOsmConfirm');
+      let payload = {};
+
+      if (currentOsmMode === 'place') {
+        const place = document.getElementById('inpOsmPlace').value.trim();
+        const depot = document.getElementById('inpOsmDepot').value.trim();
+        const maxS = document.getElementById('inpOsmMaxStreets').value;
+
+        if (!place) {
+          alert('Inserisci il nome del comune o quartiere.');
+          return;
+        }
+
+        const parsedMaxS = parseInt(maxS);
+        payload = {
+          place: place,
+          depot_query: depot || null,
+          max_streets: isNaN(parsedMaxS) ? 30 : parsedMaxS
+        };
+
+        if (depot) {
+          // Riconosce formati coordinate: "45.8030, 11.9120", "45.8030 11.9120", "45.8030; 11.9120"
+          const m = depot.match(/(-?\d+\.\d+)[,\s;]+(-?\d+\.\d+)/);
+          if (m) {
+            payload.depot_lat = parseFloat(m[1]);
+            payload.depot_lon = parseFloat(m[2]);
+          }
+        }
+      } else {
+        const coords = document.getElementById('inpOsmGpsCoords').value.trim();
+        const dist = document.getElementById('inpOsmGpsDist').value.trim();
+
+        if (!coords || !coords.includes(',')) {
+          alert('Inserisci latitudine e longitudine separate da virgola (es. 45.6670, 12.2450).');
+          return;
+        }
+
+        const parts = coords.split(',').map(s => parseFloat(s.trim()));
+        payload = {
+          lat: parts[0],
+          lon: parts[1],
+          depot_lat: parts[0],
+          depot_lon: parts[1],
+          dist: parseInt(dist) || 600
+        };
+      }
+
+      btn.innerText = '⏳ Download Rete & Calcolo...';
+      btn.disabled = true;
+      closeImportModal();
+      showToast('Download della rete stradale con posizionamento del deposito in corso (attendere ~10 secondi)...');
+
+      try {
+        const res = await fetch('/api/import_osm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          State.carpConfig = data.config;
+          renderCarpTables();
+          solveCarp();
+          showToast(`Mappa scaricata con successo! Deposito impostato al Nodo 0.`);
+        } else {
+          showErrorModal('Errore Importazione OpenStreetMap', 'Non è stato possibile scaricare la rete viaria richiesta dai server OpenStreetMap.', data.error || 'Dati non validi');
+        }
+      } catch (e) {
+        showErrorModal('Errore di Comunicazione Rete', 'Si è verificato un errore durante la connessione con il server applicativo o con OpenStreetMap.', e.toString());
+      } finally {
+        btn.innerText = '🚀 Scarica Rete con Deposito & Calcola';
+        btn.disabled = false;
+      }
+    }
+
+    // GESTIONE MODAL DI ERRORE CON COPIA RAPIDA
+    function showErrorModal(title, message, errorDetail) {
+      const modal = document.getElementById('errorModal');
+      if (!modal) {
+        alert((title ? title + ': ' : '') + message + (errorDetail ? '\n\n' + errorDetail : ''));
+        return;
+      }
+      document.getElementById('errorModalTitle').innerHTML = `<span>⚠️</span> ${title || 'Segnalazione Errore'}`;
+      document.getElementById('errorModalMessage').innerHTML = message || 'Si è verificato un errore durante l\'operazione.';
+      
+      let detailText = '';
+      if (typeof errorDetail === 'object') {
+        try { detailText = JSON.stringify(errorDetail, null, 2); } catch (_) { detailText = String(errorDetail); }
+      } else {
+        detailText = String(errorDetail || 'Nessun dettaglio aggiuntivo disponibile.');
+      }
+      document.getElementById('errorModalDetails').innerText = detailText;
+      modal.style.display = 'flex';
+    }
+
+    function closeErrorModal() {
+      const modal = document.getElementById('errorModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function copyErrorToClipboard() {
+      const title = document.getElementById('errorModalTitle')?.innerText || '';
+      const msg = document.getElementById('errorModalMessage')?.innerText || '';
+      const detail = document.getElementById('errorModalDetails')?.innerText || '';
+      const fullText = `[ERRORE MAPPE OPTIFLEET]\n${title}\n${msg}\n\nDETTAGLI TECNICI:\n${detail}`;
+      
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast('✅ Errore copiato negli appunti! Ora puoi incollarlo comodamente nella chat.');
+        const btn = document.getElementById('btnCopyError');
+        if (btn) {
+          const orig = btn.innerText;
+          btn.innerText = '✅ Copiato negli Appunti!';
+          setTimeout(() => { btn.innerText = orig; }, 3000);
+        }
+      }).catch(() => {
+        showToast('Seleziona il testo nel riquadro rosso e premi Ctrl+C.');
+      });
+    }
+  </script>
+
+</body>
+</html>

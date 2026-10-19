@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  optifleet-ro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: optifleet_platform
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      - PORT=8085
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Persistenza locale delle configurazioni e delle mappe generate
+      - ./data:/app/data
+      - ./output:/app/output
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

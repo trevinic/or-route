@@ -1,0 +1,32 @@
+{
+  "depot_node": 0,
+  "depot_info": {
+    "exact_lat": 45.667,
+    "exact_lon": 12.245,
+    "address": "Cantiere Deposito Centrale RSU Treviso"
+  },
+  "nodes": [
+    {"id": 0, "name": "Deposito Centrale RSU", "lat": 45.6670, "lon": 12.2450},
+    {"id": 1, "name": "Incrocio 1 (Nord-Est)", "lat": 45.6695, "lon": 12.2480},
+    {"id": 2, "name": "Incrocio 2 (Via Roma / Garibaldi)", "lat": 45.6720, "lon": 12.2530},
+    {"id": 3, "name": "Incrocio 3 (Via Dante)", "lat": 45.6680, "lon": 12.2560},
+    {"id": 4, "name": "Incrocio 4 (Viale Europa)", "lat": 45.6645, "lon": 12.2490}
+  ],
+  "streets": [
+    {"id": "R1", "name": "Raccordo Deposito 1", "u": 0, "v": 1, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "description": "Raccordo cantiere nord (transito)"},
+    {"id": "R4", "name": "Raccordo Deposito 4", "u": 0, "v": 4, "transit_cost": 4.0, "service_cost": 4.0, "demand_kg": 0, "description": "Raccordo cantiere sud (transito)"},
+    {"id": "VR", "name": "Via Roma", "u": 1, "v": 2, "transit_cost": 2.5, "service_cost": 4.5, "demand_kg": 1800, "description": "Centro storico: raccolta porta a porta"},
+    {"id": "CG", "name": "Corso Garibaldi", "u": 2, "v": 3, "transit_cost": 3.0, "service_cost": 5.0, "demand_kg": 2200, "description": "Arteria commerciale ad alta densità"},
+    {"id": "VD", "name": "Via Dante", "u": 3, "v": 4, "transit_cost": 2.0, "service_cost": 4.0, "demand_kg": 1500, "description": "Zona residenziale est"},
+    {"id": "VE", "name": "Viale Europa", "u": 1, "v": 4, "transit_cost": 3.5, "service_cost": 6.0, "demand_kg": 2000, "description": "Quartiere residenziale ovest"},
+    {"id": "BT", "name": "Bretella di Transito", "u": 2, "v": 4, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "description": "Bretella di transito veloce"}
+  ],
+  "vehicles": [
+    {"name": "Compattatore_1", "capacity_kg": 4500, "fixed_cost": 100.0, "description": "Mezzo pesante 2 assi per centro e assi primari"},
+    {"name": "Compattatore_2", "capacity_kg": 4500, "fixed_cost": 100.0, "description": "Mezzo satellite per completamento aree residenziali"}
+  ],
+  "settings": {
+    "deadhead_upper_bound": 5,
+    "service_speed_factor": 1.8
+  }
+}

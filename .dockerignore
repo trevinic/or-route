@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+scratch/
+cache/
+.git/
+.gitignore
+.vscode/
+.idea/
+*.log
+*.tmp
+avvia*.bat
+Dockerfile
+docker-compose.yml
+README*.md

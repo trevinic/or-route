@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_76d755e590d4a53973dfc474ce8dac64 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+    <div style="position: fixed; top: 12px; left: 60px; z-index: 9999; background: rgba(14, 22, 38, 0.92); border: 1px solid #283959; border-radius: 8px; padding: 8px 14px; font-family: sans-serif; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">
+      <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">📐 OptiFleet RO: Mappa GIS</span>
+      <a href="http://localhost:8085" target="_blank" style="background: #2563eb; color: #ffffff; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;">🏠 Apri Portale Completo</a>
+      <a href="http://localhost:8085/#tab-faq" target="_blank" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;">📘 Apri Guida & FAQ</a>
+    </div>
+    
+    
+            <div class="folium-map" id="map_76d755e590d4a53973dfc474ce8dac64" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_76d755e590d4a53973dfc474ce8dac64 = L.map(
+                "map_76d755e590d4a53973dfc474ce8dac64",
+                {
+                    center: [45.66825, 12.250499999999999],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_1f8b6a335d29695c2d291a1ce739f181 = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Tiles \u0026copy; Esri \u0026mdash; Source: Esri, DeLorme, NAVTEQ, USGS",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_1f8b6a335d29695c2d291a1ce739f181.addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var tile_layer_e7186e83729f1a15d25f11a5dbefc20f = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "\u0026copy; OpenStreetMap contributors \u0026copy; CARTO",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_e7186e83729f1a15d25f11a5dbefc20f.addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var tile_layer_66c82dce3734671647c5ca9b7c9cdb60 = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Tiles \u0026copy; Esri \u0026mdash; Source: Esri, Maxar, Earthstar Geographics",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_66c82dce3734671647c5ca9b7c9cdb60.addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var feature_group_974bd47c58d7c874c9c883545e6b2580 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_639d8c598eabf97f33e19f9f346580dc = L.polyline(
+                [[45.667, 12.245], [45.6695, 12.248]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_639d8c598eabf97f33e19f9f346580dc.bindTooltip(
+                `<div>
+                     Raccordo Deposito 1 (3m) | Rifiuti: 0 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_b2e8b4d7823fb83583bd738a628f08c6 = L.polyline(
+                [[45.667, 12.245], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_b2e8b4d7823fb83583bd738a628f08c6.bindTooltip(
+                `<div>
+                     Raccordo Deposito 4 (4m) | Rifiuti: 0 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_b1ecc9cb6c50f6e0111f4c650bdc4466 = L.polyline(
+                [[45.6695, 12.248], [45.672, 12.253]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_b1ecc9cb6c50f6e0111f4c650bdc4466.bindTooltip(
+                `<div>
+                     Via Roma (2m) | Rifiuti: 1800 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_6174f5100aac7ee97a02086f22a40b44 = L.polyline(
+                [[45.6695, 12.248], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_6174f5100aac7ee97a02086f22a40b44.bindTooltip(
+                `<div>
+                     Viale Europa (4m) | Rifiuti: 2000 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_94bdcdc349bbb3b4e9561f8cc89cfd8c = L.polyline(
+                [[45.672, 12.253], [45.668, 12.256]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_94bdcdc349bbb3b4e9561f8cc89cfd8c.bindTooltip(
+                `<div>
+                     Corso Garibaldi (3m) | Rifiuti: 2200 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_2a92f412d27080d917ef4e89c40cbb84 = L.polyline(
+                [[45.672, 12.253], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_2a92f412d27080d917ef4e89c40cbb84.bindTooltip(
+                `<div>
+                     Bretella di Transito (3m) | Rifiuti: 0 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_142aa1a10dd9b28c5b17e7c2d5c13510 = L.polyline(
+                [[45.668, 12.256], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#64748b", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#64748b", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.55, "smoothFactor": 1.0, "stroke": true, "weight": 2.5}
+            ).addTo(feature_group_974bd47c58d7c874c9c883545e6b2580);
+        
+    
+            poly_line_142aa1a10dd9b28c5b17e7c2d5c13510.bindTooltip(
+                `<div>
+                     Via Dante (2m) | Rifiuti: 1500 kg
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            feature_group_974bd47c58d7c874c9c883545e6b2580.addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var marker_306375c2ef4f35e9896f2b59c2fe2ba4 = L.marker(
+                [45.667, 12.245],
+                {
+}
+            ).addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var icon_7ae18f57870ddabd13c78c39a097f1ca = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_c5c2535187f2f105764e65c53021b803 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_4c277c9599f1daa95869c60a624c547c = $(`<div id="html_4c277c9599f1daa95869c60a624c547c" style="width: 100.0%; height: 100.0%;"><b>📍 Deposito Centrale Flotta (Nodo 0)</b><br>Punto di partenza e rientro mezzi</div>`)[0];
+                popup_c5c2535187f2f105764e65c53021b803.setContent(html_4c277c9599f1daa95869c60a624c547c);
+            
+        
+
+        marker_306375c2ef4f35e9896f2b59c2fe2ba4.bindPopup(popup_c5c2535187f2f105764e65c53021b803)
+        ;
+
+        
+    
+    
+            marker_306375c2ef4f35e9896f2b59c2fe2ba4.bindTooltip(
+                `<div>
+                     📍 Deposito Centrale (Nodo 0)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_306375c2ef4f35e9896f2b59c2fe2ba4.setIcon(icon_7ae18f57870ddabd13c78c39a097f1ca);
+            
+    
+            var feature_group_18ae15f9cc59b30487486a7e9c92ff15 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_5726cd1f86025466bc4dfcf217983608 = L.polyline(
+                [[45.672, 12.253], [45.6695, 12.248]],
+                {"bubblingMouseEvents": true, "color": "#2563eb", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#2563eb", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.92, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_18ae15f9cc59b30487486a7e9c92ff15);
+        
+    
+        var popup_913bff7ab4cd50a6703c44d568a19d80 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bc50b38ddced0bc106b3a7145290c44b = $(`<div id="html_bc50b38ddced0bc106b3a7145290c44b" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_1 &mdash; SERVIZIO RACCOLTA</b><br>Tratta: 2 &rarr; 1<br>Rifiuto raccolto: <b>1800 kg</b><br>Costo operativo: 4.5</div>`)[0];
+                popup_913bff7ab4cd50a6703c44d568a19d80.setContent(html_bc50b38ddced0bc106b3a7145290c44b);
+            
+        
+
+        poly_line_5726cd1f86025466bc4dfcf217983608.bindPopup(popup_913bff7ab4cd50a6703c44d568a19d80)
+        ;
+
+        
+    
+    
+            poly_line_5726cd1f86025466bc4dfcf217983608.bindTooltip(
+                `<div>
+                     Compattatore_1: Raccolta 2&rarr;1 (1800 kg)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_994498a5a57cfdcab06a80de96dccd15 = L.polyline(
+                [[45.668, 12.256], [45.672, 12.253]],
+                {"bubblingMouseEvents": true, "color": "#2563eb", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#2563eb", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.92, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_18ae15f9cc59b30487486a7e9c92ff15);
+        
+    
+        var popup_fc92ddc74662d91674c635905c749f67 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_91c77568a3539015f06589455c7c9f0e = $(`<div id="html_91c77568a3539015f06589455c7c9f0e" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_1 &mdash; SERVIZIO RACCOLTA</b><br>Tratta: 3 &rarr; 2<br>Rifiuto raccolto: <b>2200 kg</b><br>Costo operativo: 5.0</div>`)[0];
+                popup_fc92ddc74662d91674c635905c749f67.setContent(html_91c77568a3539015f06589455c7c9f0e);
+            
+        
+
+        poly_line_994498a5a57cfdcab06a80de96dccd15.bindPopup(popup_fc92ddc74662d91674c635905c749f67)
+        ;
+
+        
+    
+    
+            poly_line_994498a5a57cfdcab06a80de96dccd15.bindTooltip(
+                `<div>
+                     Compattatore_1: Raccolta 3&rarr;2 (2200 kg)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_1964f5972f0f699fe06dc37d19e98672 = L.polyline(
+                [[45.6695, 12.248], [45.667, 12.245]],
+                {"bubblingMouseEvents": true, "color": "#f97316", "dashArray": "8, 6", "dashOffset": null, "fill": false, "fillColor": "#f97316", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 3.5}
+            ).addTo(feature_group_18ae15f9cc59b30487486a7e9c92ff15);
+        
+    
+        var popup_22deaf61981f03aaec50824ea253922e = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c0f355431444d6238df0111f89bfc4e9 = $(`<div id="html_c0f355431444d6238df0111f89bfc4e9" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_1 &mdash; TRANSITO A VUOTO</b><br>Tratta: 1 &rarr; 0<br>Ripetizioni: 1x<br>Costo transito: 3.0</div>`)[0];
+                popup_22deaf61981f03aaec50824ea253922e.setContent(html_c0f355431444d6238df0111f89bfc4e9);
+            
+        
+
+        poly_line_1964f5972f0f699fe06dc37d19e98672.bindPopup(popup_22deaf61981f03aaec50824ea253922e)
+        ;
+
+        
+    
+    
+            poly_line_1964f5972f0f699fe06dc37d19e98672.bindTooltip(
+                `<div>
+                     Compattatore_1: Transito 1&rarr;0
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_155452b692892a6bbecebd7aeee617a0 = L.polyline(
+                [[45.667, 12.245], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#f97316", "dashArray": "8, 6", "dashOffset": null, "fill": false, "fillColor": "#f97316", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 3.5}
+            ).addTo(feature_group_18ae15f9cc59b30487486a7e9c92ff15);
+        
+    
+        var popup_ecda62f9bb2c18800943e02d5e4f70cc = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_2d4ca15db304bb463865102fdf3fea1a = $(`<div id="html_2d4ca15db304bb463865102fdf3fea1a" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_1 &mdash; TRANSITO A VUOTO</b><br>Tratta: 0 &rarr; 4<br>Ripetizioni: 1x<br>Costo transito: 4.0</div>`)[0];
+                popup_ecda62f9bb2c18800943e02d5e4f70cc.setContent(html_2d4ca15db304bb463865102fdf3fea1a);
+            
+        
+
+        poly_line_155452b692892a6bbecebd7aeee617a0.bindPopup(popup_ecda62f9bb2c18800943e02d5e4f70cc)
+        ;
+
+        
+    
+    
+            poly_line_155452b692892a6bbecebd7aeee617a0.bindTooltip(
+                `<div>
+                     Compattatore_1: Transito 0&rarr;4
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_55721317c27119281a6d266d2806d2fd = L.polyline(
+                [[45.6645, 12.249], [45.668, 12.256]],
+                {"bubblingMouseEvents": true, "color": "#f97316", "dashArray": "8, 6", "dashOffset": null, "fill": false, "fillColor": "#f97316", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 3.5}
+            ).addTo(feature_group_18ae15f9cc59b30487486a7e9c92ff15);
+        
+    
+        var popup_ebc36bbf98421afb8a9a16748ae1df69 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_9d06ff2f40c344956b61e81fa7218301 = $(`<div id="html_9d06ff2f40c344956b61e81fa7218301" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_1 &mdash; TRANSITO A VUOTO</b><br>Tratta: 4 &rarr; 3<br>Ripetizioni: 1x<br>Costo transito: 2.0</div>`)[0];
+                popup_ebc36bbf98421afb8a9a16748ae1df69.setContent(html_9d06ff2f40c344956b61e81fa7218301);
+            
+        
+
+        poly_line_55721317c27119281a6d266d2806d2fd.bindPopup(popup_ebc36bbf98421afb8a9a16748ae1df69)
+        ;
+
+        
+    
+    
+            poly_line_55721317c27119281a6d266d2806d2fd.bindTooltip(
+                `<div>
+                     Compattatore_1: Transito 4&rarr;3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            feature_group_18ae15f9cc59b30487486a7e9c92ff15.addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var feature_group_54ee124573ed4b790652f5644d16f00d = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_cfa91398b9af55f4f7609c60b20b4a89 = L.polyline(
+                [[45.668, 12.256], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#16a34a", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#16a34a", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.92, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_54ee124573ed4b790652f5644d16f00d);
+        
+    
+        var popup_f599afac9a03c1539f6658cdae6df393 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_29f25b1ccdae8e7f6c81017f308f0254 = $(`<div id="html_29f25b1ccdae8e7f6c81017f308f0254" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_2 &mdash; SERVIZIO RACCOLTA</b><br>Tratta: 3 &rarr; 4<br>Rifiuto raccolto: <b>1500 kg</b><br>Costo operativo: 4.0</div>`)[0];
+                popup_f599afac9a03c1539f6658cdae6df393.setContent(html_29f25b1ccdae8e7f6c81017f308f0254);
+            
+        
+
+        poly_line_cfa91398b9af55f4f7609c60b20b4a89.bindPopup(popup_f599afac9a03c1539f6658cdae6df393)
+        ;
+
+        
+    
+    
+            poly_line_cfa91398b9af55f4f7609c60b20b4a89.bindTooltip(
+                `<div>
+                     Compattatore_2: Raccolta 3&rarr;4 (1500 kg)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_c5b11f1a36d47f970d9cc1587c37591e = L.polyline(
+                [[45.6695, 12.248], [45.6645, 12.249]],
+                {"bubblingMouseEvents": true, "color": "#16a34a", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#16a34a", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.92, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_54ee124573ed4b790652f5644d16f00d);
+        
+    
+        var popup_c94f5d3579ac85ad5dbb9f7dfc6af59a = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_254cd969c4ffa87a1398ed8d7fc8f33f = $(`<div id="html_254cd969c4ffa87a1398ed8d7fc8f33f" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_2 &mdash; SERVIZIO RACCOLTA</b><br>Tratta: 1 &rarr; 4<br>Rifiuto raccolto: <b>2000 kg</b><br>Costo operativo: 6.0</div>`)[0];
+                popup_c94f5d3579ac85ad5dbb9f7dfc6af59a.setContent(html_254cd969c4ffa87a1398ed8d7fc8f33f);
+            
+        
+
+        poly_line_c5b11f1a36d47f970d9cc1587c37591e.bindPopup(popup_c94f5d3579ac85ad5dbb9f7dfc6af59a)
+        ;
+
+        
+    
+    
+            poly_line_c5b11f1a36d47f970d9cc1587c37591e.bindTooltip(
+                `<div>
+                     Compattatore_2: Raccolta 1&rarr;4 (2000 kg)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_be2fef898f8fe69b1b9c95d0584e07f8 = L.polyline(
+                [[45.667, 12.245], [45.6695, 12.248]],
+                {"bubblingMouseEvents": true, "color": "#f97316", "dashArray": "8, 6", "dashOffset": null, "fill": false, "fillColor": "#f97316", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 3.5}
+            ).addTo(feature_group_54ee124573ed4b790652f5644d16f00d);
+        
+    
+        var popup_455b0c0ab8c55b59d501de37a6dc0c0d = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_d96bc2ced7db2a3352dde3be6d9255b5 = $(`<div id="html_d96bc2ced7db2a3352dde3be6d9255b5" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_2 &mdash; TRANSITO A VUOTO</b><br>Tratta: 0 &rarr; 1<br>Ripetizioni: 1x<br>Costo transito: 3.0</div>`)[0];
+                popup_455b0c0ab8c55b59d501de37a6dc0c0d.setContent(html_d96bc2ced7db2a3352dde3be6d9255b5);
+            
+        
+
+        poly_line_be2fef898f8fe69b1b9c95d0584e07f8.bindPopup(popup_455b0c0ab8c55b59d501de37a6dc0c0d)
+        ;
+
+        
+    
+    
+            poly_line_be2fef898f8fe69b1b9c95d0584e07f8.bindTooltip(
+                `<div>
+                     Compattatore_2: Transito 0&rarr;1
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_91ddef88f7eba69c19672829562e16c1 = L.polyline(
+                [[45.6645, 12.249], [45.667, 12.245]],
+                {"bubblingMouseEvents": true, "color": "#f97316", "dashArray": "8, 6", "dashOffset": null, "fill": false, "fillColor": "#f97316", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 3.5}
+            ).addTo(feature_group_54ee124573ed4b790652f5644d16f00d);
+        
+    
+        var popup_e158922d6c4f29d272201ba987d9ff61 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a22d7964431cf0d369082b5caf87f99c = $(`<div id="html_a22d7964431cf0d369082b5caf87f99c" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_2 &mdash; TRANSITO A VUOTO</b><br>Tratta: 4 &rarr; 0<br>Ripetizioni: 1x<br>Costo transito: 4.0</div>`)[0];
+                popup_e158922d6c4f29d272201ba987d9ff61.setContent(html_a22d7964431cf0d369082b5caf87f99c);
+            
+        
+
+        poly_line_91ddef88f7eba69c19672829562e16c1.bindPopup(popup_e158922d6c4f29d272201ba987d9ff61)
+        ;
+
+        
+    
+    
+            poly_line_91ddef88f7eba69c19672829562e16c1.bindTooltip(
+                `<div>
+                     Compattatore_2: Transito 4&rarr;0
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_bd9e30262d323279aa8f768b60551c19 = L.polyline(
+                [[45.6645, 12.249], [45.668, 12.256]],
+                {"bubblingMouseEvents": true, "color": "#f97316", "dashArray": "8, 6", "dashOffset": null, "fill": false, "fillColor": "#f97316", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.85, "smoothFactor": 1.0, "stroke": true, "weight": 3.5}
+            ).addTo(feature_group_54ee124573ed4b790652f5644d16f00d);
+        
+    
+        var popup_829782054459551a48736661be7c788b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c7c546f1ccb7f28b8ee1c39689e7e12f = $(`<div id="html_c7c546f1ccb7f28b8ee1c39689e7e12f" style="width: 100.0%; height: 100.0%;"><b>🚛 Compattatore_2 &mdash; TRANSITO A VUOTO</b><br>Tratta: 4 &rarr; 3<br>Ripetizioni: 1x<br>Costo transito: 2.0</div>`)[0];
+                popup_829782054459551a48736661be7c788b.setContent(html_c7c546f1ccb7f28b8ee1c39689e7e12f);
+            
+        
+
+        poly_line_bd9e30262d323279aa8f768b60551c19.bindPopup(popup_829782054459551a48736661be7c788b)
+        ;
+
+        
+    
+    
+            poly_line_bd9e30262d323279aa8f768b60551c19.bindTooltip(
+                `<div>
+                     Compattatore_2: Transito 4&rarr;3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            feature_group_54ee124573ed4b790652f5644d16f00d.addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            var circle_marker_19f08353ffcbaeaeb3aa2a171acd80fe = L.circleMarker(
+                [45.6695, 12.248],
+                {"bubblingMouseEvents": true, "color": "#475569", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ffffff", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 3, "stroke": true, "weight": 3}
+            ).addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            circle_marker_19f08353ffcbaeaeb3aa2a171acd80fe.bindTooltip(
+                `<div>
+                     Incrocio 1
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_d743b867bad8843cc0ff92980af0d31d = L.circleMarker(
+                [45.672, 12.253],
+                {"bubblingMouseEvents": true, "color": "#475569", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ffffff", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 3, "stroke": true, "weight": 3}
+            ).addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            circle_marker_d743b867bad8843cc0ff92980af0d31d.bindTooltip(
+                `<div>
+                     Incrocio 2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_e31002841b13fa2a42cb7208cce9c293 = L.circleMarker(
+                [45.668, 12.256],
+                {"bubblingMouseEvents": true, "color": "#475569", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ffffff", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 3, "stroke": true, "weight": 3}
+            ).addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            circle_marker_e31002841b13fa2a42cb7208cce9c293.bindTooltip(
+                `<div>
+                     Incrocio 3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_f0e5490b3affb7af84d67f2874f54cbe = L.circleMarker(
+                [45.6645, 12.249],
+                {"bubblingMouseEvents": true, "color": "#475569", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ffffff", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 3, "stroke": true, "weight": 3}
+            ).addTo(map_76d755e590d4a53973dfc474ce8dac64);
+        
+    
+            circle_marker_f0e5490b3affb7af84d67f2874f54cbe.bindTooltip(
+                `<div>
+                     Incrocio 4
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            map_76d755e590d4a53973dfc474ce8dac64.fitBounds(
+                [[45.6645, 12.245], [45.672, 12.256]],
+                {"padding": [25, 25]}
+            );
+        
+    
+            var layer_control_fc32b6efd2a7e07f5389e07f4bf9df2d_layers = {
+                base_layers : {
+                    "Mappa Stradale (Esri)" : tile_layer_1f8b6a335d29695c2d291a1ce739f181,
+                    "CartoDB Voyager (Chiara)" : tile_layer_e7186e83729f1a15d25f11a5dbefc20f,
+                    "Satellite (Esri)" : tile_layer_66c82dce3734671647c5ca9b7c9cdb60,
+                },
+                overlays :  {
+                    "\ud83d\udee3\ufe0f Rete Stradale e Viabilit\u00e0 (Tutte le Vie)" : feature_group_974bd47c58d7c874c9c883545e6b2580,
+                    "\ud83d\ude9b Compattatore_1 (4000 kg / 4500 kg - 89%)" : feature_group_18ae15f9cc59b30487486a7e9c92ff15,
+                    "\ud83d\ude9b Compattatore_2 (3500 kg / 4500 kg - 78%)" : feature_group_54ee124573ed4b790652f5644d16f00d,
+                },
+            };
+            let layer_control_fc32b6efd2a7e07f5389e07f4bf9df2d = L.control.layers(
+                layer_control_fc32b6efd2a7e07f5389e07f4bf9df2d_layers.base_layers,
+                layer_control_fc32b6efd2a7e07f5389e07f4bf9df2d_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": false,
+  "autoZIndex": true,
+}
+            ).addTo(map_76d755e590d4a53973dfc474ce8dac64);
+
+        
+</script>
+</html>

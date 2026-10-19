@@ -1,0 +1,101 @@
+{
+  "depot": {
+    "id": 0,
+    "name": "Piattaforma Distribuzione Freschi (Bologna CAAB)",
+    "lat": 44.512,
+    "lon": 11.398,
+    "ready_time": 0,
+    "due_time": 480
+  },
+  "speed_kmh": 38,
+  "cost_per_km": 1.25,
+  "vehicles": [
+    {
+      "name": "Furgone_Frigo_1",
+      "capacity": 1000,
+      "fixed_cost": 75
+    },
+    {
+      "name": "Furgone_Frigo_2",
+      "capacity": 1000,
+      "fixed_cost": 75
+    },
+    {
+      "name": "Furgone_Frigo_3",
+      "capacity": 1500,
+      "fixed_cost": 90
+    }
+  ],
+  "customers": [
+    {
+      "id": 1,
+      "name": "Supermercato Pam (Centro)",
+      "lat": 44.494,
+      "lon": 11.343,
+      "demand": 320,
+      "ready_time": 30,
+      "due_time": 120,
+      "service_time": 20
+    },
+    {
+      "id": 2,
+      "name": "Ospedale S. Orsola (Farmacia)",
+      "lat": 44.491,
+      "lon": 11.365,
+      "demand": 180,
+      "ready_time": 45,
+      "due_time": 150,
+      "service_time": 25
+    },
+    {
+      "id": 3,
+      "name": "Ristorante Gourmet (San Lazzaro)",
+      "lat": 44.471,
+      "lon": 11.41,
+      "demand": 210,
+      "ready_time": 120,
+      "due_time": 240,
+      "service_time": 15
+    },
+    {
+      "id": 4,
+      "name": "Mensa Aziendale (Casalecchio)",
+      "lat": 44.478,
+      "lon": 11.275,
+      "demand": 350,
+      "ready_time": 60,
+      "due_time": 180,
+      "service_time": 25
+    },
+    {
+      "id": 5,
+      "name": "Hotel Bologna Congressi",
+      "lat": 44.515,
+      "lon": 11.355,
+      "demand": 240,
+      "ready_time": 180,
+      "due_time": 300,
+      "service_time": 15
+    },
+    {
+      "id": 6,
+      "name": "Ipercoop Lame (Nord)",
+      "lat": 44.522,
+      "lon": 11.325,
+      "demand": 410,
+      "ready_time": 90,
+      "due_time": 210,
+      "service_time": 30
+    },
+    {
+      "id": 7,
+      "name": "Bistrot Stazione Centrale",
+      "lat": 44.505,
+      "lon": 11.342,
+      "demand": 150,
+      "ready_time": 240,
+      "due_time": 360,
+      "service_time": 15
+    }
+  ]
+}

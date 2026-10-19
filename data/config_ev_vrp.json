@@ -1,0 +1,93 @@
+{
+  "depot": {
+    "id": "DEPOT",
+    "name": "Hub Centrale & Deposito Notturno",
+    "lat": 45.44,
+    "lon": 12.315
+  },
+  "intermediate_facilities": [
+    {
+      "id": "FAC_1",
+      "name": "Impianto TMB / Stazione DC Ricarica Nord",
+      "type": "recharge_and_dump",
+      "lat": 45.485,
+      "lon": 12.26
+    },
+    {
+      "id": "FAC_2",
+      "name": "Hub Ricarica Rapida 150kW Sud",
+      "type": "recharge_fast",
+      "lat": 45.405,
+      "lon": 12.285
+    }
+  ],
+  "kwh_cost": 0.38,
+  "kwh_per_km": 0.45,
+  "vehicles": [
+    {
+      "name": "Compattatore_EV_1",
+      "capacity_kg": 3500,
+      "battery_kwh": 90,
+      "fixed_cost": 110,
+      "description": "Veicolo 100% elettrico urbano 90 kWh"
+    },
+    {
+      "name": "Compattatore_EV_2",
+      "capacity_kg": 3500,
+      "battery_kwh": 90,
+      "fixed_cost": 110,
+      "description": "Veicolo 100% elettrico urbano 90 kWh"
+    }
+  ],
+  "customers": [
+    {
+      "id": "C1",
+      "name": "Zona Residenziale Mestre Centro",
+      "lat": 45.492,
+      "lon": 12.24,
+      "demand": 950
+    },
+    {
+      "id": "C2",
+      "name": "Distretto Commerciale Marghera",
+      "lat": 45.468,
+      "lon": 12.215,
+      "demand": 1200
+    },
+    {
+      "id": "C3",
+      "name": "Ospedale dell'Angelo",
+      "lat": 45.515,
+      "lon": 12.228,
+      "demand": 800
+    },
+    {
+      "id": "C4",
+      "name": "Zona Industriale Ovest",
+      "lat": 45.452,
+      "lon": 12.195,
+      "demand": 1400
+    },
+    {
+      "id": "C5",
+      "name": "Polo Logistico Vega",
+      "lat": 45.475,
+      "lon": 12.255,
+      "demand": 1100
+    },
+    {
+      "id": "C6",
+      "name": "Quartiere Gazzera",
+      "lat": 45.501,
+      "lon": 12.212,
+      "demand": 850
+    },
+    {
+      "id": "C7",
+      "name": "Quartiere Favaro Veneto",
+      "lat": 45.51,
+      "lon": 12.285,
+      "demand": 900
+    }
+  ]
+}

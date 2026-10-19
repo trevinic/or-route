@@ -1,0 +1,84 @@
+{
+  "depot": {
+    "id": 0,
+    "name": "Hub Logistico Centrale (Verona Interporto)",
+    "lat": 45.385,
+    "lon": 10.95
+  },
+  "cost_per_km": 1.15,
+  "vehicles": [
+    {
+      "name": "Furgone_EcoDaily_1",
+      "capacity": 1200,
+      "fixed_cost": 60
+    },
+    {
+      "name": "Furgone_EcoDaily_2",
+      "capacity": 1200,
+      "fixed_cost": 60
+    },
+    {
+      "name": "Camion_Eurocargo_3",
+      "capacity": 2500,
+      "fixed_cost": 95
+    }
+  ],
+  "customers": [
+    {
+      "id": 1,
+      "name": "Supermercato Conad (Peschiera)",
+      "lat": 45.438,
+      "lon": 10.69,
+      "demand": 380
+    },
+    {
+      "id": 2,
+      "name": "Farmacia Centrale (Desenzano)",
+      "lat": 45.47,
+      "lon": 10.535,
+      "demand": 160
+    },
+    {
+      "id": 3,
+      "name": "Centro Brico (Affi)",
+      "lat": 45.55,
+      "lon": 10.84,
+      "demand": 520
+    },
+    {
+      "id": 4,
+      "name": "Ristorante Gourmet (Bardolino)",
+      "lat": 45.545,
+      "lon": 10.72,
+      "demand": 210
+    },
+    {
+      "id": 5,
+      "name": "Hotel Resort (Sirmione)",
+      "lat": 45.492,
+      "lon": 10.608,
+      "demand": 340
+    },
+    {
+      "id": 6,
+      "name": "Pasticceria Artigiana (Villafranca)",
+      "lat": 45.35,
+      "lon": 10.845,
+      "demand": 190
+    },
+    {
+      "id": 7,
+      "name": "Magazzino Ricambi (San Bonifacio)",
+      "lat": 45.398,
+      "lon": 11.275,
+      "demand": 450
+    },
+    {
+      "id": 8,
+      "name": "Polo Commerciale (Domegliara)",
+      "lat": 45.53,
+      "lon": 10.875,
+      "demand": 290
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "depots": [
+    {
+      "id": "DEP_NORD",
+      "name": "Cantiere Hub Nord (Conegliano)",
+      "lat": 45.89,
+      "lon": 12.3,
+      "color": "#3b82f6"
+    },
+    {
+      "id": "DEP_SUD",
+      "name": "Cantiere Hub Sud (Treviso)",
+      "lat": 45.67,
+      "lon": 12.24,
+      "color": "#10b981"
+    }
+  ],
+  "customers": [
+    {
+      "id": "CLI_1",
+      "name": "Supermercato Nord-Est (Vittorio V.)",
+      "lat": 45.92,
+      "lon": 12.31,
+      "demand": 450.0
+    },
+    {
+      "id": "CLI_2",
+      "name": "Centro Commerciale Colli (Susegana)",
+      "lat": 45.85,
+      "lon": 12.25,
+      "demand": 600.0
+    },
+    {
+      "id": "CLI_3",
+      "name": "Distributore Alimentare (Pieve di Soligo)",
+      "lat": 45.895,
+      "lon": 12.18,
+      "demand": 500.0
+    },
+    {
+      "id": "CLI_4",
+      "name": "Negozio Retail Nord (San Vendemiano)",
+      "lat": 45.885,
+      "lon": 12.335,
+      "demand": 350.0
+    },
+    {
+      "id": "CLI_5",
+      "name": "Ipermercato Centro (Mogliano Veneto)",
+      "lat": 45.6,
+      "lon": 12.24,
+      "demand": 700.0
+    },
+    {
+      "id": "CLI_6",
+      "name": "Farmacia Centrale (Treviso Centro)",
+      "lat": 45.666,
+      "lon": 12.245,
+      "demand": 250.0
+    },
+    {
+      "id": "CLI_7",
+      "name": "Magazzino Ricambi (Silea)",
+      "lat": 45.655,
+      "lon": 12.285,
+      "demand": 400.0
+    },
+    {
+      "id": "CLI_8",
+      "name": "Polo Produttivo Ovest (Paese)",
+      "lat": 45.675,
+      "lon": 12.16,
+      "demand": 550.0
+    }
+  ],
+  "vehicles": [
+    {
+      "name": "Camion_Nord_1",
+      "home_depot": "DEP_NORD",
+      "capacity": 1500.0,
+      "fixed_cost": 80.0,
+      "description": "Motrice assegnata a Cantiere Nord"
+    },
+    {
+      "name": "Camion_Nord_2",
+      "home_depot": "DEP_NORD",
+      "capacity": 1500.0,
+      "fixed_cost": 80.0,
+      "description": "Motrice assegnata a Cantiere Nord"
+    },
+    {
+      "name": "Camion_Sud_1",
+      "home_depot": "DEP_SUD",
+      "capacity": 1600.0,
+      "fixed_cost": 85.0,
+      "description": "Motrice assegnata a Cantiere Sud"
+    },
+    {
+      "name": "Camion_Sud_2",
+      "home_depot": "DEP_SUD",
+      "capacity": 1600.0,
+      "fixed_cost": 85.0,
+      "description": "Motrice assegnata a Cantiere Sud"
+    }
+  ],
+  "cost_per_km": 1.2
+}
