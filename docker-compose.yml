@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  optifleet-ro:
+  or-route:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: optifleet_platform
+    container_name: or_route_platform
     restart: unless-stopped
     ports:
       - "8085:8085"

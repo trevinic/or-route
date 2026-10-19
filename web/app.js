@@ -1,5 +1,5 @@
 /**
- * OptiFleet RO - Logica Applicativa Frontend
+ * OR-Route - Logica Applicativa Frontend
  * Gestione Multi-Modello (CVRP, VRPTW, CARP, EV/IF), Canvas Rendering,
  * Wizard di Selezione Aziendale, e Calcolatore ROI.
  */
@@ -607,7 +607,7 @@ async function applyWizardParametersToModel() {
 // ==========================================
 function exportPlatformSettings() {
   const exportData = {
-    platform: "OptiFleet RO",
+    platform: "OR-Route",
     version: "2.5",
     export_date: new Date().toISOString(),
     wizard_answers: wizardAnswers,
@@ -627,7 +627,7 @@ function exportPlatformSettings() {
   const dateStr = now.toISOString().slice(0, 10);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `optifleet_impostazioni_${dateStr}.json`;
+  a.download = `or_route_impostazioni_${dateStr}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -747,7 +747,7 @@ function saveToLocalStorage() {
       vrppd_config: State.vrppdConfig,
       mdvrp_config: State.mdvrpConfig
     };
-    localStorage.setItem('optifleet_local_backup', JSON.stringify(cache));
+    localStorage.setItem('or_route_local_backup', JSON.stringify(cache));
   } catch (e) {
     console.warn('Errore salvataggio localStorage:', e);
   }

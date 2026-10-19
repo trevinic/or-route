@@ -1,5 +1,5 @@
 # =============================================================================
-# Dockerfile per OptiFleet RO - Piattaforma di Ricerca Operativa
+# Dockerfile per OR-Route - Piattaforma di Ricerca Operativa
 # Include: Python 3.11 Slim, Solutore COIN-OR CBC, Librerie GIS/OSM e Server REST
 # =============================================================================
 

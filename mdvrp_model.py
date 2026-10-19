@@ -135,7 +135,7 @@ def solve_mdvrp(
     veh_depot = {str(v["name"]): str(v.get("home_depot", depot_ids[0])) for v in vehicles}
 
     # Modello PuLP
-    prob = pulp.LpProblem("OptiFleet_MDVRP_Optimization", pulp.LpMinimize)
+    prob = pulp.LpProblem("OR_Route_MDVRP_Optimization", pulp.LpMinimize)
 
     # Variabili
     # x[i, j, k] = 1 se il mezzo k viaggia da i a j

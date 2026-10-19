@@ -1,5 +1,5 @@
 """
-Server Web per la Piattaforma OptiFleet RO:
+Server Web per la Piattaforma OR-Route:
 Modelli di Ricerca Operativa per l'Ottimizzazione delle Flotte Aziendali.
 Fornisce API REST per:
 - CARP (Capacitated Arc Routing Problem - raccolta rifiuti e servizi a rete)
@@ -845,7 +845,7 @@ def run_server(port: int = None):
 
     with ThreadedTCPServer(("", port), CARPRequestHandler) as httpd:
         print(f"\n==================================================================")
-        print(f" PIATTAFORMA OPTIFLEET RICERCA OPERATIVA ATTIVA: http://localhost:{port}")
+        print(f" PIATTAFORMA OR-ROUTE RICERCA OPERATIVA ATTIVA: http://localhost:{port}")
         print(f"==================================================================\n")
         try:
             httpd.serve_forever()

@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableDelayedExpansion
 chcp 65001 >nul
-title OptiFleet RO - Algoritmo e Server Web
+title OR-Route - Algoritmo e Server Web
 
 echo ===========================================================================
-echo                 OPTIFLEET RO - RICERCA OPERATIVA
+echo                 OR-ROUTE - RICERCA OPERATIVA
 echo    Piattaforma di Ottimizzazione Flotte (CARP, CVRP, VRPTW, EV-VRP)
 echo ===========================================================================
 echo.

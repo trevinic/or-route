@@ -42,7 +42,7 @@ def configure_osmnx_settings():
     if hasattr(ox, "settings"):
         ox.settings.overpass_rate_limit = False
         ox.settings.requests_timeout = 25
-        ox.settings.http_user_agent = "OptiFleetRO_Research/2.0 (RSU Optimization; mail@optifleet.org)"
+        ox.settings.http_user_agent = "ORRoute_Research/2.0 (RSU Optimization; mail@or-route.org)"
 
 
 def download_osm_with_fallbacks(fetch_func, description: str):

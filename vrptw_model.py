@@ -88,7 +88,7 @@ def solve_vrptw(
     M = max_horizon
 
     # Modello PuLP
-    prob = pulp.LpProblem("OptiFleet_VRPTW_Optimization", pulp.LpMinimize)
+    prob = pulp.LpProblem("OR_Route_VRPTW_Optimization", pulp.LpMinimize)
 
     # Variabili decisionali
     x = {

@@ -202,7 +202,7 @@ def solve_vrppd(
     veh_fixed = {str(v["name"]): float(v.get("fixed_cost", 60.0)) for v in vehicles}
 
     # Modello PuLP
-    prob = pulp.LpProblem("OptiFleet_VRPPD_Optimization", pulp.LpMinimize)
+    prob = pulp.LpProblem("OR_Route_VRPPD_Optimization", pulp.LpMinimize)
 
     # Variabili decisionali
     # x[i, j, k] = 1 se il veicolo k viaggia da i a j

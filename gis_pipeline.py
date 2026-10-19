@@ -391,7 +391,7 @@ def genera_mappa_percorso(
 
     floating_nav_html = """
     <div style="position: fixed; top: 12px; left: 60px; z-index: 9999; background: rgba(14, 22, 38, 0.92); border: 1px solid #283959; border-radius: 8px; padding: 8px 14px; font-family: sans-serif; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">
-      <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">📐 OptiFleet RO: Mappa GIS</span>
+      <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">📐 OR-Route: Mappa GIS</span>
       <a href="http://localhost:8085" target="_blank" style="background: #2563eb; color: #ffffff; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;">🏠 Apri Portale Completo</a>
       <a href="http://localhost:8085/#tab-faq" target="_blank" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;">📘 Apri Guida & FAQ</a>
     </div>

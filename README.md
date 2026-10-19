@@ -1,4 +1,4 @@
-# 📐 OptiFleet RO &mdash; Piattaforma di Ricerca Operativa per Flotte Aziendali
+# 📐 OR-Route &mdash; Piattaforma di Ricerca Operativa per Flotte Aziendali
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![PuLP MILP](https://img.shields.io/badge/PuLP-COIN--OR_CBC-FF6F00?style=flat)](https://github.com/coin-or/pulp)
@@ -6,7 +6,7 @@
 [![OpenStreetMap](https://img.shields.io/badge/Maps-OpenStreetMap_%2F_OSMnx-7EBC6F?style=flat&logo=openstreetmap&logoColor=white)](https://www.openstreetmap.org/)
 [![License: Open](https://img.shields.io/badge/License-Open_Tools-10B981?style=flat)](#licenza)
 
-**OptiFleet RO** è una piattaforma applicativa avanzata e aperta per l'ottimizzazione combinatoria e la pianificazione operativa delle flotte aziendali, corrieri espresso, distribuzione merci e servizi municipali di igiene urbana (raccolta rifiuti porta-a-porta e spazzamento stradale).
+**OR-Route** è una piattaforma applicativa avanzata e aperta per l'ottimizzazione combinatoria e la pianificazione operativa delle flotte aziendali, corrieri espresso, distribuzione merci e servizi municipali di igiene urbana (raccolta rifiuti porta-a-porta e spazzamento stradale).
 
 ---
 
@@ -39,12 +39,12 @@
 
 1. **Clona il repository**:
    ```bash
-   git clone https://github.com/trevinic/optifleet-ro.git
-   cd optifleet-ro
+   git clone https://github.com/trevinic/or-route.git
+   cd or-route
    ```
 
 2. **Avvio con 1 clic (Script Batch)**:
-   Fai doppio clic sul file `avvia_optifleet.bat`. Lo script configurerà automaticamente l'ambiente virtuale Python `.venv`, installerà le dipendenze e aprirà il browser su:
+   Fai doppio clic sul file `avvia_optifleet.bat` (o `avvia.bat`). Lo script configurerà automaticamente l'ambiente virtuale Python `.venv`, installerà le dipendenze e aprirà il browser su:
    👉 **http://localhost:8085**
 
 3. **Avvio manuale da terminale**:
@@ -69,7 +69,7 @@ L'applicazione sarà immediatamente accessibile su `http://localhost:8085`.
 
 ### Deploy su Render.com / Fly.io / Railway / Google Cloud Run:
 1. Accedi a [Render.com](https://render.com) (o Fly.io).
-2. Seleziona **"New Web Service"** e collega questo repository GitHub (`trevinic/optifleet-ro`).
+2. Seleziona **"New Web Service"** e collega questo repository GitHub (`trevinic/or-route`).
 3. Render rileverà automaticamente il `Dockerfile` ed eseguirà il build in cloud con certificato HTTPS (SSL) gratuito e supporto per dominio personalizzato.
 
 ---
@@ -77,7 +77,7 @@ L'applicazione sarà immediatamente accessibile su `http://localhost:8085`.
 ## 📖 Documentazione Completa
 
 Per la documentazione tecnica esaustiva, le formulazioni algebriche complete e la cronologia degli aggiornamenti, consulta il file:  
-👉 [`DOCUMENTAZIONE_PROGRESSI_OPTIFLEET.md`](DOCUMENTAZIONE_PROGRESSI_OPTIFLEET.md)
+👉 [`DOCUMENTAZIONE_PROGRESSI_OR_ROUTE.md`](DOCUMENTAZIONE_PROGRESSI_OR_ROUTE.md)
 
 ---
 

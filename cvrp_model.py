@@ -64,7 +64,7 @@ def solve_cvrp(
     veh_fixed = {v["name"]: float(v.get("fixed_cost", 50.0)) for v in vehicles}
 
     # 2. Modello PuLP
-    prob = pulp.LpProblem("OptiFleet_CVRP_Optimization", pulp.LpMinimize)
+    prob = pulp.LpProblem("OR_Route_CVRP_Optimization", pulp.LpMinimize)
 
     # Variabili decisionali
     # x[i, j, k] = 1 se il veicolo k va direttamente da i a j

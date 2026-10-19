@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OptiFleet RO &mdash; Modelli di Ricerca Operativa per Flotte Aziendali</title>
+  <title>OR-Route &mdash; Modelli di Ricerca Operativa per Flotte Aziendali</title>
   <meta name="description" content="Piattaforma gratuita di Ricerca Operativa e algoritmi MILP per ottimizzare percorsi, costi carburante e pianificazione delle flotte aziendali (CVRP, VRPTW, CARP, EV-VRP).">
   
   <!-- Google Fonts: Outfit (UI) & JetBrains Mono (Math/Code) -->
@@ -27,7 +27,7 @@
       <div class="logo-group">
         <div class="logo-badge">📐</div>
         <div class="logo-text">
-          <h1>OptiFleet <span class="highlight">RO</span></h1>
+          <h1>OR-<span class="highlight">Route</span></h1>
           <div class="logo-sub">Ricerca Operativa & Algoritmi Matematici per Flotte Aziendali</div>
         </div>
       </div>
@@ -1410,7 +1410,7 @@
         </div>
 
         <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 13.5px; line-height: 1.6;">
-          Benvenuto nella sezione scientifica e divulgativa di <b>OptiFleet RO</b>. Qui trovi le risposte alle domande più critiche sulla pianificazione delle flotte aziendali, la <b>dispensa teorica</b> con le <b>formulazioni matematiche MILP (Mixed-Integer Linear Programming)</b> dei modelli implementati nel software, e la <b>bibliografia accademica ufficiale</b> con i paper scientifici e gli strumenti open-source che rendono possibile l'ottimizzazione combinatoria avanzata.
+          Benvenuto nella sezione scientifica e divulgativa di <b>OR-Route</b>. Qui trovi le risposte alle domande più critiche sulla pianificazione delle flotte aziendali, la <b>dispensa teorica</b> con le <b>formulazioni matematiche MILP (Mixed-Integer Linear Programming)</b> dei modelli implementati nel software, e la <b>bibliografia accademica ufficiale</b> con i paper scientifici e gli strumenti open-source che rendono possibile l'ottimizzazione combinatoria avanzata.
         </p>
 
         <!-- Barra di Filtraggio Categorie -->
@@ -1434,7 +1434,7 @@
              ================================================================= -->
         <div class="faq-group" data-category="guide">
           <div class="faq-group-title" style="color: #38bdf8;">
-            <span>📘</span> Guida Operativa Passo-Passo: Manuale d'Uso di OptiFleet RO
+            <span>📘</span> Guida Operativa Passo-Passo: Manuale d'Uso di OR-Route
           </div>
 
           <p style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6; margin-bottom: 18px;">
@@ -1676,7 +1676,7 @@
                 <li><b>Algoritmi Esatti (Branch-and-Cut / Simplex Duale con COIN-OR CBC)</b>: esplorano l'albero delle soluzioni intere tagliando rami inammissibili tramite piani di taglio (Gomory cuts, clique cuts). <b>Vantaggio</b>: garantiscono l'ottimo globale matematico provato o un gap certificato (es. $Gap < 0.5\%$). <b>Ideali per</b>: cluster operativi da 10 a 60 nodi/archi con vincoli temporali stringenti.</li>
                 <li><b>Euristiche e Meta-euristiche (Clarke-Wright Savings, ALNS - Adaptive Large Neighborhood Search, Tabu Search)</b>: metodi stocastici e costruttivi rapidi. <b>Vantaggio</b>: calcolano soluzioni eccellenti (entro il 2-4% dall'ottimo) in frazioni di secondo anche per problemi con 1.000 o 5.000 fermate.</li>
               </ul>
-              <b>L'approccio ibrido di OptiFleet</b>: la nostra architettura combina decomposizione spaziale e geografica per partizionare grandi aree territoriali, affidando poi al solver esatto CBC la rischedulazione ottima all'interno di ciascun macro-settore.
+              <b>L'approccio ibrido di OR-Route</b>: la nostra architettura combina decomposizione spaziale e geografica per partizionare grandi aree territoriali, affidando poi al solver esatto CBC la rischedulazione ottima all'interno di ciascun macro-settore.
             </div>
           </details>
 
@@ -1705,7 +1705,7 @@
             </summary>
             <div class="faq-answer">
               Le mappe geografiche e il motore di importazione viaria <b>valgono per tutti i Paesi europei e per qualsiasi territorio nel mondo</b>, senza alcuna limitazione geografica.<br><br>
-              L'infrastruttura GIS di OptiFleet si basa sullo standard cartografico aperto <b>OpenStreetMap (OSM)</b>, tramite le librerie <b>OSMnx</b> e <b>Folium/Leaflet</b>. Questo assicura:
+              L'infrastruttura GIS di OR-Route si basa sullo standard cartografico aperto <b>OpenStreetMap (OSM)</b>, tramite le librerie <b>OSMnx</b> e <b>Folium/Leaflet</b>. Questo assicura:
               <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
                 <li><b>Ricerca Internazionale per Toponimo</b>: nel modulo di importazione è possibile digitare qualsiasi comune o dipartimento europeo specificando la nazione (es. <code>Nice, France</code>, <code>München, Germany</code>, <code>Valencia, Spain</code>, <code>Lugano, Switzerland</code>, <code>Innsbruck, Austria</code>, <code>Gent, Belgium</code>). Il geocodificatore internazionale Nominatim individuerà i confini amministrativi corretti.</li>
                 <li><b>Coordinate GPS Universali</b>: selezionando l'opzione con coordinate (latitudine e longitudine, es. <code>43.7102, 7.2620</code>) e raggio metrico (es. 800m, 1500m), il sistema estrae la viabilità stradale esatta in qualunque punto della terra indipendentemente dalla lingua o dai confini amministrativi.</li>
@@ -1919,7 +1919,7 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
           </div>
 
           <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 16px;">
-            I modelli matematici di <b>OptiFleet RO</b> poggiano su oltre 60 anni di letteratura scientifica internazionale nel campo della Ricerca Operativa, dell'Ingegneria dei Sistemi di Trasporto e della Matematica Applicata. Di seguito sono riportati i paper seminali originali e i motori computazionali impiegati:
+            I modelli matematici di <b>OR-Route</b> poggiano su oltre 60 anni di letteratura scientifica internazionale nel campo della Ricerca Operativa, dell'Ingegneria dei Sistemi di Trasporto e della Matematica Applicata. Di seguito sono riportati i paper seminali originali e i motori computazionali impiegati:
           </p>
 
           <!-- Paper 1 -->
@@ -2024,7 +2024,7 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
           <!-- Strumenti Software & Motori Open Source -->
           <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; margin-top: 24px;">
             <h4 style="font-size: 15px; color: #38bdf8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-              <span>⚙️</span> Motori Matematici & Framework Software Impiegati in OptiFleet
+              <span>⚙️</span> Motori Matematici & Framework Software Impiegati in OR-Route
             </h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
               <div style="background: rgba(2, 6, 23, 0.5); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
@@ -2080,7 +2080,7 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
           Strumenti e Convenzioni Selezionate per la Gestione Flotte
         </h2>
         <p style="color: var(--text-muted); font-size: 13.5px;">
-          OptiFleet collabora con i leader di settore della mobilità aziendale per offrirti sconti esclusivi, canoni agevolati e prove gratuite:
+          OR-Route collabora con i leader di settore della mobilità aziendale per offrirti sconti esclusivi, canoni agevolati e prove gratuite:
         </p>
       </div>
 
@@ -2302,7 +2302,7 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
       <div>
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
           <span style="font-size: 20px;">📐</span>
-          <b style="font-size: 16px; color: var(--text-main);">OptiFleet RO</b>
+          <b style="font-size: 16px; color: var(--text-main);">OR-Route</b>
         </div>
         <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6;">
           Piattaforma gratuita e aperta dedicata all'applicazione della Ricerca Operativa industriale (Operational Research & MILP Solvers) per la riduzione dei costi e delle emissioni delle flotte aziendali.
@@ -2328,7 +2328,7 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
       </div>
     </div>
     <div class="footer-bottom">
-      <div>&copy; 2026 OptiFleet RO &mdash; Modelli Gratuiti di Ricerca Operativa per Flotte Aziendali.</div>
+      <div>&copy; 2026 OR-Route &mdash; Modelli Gratuiti di Ricerca Operativa per Flotte Aziendali.</div>
       <div>Monetizzazione etica: Google AdSense & Affiliazioni di settore.</div>
     </div>
   </footer>
@@ -2485,7 +2485,7 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
       const title = document.getElementById('errorModalTitle')?.innerText || '';
       const msg = document.getElementById('errorModalMessage')?.innerText || '';
       const detail = document.getElementById('errorModalDetails')?.innerText || '';
-      const fullText = `[ERRORE MAPPE OPTIFLEET]\n${title}\n${msg}\n\nDETTAGLI TECNICI:\n${detail}`;
+      const fullText = `[ERRORE MAPPE OR-ROUTE]\n${title}\n${msg}\n\nDETTAGLI TECNICI:\n${detail}`;
       
       navigator.clipboard.writeText(fullText).then(() => {
         showToast('✅ Errore copiato negli appunti! Ora puoi incollarlo comodamente nella chat.');
