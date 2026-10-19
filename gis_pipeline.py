@@ -187,11 +187,19 @@ def genera_mappa_percorso(
 
     m = folium.Map(location=[center_lat, center_lon], zoom_start=13, tiles=None)
 
-    # Provider di mappe stabili (Esri & CartoDB) per evitare blocchi o rate-limit OSM
+    # Provider di mappe: Stradario aperto di default (OpenStreetMap)
+    folium.TileLayer(
+        tiles="OpenStreetMap",
+        name="Mappa Stradale (OpenStreetMap)",
+        show=True,
+        control=True
+    ).add_to(m)
+
     folium.TileLayer(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
         attr="Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS",
         name="Mappa Stradale (Esri)",
+        show=False,
         control=True
     ).add_to(m)
 
@@ -199,6 +207,7 @@ def genera_mappa_percorso(
         tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
         attr="&copy; OpenStreetMap contributors &copy; CARTO",
         name="CartoDB Voyager (Chiara)",
+        show=False,
         control=True
     ).add_to(m)
 
@@ -206,6 +215,7 @@ def genera_mappa_percorso(
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         attr="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
         name="Satellite (Esri)",
+        show=False,
         control=True
     ).add_to(m)
 
@@ -388,15 +398,6 @@ def genera_mappa_percorso(
 
     # 7. Adattamento automatico della vista su tutta l'estensione geografica
     m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]], padding=(25, 25))
-
-    floating_nav_html = """
-    <div style="position: fixed; top: 12px; left: 60px; z-index: 9999; background: rgba(14, 22, 38, 0.92); border: 1px solid #283959; border-radius: 8px; padding: 8px 14px; font-family: sans-serif; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">
-      <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">📐 OR-Route: Mappa GIS</span>
-      <a href="http://localhost:8085" target="_blank" style="background: #2563eb; color: #ffffff; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;">🏠 Apri Portale Completo</a>
-      <a href="http://localhost:8085/#tab-faq" target="_blank" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;">📘 Apri Guida & FAQ</a>
-    </div>
-    """
-    m.get_root().html.add_child(folium.Element(floating_nav_html))
 
     folium.LayerControl(collapsed=False).add_to(m)
     m.save(output_file)
