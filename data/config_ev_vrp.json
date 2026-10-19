@@ -28,6 +28,8 @@
       "name": "Compattatore_EV_1",
       "capacity_kg": 3500,
       "battery_kwh": 90,
+      "kwh_cost": 0.38,
+      "kwh_per_km": 0.45,
       "fixed_cost": 110,
       "description": "Veicolo 100% elettrico urbano 90 kWh"
     },
@@ -35,6 +37,8 @@
       "name": "Compattatore_EV_2",
       "capacity_kg": 3500,
       "battery_kwh": 90,
+      "kwh_cost": 0.38,
+      "kwh_per_km": 0.45,
       "fixed_cost": 110,
       "description": "Veicolo 100% elettrico urbano 90 kWh"
     }

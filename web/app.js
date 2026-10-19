@@ -492,7 +492,9 @@ function syncWizardFleetToModels() {
       name: v.name,
       capacity: v.capacity,
       battery_kwh: 60 + (idx * 10),
-      fixed_cost: v.fixed_cost
+      fixed_cost: v.fixed_cost,
+      kwh_cost: 0.38,
+      kwh_per_km: 0.45
     }));
     if (State.activeTab === 'tab-intermediate') renderEvTables();
   }
@@ -681,7 +683,9 @@ async function applyWizardParametersToModel() {
         name: v.name,
         capacity: v.capacity,
         battery_kwh: 60.0 + (i * 10.0),
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        kwh_cost: 0.38,
+        kwh_per_km: 0.45
       }));
       try {
         await fetch('/api/ev_vrp/config', {
@@ -2812,7 +2816,9 @@ async function loadEvConfig() {
         name: v.name,
         capacity: v.capacity,
         battery_kwh: 60 + (idx * 10),
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        kwh_cost: 0.38,
+        kwh_per_km: 0.45
       }))
     };
     State.evResult = null;
@@ -2825,6 +2831,12 @@ async function loadEvConfig() {
     try {
       const res = await fetch('/api/ev_vrp/config');
       State.evConfig = await res.json();
+      if (State.evConfig && State.evConfig.vehicles) {
+        State.evConfig.vehicles.forEach(v => {
+          if (v.kwh_cost === undefined || v.kwh_cost === null) v.kwh_cost = State.evConfig.kwh_cost || 0.38;
+          if (v.kwh_per_km === undefined || v.kwh_per_km === null) v.kwh_per_km = State.evConfig.kwh_per_km || 0.45;
+        });
+      }
     } catch (e) {
       console.error('Errore caricamento EV-VRP:', e);
     }
@@ -2942,6 +2954,8 @@ function renderEvTables() {
   if (vBody && State.evConfig.vehicles) {
     vBody.innerHTML = '';
     State.evConfig.vehicles.forEach((v, idx) => {
+      const vKwhCost = (v.kwh_cost !== undefined && v.kwh_cost !== null) ? v.kwh_cost : (State.evConfig.kwh_cost || 0.38);
+      const vKwhPerKm = (v.kwh_per_km !== undefined && v.kwh_per_km !== null) ? v.kwh_per_km : (State.evConfig.kwh_per_km || 0.45);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>🔋 ${v.name}</b></td>
@@ -2958,6 +2972,14 @@ function renderEvTables() {
             onchange="updateEvVehicleCost(${idx}, this.value)">
         </td>
         <td>
+          <input type="number" class="cell-inp" min="0.05" step="0.02" value="${vKwhCost}"
+            onchange="updateEvVehicleKwhCost(${idx}, this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" min="0.05" step="0.05" value="${vKwhPerKm}"
+            onchange="updateEvVehicleKwhPerKm(${idx}, this.value)">
+        </td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi mezzo EV" onclick="removeEvVehicle(${idx})">&times;</button>
         </td>
       `;
@@ -3062,6 +3084,18 @@ function updateEvVehicleCost(idx, val) {
   State.evConfig.vehicles[idx].fixed_cost = parseFloat(val) || 60;
 }
 
+function updateEvVehicleKwhCost(idx, val) {
+  if (State.evConfig && State.evConfig.vehicles && State.evConfig.vehicles[idx]) {
+    State.evConfig.vehicles[idx].kwh_cost = parseFloat(val) || 0.38;
+  }
+}
+
+function updateEvVehicleKwhPerKm(idx, val) {
+  if (State.evConfig && State.evConfig.vehicles && State.evConfig.vehicles[idx]) {
+    State.evConfig.vehicles[idx].kwh_per_km = parseFloat(val) || 0.45;
+  }
+}
+
 function updateEvKwhCost(val) {
   if (!State.evConfig) return;
   State.evConfig.kwh_cost = parseFloat(val) || 0.38;
@@ -3145,6 +3179,8 @@ function addEvVehicleRow() {
     name: `EV_Van_${nextNum}`,
     capacity: 1500,
     battery_kwh: 75.0,
+    kwh_cost: State.evConfig.kwh_cost || 0.38,
+    kwh_per_km: State.evConfig.kwh_per_km || 0.45,
     fixed_cost: 70.0
   });
   renderEvTables();
@@ -3179,6 +3215,8 @@ function autoScaleEvFleet(andSolve = false) {
       name: `EV_Van_${nextNum}`,
       capacity: stdCap,
       battery_kwh: 75.0,
+      kwh_cost: State.evConfig.kwh_cost || 0.38,
+      kwh_per_km: State.evConfig.kwh_per_km || 0.45,
       fixed_cost: 70.0
     });
   }
@@ -3325,7 +3363,8 @@ function renderEvVehicleReport(data) {
       </div>
       <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
         Carico a bordo: <b>${vInfo.total_load} kg</b> su ${vInfo.capacity} kg (${vInfo.saturation_pct}%) | 
-        Energia: <b>${vInfo.kwh_used} kWh</b> (${vInfo.total_km} km percorsi)
+        Energia: <b>${vInfo.kwh_used} kWh</b> (${vInfo.total_km} km percorsi) | 
+        Parametri Mezzo: <b>${(vInfo.kwh_per_km !== undefined ? vInfo.kwh_per_km : 0.45)} kWh/km</b> (${(vInfo.kwh_cost !== undefined ? vInfo.kwh_cost : 0.38)} €/kWh)
       </div>
       <div style="background: #17243c; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
         <div style="background: ${color}; height: 100%; width: ${Math.min(vInfo.saturation_pct, 100)}%;"></div>

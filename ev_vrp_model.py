@@ -45,6 +45,8 @@ def get_default_ev_vrp_scenario() -> Dict[str, Any]:
                 "name": "Compattatore_EV_1",
                 "capacity_kg": 3500,
                 "battery_kwh": 90,
+                "kwh_cost": 0.38,
+                "kwh_per_km": 0.45,
                 "fixed_cost": 110.0,
                 "description": "Veicolo 100% elettrico urbano 90 kWh"
             },
@@ -52,6 +54,8 @@ def get_default_ev_vrp_scenario() -> Dict[str, Any]:
                 "name": "Compattatore_EV_2",
                 "capacity_kg": 3500,
                 "battery_kwh": 90,
+                "kwh_cost": 0.38,
+                "kwh_per_km": 0.45,
                 "fixed_cost": 110.0,
                 "description": "Veicolo 100% elettrico urbano 90 kWh"
             }
@@ -79,6 +83,7 @@ def solve_ev_vrp(
 ) -> Dict[str, Any]:
     """
     Risolve il problema di routing con soste intermedie per ricarica batteria o scarico rifiuti.
+    Supporta specifiche individuali di consumo (kWh/km) e costo energia (€/kWh) per ogni mezzo.
     """
     all_points = [depot] + facilities + customers
     coords = {}
@@ -97,7 +102,7 @@ def solve_ev_vrp(
                 dist[(id1, id2)] = round(d, 2)
 
     total_demand = sum(float(c["demand"]) for c in customers)
-    total_capacity = sum(float(v["capacity_kg"]) for v in vehicles)
+    total_capacity = sum(float(v.get("capacity_kg", v.get("capacity", 3500))) for v in vehicles)
 
     # Heuristic Clustering con inserimento stazioni intermedie quando il carico o la batteria lo esigono
     # Partiziona i clienti tra i veicoli
@@ -114,9 +119,11 @@ def solve_ev_vrp(
 
     for v_idx, v in enumerate(vehicles):
         v_name = v["name"]
-        v_cap = float(v["capacity_kg"])
+        v_cap = float(v.get("capacity_kg", v.get("capacity", 3500)))
         v_bat = float(v.get("battery_kwh", 90.0))
         fixed_cost = float(v.get("fixed_cost", 100.0))
+        v_kwh_cost = float(v.get("kwh_cost") if v.get("kwh_cost") is not None else kwh_cost)
+        v_kwh_per_km = float(v.get("kwh_per_km") if v.get("kwh_per_km") is not None else kwh_per_km)
 
         # Assegna sottoinsieme clienti
         my_customers = unassigned[v_idx * cust_per_veh : (v_idx + 1) * cust_per_veh]
@@ -125,6 +132,8 @@ def solve_ev_vrp(
                 "used": False,
                 "capacity": v_cap,
                 "battery_kwh": v_bat,
+                "kwh_cost": v_kwh_cost,
+                "kwh_per_km": v_kwh_per_km,
                 "fixed_cost": fixed_cost,
                 "total_load": 0,
                 "total_km": 0,
@@ -159,7 +168,7 @@ def solve_ev_vrp(
             remaining.sort(key=lambda c: dist[(current_id, c["id"])])
             next_c = remaining[0]
             d_next = dist[(current_id, next_c["id"])]
-            kwh_next = d_next * kwh_per_km
+            kwh_next = d_next * v_kwh_per_km
             c_demand = float(next_c["demand"])
 
             # Controlla se serve ricarica o scarico intermedio
@@ -171,8 +180,8 @@ def solve_ev_vrp(
                 best_fac = min(facilities, key=lambda f: dist[(current_id, f["id"])] + dist[(f["id"], next_c["id"])])
                 d_to_fac = dist[(current_id, best_fac["id"])]
                 v_dist += d_to_fac
-                current_battery -= d_to_fac * kwh_per_km
-                v_kwh += d_to_fac * kwh_per_km
+                current_battery -= d_to_fac * v_kwh_per_km
+                v_kwh += d_to_fac * v_kwh_per_km
 
                 action_desc = "Scarico Rifiuti TMB (0 kg)" if needs_dump else "Ricarica Rapida DC 100%"
                 if needs_dump and needs_recharge:
@@ -196,7 +205,7 @@ def solve_ev_vrp(
             # Raggiunge il cliente
             d_step = dist[(current_id, next_c["id"])]
             v_dist += d_step
-            kwh_step = d_step * kwh_per_km
+            kwh_step = d_step * v_kwh_per_km
             current_battery -= kwh_step
             v_kwh += kwh_step
             current_load += c_demand
@@ -217,8 +226,8 @@ def solve_ev_vrp(
         # Rientro al deposito centrale
         d_return = dist[(current_id, depot["id"])]
         v_dist += d_return
-        v_kwh += d_return * kwh_per_km
-        current_battery -= d_return * kwh_per_km
+        v_kwh += d_return * v_kwh_per_km
+        current_battery -= d_return * v_kwh_per_km
 
         stops.append({
             "id": depot["id"],
@@ -232,7 +241,7 @@ def solve_ev_vrp(
 
         v_dist = round(v_dist, 1)
         v_kwh = round(v_kwh, 1)
-        energy_cost = round(v_kwh * kwh_cost, 2)
+        energy_cost = round(v_kwh * v_kwh_cost, 2)
         v_cost = round(fixed_cost + energy_cost, 2)
 
         total_km += v_dist
@@ -243,6 +252,8 @@ def solve_ev_vrp(
             "used": True,
             "capacity": v_cap,
             "battery_kwh": v_bat,
+            "kwh_cost": v_kwh_cost,
+            "kwh_per_km": v_kwh_per_km,
             "fixed_cost": fixed_cost,
             "energy_cost": energy_cost,
             "total_load": round(current_load, 1),
