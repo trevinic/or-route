@@ -7,6 +7,7 @@
 // Stato Applicazione Globale
 const State = {
   activeTab: 'tab-carp',
+  hasImportedConfigFile: false,
   cvrpConfig: null,
   cvrpResult: null,
   vrptwConfig: null,
@@ -412,6 +413,100 @@ function recalcWizardFleetTotals() {
 
   const badgeKm = document.getElementById('wizBadgeCostKm');
   if (badgeKm) badgeKm.innerText = `${avgKmCost.toFixed(2)} €/km`;
+
+  syncWizardFleetToModels();
+}
+
+function getWizardConcreteVehicles() {
+  const concreteVehicles = [];
+  if (!wizardAnswers || !wizardAnswers.fleetCategories) return concreteVehicles;
+  wizardAnswers.fleetCategories.forEach(cat => {
+    const qty = parseInt(cat.qty) || 1;
+    for (let i = 1; i <= qty; i++) {
+      const suffix = qty > 1 ? `_${i}` : '';
+      const cleanName = (cat.name || 'Mezzo').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') + suffix;
+      concreteVehicles.push({
+        name: cleanName,
+        category: cat.name || 'Standard',
+        capacity: parseFloat(cat.capacity) || 1000,
+        capacity_kg: parseFloat(cat.capacity) || 1000,
+        fixed_cost: parseFloat(cat.calculatedFixedCost) || 0,
+        cost_per_km: parseFloat(cat.costPerKm) || 1.2
+      });
+    }
+  });
+  return concreteVehicles;
+}
+
+function syncWizardFleetToModels() {
+  if (State.hasImportedConfigFile) return;
+  const concreteVehicles = getWizardConcreteVehicles();
+  if (!concreteVehicles.length) return;
+
+  // CVRP
+  if (State.cvrpConfig) {
+    State.cvrpConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      capacity: v.capacity,
+      fixed_cost: v.fixed_cost
+    }));
+    if (State.activeTab === 'tab-cvrp') renderCvrpTables();
+  }
+
+  // VRPTW
+  if (State.vrptwConfig) {
+    State.vrptwConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      capacity: v.capacity,
+      fixed_cost: v.fixed_cost
+    }));
+    if (State.activeTab === 'tab-vrptw') renderVrptwTables();
+  }
+
+  // CARP
+  if (State.carpConfig) {
+    State.carpConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      capacity_kg: v.capacity_kg,
+      fixed_cost: v.fixed_cost,
+      description: v.category
+    }));
+    if (State.activeTab === 'tab-carp') renderCarpTables();
+  }
+
+  // EV-VRP
+  if (State.evConfig) {
+    State.evConfig.vehicles = concreteVehicles.map((v, idx) => ({
+      name: v.name,
+      capacity: v.capacity,
+      battery_kwh: 60 + (idx * 10),
+      fixed_cost: v.fixed_cost
+    }));
+    if (State.activeTab === 'tab-intermediate') renderEvTables();
+  }
+
+  // VRPPD
+  if (State.vrppdConfig) {
+    State.vrppdConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      capacity: v.capacity,
+      fixed_cost: v.fixed_cost,
+      description: v.category
+    }));
+    if (State.activeTab === 'tab-vrppd') renderVrppdTables();
+  }
+
+  // MDVRP
+  if (State.mdvrpConfig) {
+    const firstDep = (State.mdvrpConfig.depots && State.mdvrpConfig.depots[0]) ? State.mdvrpConfig.depots[0].id : '';
+    State.mdvrpConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      home_depot: firstDep,
+      capacity: v.capacity,
+      fixed_cost: v.fixed_cost
+    }));
+    if (State.activeTab === 'tab-mdvrp') renderMdvrpTables();
+  }
 }
 
 function evaluateWizard() {
@@ -471,22 +566,7 @@ async function applyWizardParametersToModel() {
   const model = wizardAnswers.recommendedModel || 'carp';
   
   // Unroll della flotta eterogenea definita dall'utente
-  const concreteVehicles = [];
-  wizardAnswers.fleetCategories.forEach(cat => {
-    for (let i = 1; i <= cat.qty; i++) {
-      const suffix = cat.qty > 1 ? `_${i}` : '';
-      const cleanName = cat.name.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') + suffix;
-      concreteVehicles.push({
-        name: cleanName,
-        category: cat.name,
-        capacity: cat.capacity,
-        capacity_kg: cat.capacity,
-        fixed_cost: cat.calculatedFixedCost,
-        cost_per_km: cat.costPerKm
-      });
-    }
-  });
-
+  const concreteVehicles = getWizardConcreteVehicles();
   const totVehicles = concreteVehicles.length;
   const avgKmCost = concreteVehicles.reduce((acc, v) => acc + v.cost_per_km, 0) / (totVehicles || 1);
 
@@ -668,6 +748,8 @@ function handleImportConfigFile(event) {
       const data = JSON.parse(e.target.result);
       if (!data) throw new Error('File vuoto o non valido.');
 
+      State.hasImportedConfigFile = true;
+
       // Ripristino risposte del wizard e flotta eterogenea
       if (data.wizard_answers) {
         Object.assign(wizardAnswers, data.wizard_answers);
@@ -779,14 +861,35 @@ function saveToLocalStorage() {
 // 2. MODELLO CVRP: LOGISTICA & CONSEGNE MERCI
 // ==========================================
 async function loadCvrpConfig() {
-  try {
-    const res = await fetch('/api/cvrp/config');
-    State.cvrpConfig = await res.json();
+  if (!State.hasImportedConfigFile && !State.cvrpConfig) {
+    State.cvrpConfig = {
+      name: 'CVRP Flotta Personalizzata',
+      cost_per_km: 1.20,
+      depot: { name: '', lat: null, lon: null },
+      customers: [],
+      vehicles: getWizardConcreteVehicles().map(v => ({
+        name: v.name,
+        capacity: v.capacity,
+        fixed_cost: v.fixed_cost
+      }))
+    };
+    State.cvrpResult = null;
     renderCvrpTables();
-    drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
-  } catch (e) {
-    console.error('Errore caricamento CVRP:', e);
+    renderLeafletRouteMap('cvrpMap', 'cvrp', State.cvrpConfig, null);
+    drawRouteCanvas('cvrpCanvas', State.cvrpConfig, null);
+    return;
   }
+  if (!State.cvrpConfig) {
+    try {
+      const res = await fetch('/api/cvrp/config');
+      State.cvrpConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento CVRP:', e);
+    }
+  }
+  renderCvrpTables();
+  renderLeafletRouteMap('cvrpMap', 'cvrp', State.cvrpConfig, State.cvrpResult || null);
+  drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
 }
 
 function renderCvrpTables() {
@@ -794,19 +897,18 @@ function renderCvrpTables() {
 
   // 0. Deposito CVRP
   const dep = State.cvrpConfig.depot;
-  if (dep) {
-    const nameInp = document.getElementById('cvrpDepotName');
-    const latInp = document.getElementById('cvrpDepotLat');
-    const lonInp = document.getElementById('cvrpDepotLon');
-    if (nameInp) nameInp.value = dep.name || 'Hub Centrale';
-    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
-    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
-  }
+  const nameInp = document.getElementById('cvrpDepotName');
+  const latInp = document.getElementById('cvrpDepotLat');
+  const lonInp = document.getElementById('cvrpDepotLon');
+  if (nameInp) nameInp.value = (dep && dep.name) ? dep.name : '';
+  if (latInp) latInp.value = (dep && dep.lat !== null && dep.lat !== undefined && !isNaN(dep.lat) && dep.lat !== '') ? dep.lat : '';
+  if (lonInp) lonInp.value = (dep && dep.lon !== null && dep.lon !== undefined && !isNaN(dep.lon) && dep.lon !== '') ? dep.lon : '';
 
   // Conteggio Clienti
   const countEl = document.getElementById('cvrpCustomerCount');
-  if (countEl && State.cvrpConfig.customers) {
-    countEl.innerText = `${State.cvrpConfig.customers.length} clienti / destinazioni`;
+  const custs = State.cvrpConfig.customers || [];
+  if (countEl) {
+    countEl.innerText = `${custs.length} clienti / destinazioni`;
   }
 
   // Costo Chilometrico
@@ -817,33 +919,37 @@ function renderCvrpTables() {
 
   // 1. Tabella Clienti con Coordinate Modificabili
   const tbody = document.getElementById('cvrpCustomersBody');
-  if (tbody && State.cvrpConfig.customers) {
+  if (tbody) {
     tbody.innerHTML = '';
-    State.cvrpConfig.customers.forEach((c, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" 
-            onchange="updateCvrpCustomerField(${idx}, 'name', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 82px;" value="${c.lat}" 
-            onchange="updateCvrpCustomerCoord(${idx}, 'lat', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 82px;" value="${c.lon}" 
-            onchange="updateCvrpCustomerCoord(${idx}, 'lon', this.value)">
-        </td>
-        <td>
-          <input type="number" class="cell-inp" style="width: 80px;" min="10" step="20" value="${c.demand}" 
-            onchange="updateCvrpCustomerDemand(${idx}, this.value)">
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeCvrpCustomer(${idx})">&times;</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    if (custs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Nessun cliente presente. Clicca su <b>+ Nuovo Cliente</b> per inserire le coordinate o importa un file.</td></tr>';
+    } else {
+      custs.forEach((c, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" 
+              onchange="updateCvrpCustomerField(${idx}, 'name', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 82px;" value="${c.lat != null ? c.lat : ''}" 
+              onchange="updateCvrpCustomerCoord(${idx}, 'lat', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 82px;" value="${c.lon != null ? c.lon : ''}" 
+              onchange="updateCvrpCustomerCoord(${idx}, 'lon', this.value)">
+          </td>
+          <td>
+            <input type="number" class="cell-inp" style="width: 80px;" min="10" step="20" value="${c.demand || ''}" 
+              onchange="updateCvrpCustomerDemand(${idx}, this.value)">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeCvrpCustomer(${idx})">&times;</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   }
 
   // 2. Tabella Veicoli CVRP
@@ -875,9 +981,11 @@ function renderCvrpTables() {
 }
 
 function updateCvrpDepot(field, val) {
-  if (!State.cvrpConfig || !State.cvrpConfig.depot) return;
+  if (!State.cvrpConfig) return;
+  if (!State.cvrpConfig.depot) State.cvrpConfig.depot = {};
   if (field === 'lat' || field === 'lon') {
-    State.cvrpConfig.depot[field] = parseFloat(val) || 0;
+    const num = parseFloat(val);
+    State.cvrpConfig.depot[field] = isNaN(num) ? null : num;
   } else {
     State.cvrpConfig.depot[field] = val;
   }
@@ -891,7 +999,8 @@ function updateCvrpCustomerField(idx, field, val) {
 
 function updateCvrpCustomerCoord(idx, coord, val) {
   if (!State.cvrpConfig || !State.cvrpConfig.customers || !State.cvrpConfig.customers[idx]) return;
-  State.cvrpConfig.customers[idx][coord] = parseFloat(val) || 0;
+  const num = parseFloat(val);
+  State.cvrpConfig.customers[idx][coord] = isNaN(num) ? null : num;
   drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
 }
 
@@ -958,15 +1067,18 @@ function addCvrpCustomer() {
   const demand = prompt('Domanda merci (kg o colli):', '250');
   
   const dep = State.cvrpConfig.depot;
+  const baseLat = (dep && typeof dep.lat === 'number' && !isNaN(dep.lat) && dep.lat !== null) ? dep.lat : 45.4642;
+  const baseLon = (dep && typeof dep.lon === 'number' && !isNaN(dep.lon) && dep.lon !== null) ? dep.lon : 9.1900;
   const offsetLat = (Math.random() - 0.5) * 0.15;
   const offsetLon = (Math.random() - 0.5) * 0.25;
 
+  if (!State.cvrpConfig.customers) State.cvrpConfig.customers = [];
   const newId = State.cvrpConfig.customers.length + 1;
   State.cvrpConfig.customers.push({
     id: newId,
     name: name,
-    lat: Number((dep.lat + offsetLat).toFixed(4)),
-    lon: Number((dep.lon + offsetLon).toFixed(4)),
+    lat: Number((baseLat + offsetLat).toFixed(4)),
+    lon: Number((baseLon + offsetLon).toFixed(4)),
     demand: parseFloat(demand) || 200
   });
   renderCvrpTables();
@@ -1064,6 +1176,16 @@ function filterCvrpCustomersByCapacity(andSolve = false) {
 }
 
 async function solveCvrp() {
+  if (!State.cvrpConfig || !State.cvrpConfig.customers || State.cvrpConfig.customers.length === 0) {
+    showToast('⚠️ Inserisci almeno un cliente e il deposito prima di avviare il calcolo!');
+    return;
+  }
+  const dep = State.cvrpConfig.depot;
+  if (!dep || dep.lat == null || dep.lon == null || isNaN(dep.lat) || isNaN(dep.lon)) {
+    showToast('⚠️ Inserisci le coordinate del deposito centrale prima di avviare il calcolo!');
+    return;
+  }
+
   const btn = document.getElementById('btnSolveCvrp');
   if (btn) {
     btn.innerText = '⏳ Calcolo Ottimo...';
@@ -1175,14 +1297,36 @@ function renderCvrpVehicleReport(data) {
 // 3. MODELLO VRPTW: FINESTRE TEMPORALI VINCOLANTI
 // ==========================================
 async function loadVrptwConfig() {
-  try {
-    const res = await fetch('/api/vrptw/config');
-    State.vrptwConfig = await res.json();
+  if (!State.hasImportedConfigFile && !State.vrptwConfig) {
+    State.vrptwConfig = {
+      name: 'VRPTW Flotta Personalizzata',
+      cost_per_km: 1.20,
+      avg_speed_kmh: 40,
+      depot: { name: '', lat: null, lon: null, ready_time: 0, due_time: 480 },
+      customers: [],
+      vehicles: getWizardConcreteVehicles().map(v => ({
+        name: v.name,
+        capacity: v.capacity,
+        fixed_cost: v.fixed_cost
+      }))
+    };
+    State.vrptwResult = null;
     renderVrptwTables();
-    drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
-  } catch (e) {
-    console.error('Errore caricamento VRPTW:', e);
+    renderLeafletRouteMap('vrptwMap', 'vrptw', State.vrptwConfig, null);
+    drawRouteCanvas('vrptwCanvas', State.vrptwConfig, null);
+    return;
   }
+  if (!State.vrptwConfig) {
+    try {
+      const res = await fetch('/api/vrptw/config');
+      State.vrptwConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento VRPTW:', e);
+    }
+  }
+  renderVrptwTables();
+  renderLeafletRouteMap('vrptwMap', 'vrptw', State.vrptwConfig, State.vrptwResult || null);
+  drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
 }
 
 function renderVrptwTables() {
@@ -1190,17 +1334,22 @@ function renderVrptwTables() {
 
   // 0. Deposito VRPTW
   const dep = State.vrptwConfig.depot;
-  if (dep) {
-    const nameInp = document.getElementById('vrptwDepotName');
-    const latInp = document.getElementById('vrptwDepotLat');
-    const lonInp = document.getElementById('vrptwDepotLon');
-    const readyInp = document.getElementById('vrptwDepotReady');
-    const dueInp = document.getElementById('vrptwDepotDue');
-    if (nameInp) nameInp.value = dep.name || 'Hub Logistico';
-    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
-    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
-    if (readyInp) readyInp.value = minutesToTime(dep.ready_time !== undefined ? dep.ready_time : 0);
-    if (dueInp) dueInp.value = minutesToTime(dep.due_time !== undefined ? dep.due_time : 480);
+  const nameInp = document.getElementById('vrptwDepotName');
+  const latInp = document.getElementById('vrptwDepotLat');
+  const lonInp = document.getElementById('vrptwDepotLon');
+  const readyInp = document.getElementById('vrptwDepotReady');
+  const dueInp = document.getElementById('vrptwDepotDue');
+  if (nameInp) nameInp.value = (dep && dep.name) ? dep.name : '';
+  if (latInp) latInp.value = (dep && dep.lat !== null && dep.lat !== undefined && !isNaN(dep.lat) && dep.lat !== '') ? dep.lat : '';
+  if (lonInp) lonInp.value = (dep && dep.lon !== null && dep.lon !== undefined && !isNaN(dep.lon) && dep.lon !== '') ? dep.lon : '';
+  if (readyInp) readyInp.value = (dep && dep.ready_time != null) ? minutesToTime(dep.ready_time) : '';
+  if (dueInp) dueInp.value = (dep && dep.due_time != null) ? minutesToTime(dep.due_time) : '';
+
+  // Conteggio Clienti
+  const countEl = document.getElementById('vrptwCustomerCount');
+  const custs = State.vrptwConfig.customers || [];
+  if (countEl) {
+    countEl.innerText = `${custs.length} destinazioni`;
   }
 
   // Input Costo al km e Velocità Media
@@ -1215,46 +1364,50 @@ function renderVrptwTables() {
 
   // 1. Tabella Clienti & Finestre con Coordinate ed Orari Modificabili
   const tbody = document.getElementById('vrptwCustomersBody');
-  if (tbody && State.vrptwConfig.customers) {
+  if (tbody) {
     tbody.innerHTML = '';
-    State.vrptwConfig.customers.forEach((c, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" 
-            onchange="updateVrptwCustomerField(${idx}, 'name', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 76px;" value="${c.lat}" 
-            onchange="updateVrptwCustomerCoord(${idx}, 'lat', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 76px;" value="${c.lon}" 
-            onchange="updateVrptwCustomerCoord(${idx}, 'lon', this.value)">
-        </td>
-        <td>
-          <input type="number" class="cell-inp" style="width: 74px;" min="10" step="20" value="${c.demand}" 
-            onchange="updateVrptwCustomerDemand(${idx}, this.value)">
-        </td>
-        <td>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <input type="time" class="cell-inp" style="width: 74px; font-size: 11px; padding: 4px 5px;" value="${minutesToTime(c.ready_time)}" 
-              onchange="updateVrptwTimeWindow(${idx}, 'ready', this.value)">
-            <span style="color: var(--text-muted);">-</span>
-            <input type="time" class="cell-inp" style="width: 74px; font-size: 11px; padding: 4px 5px;" value="${minutesToTime(c.due_time)}" 
-              onchange="updateVrptwTimeWindow(${idx}, 'due', this.value)">
-          </div>
-        </td>
-        <td>
-          <input type="number" class="cell-inp" style="width: 58px;" min="5" step="5" value="${c.service_time}" 
-            onchange="updateVrptwServiceTime(${idx}, this.value)"> min
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeVrptwCustomer(${idx})">&times;</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    if (custs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 18px;">Nessuna destinazione presente. Clicca su <b>+ Nuovo Cliente</b> per inserire le coordinate e finestre orarie.</td></tr>';
+    } else {
+      custs.forEach((c, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" 
+              onchange="updateVrptwCustomerField(${idx}, 'name', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 76px;" value="${c.lat != null ? c.lat : ''}" 
+              onchange="updateVrptwCustomerCoord(${idx}, 'lat', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 76px;" value="${c.lon != null ? c.lon : ''}" 
+              onchange="updateVrptwCustomerCoord(${idx}, 'lon', this.value)">
+          </td>
+          <td>
+            <input type="number" class="cell-inp" style="width: 74px;" min="10" step="20" value="${c.demand || ''}" 
+              onchange="updateVrptwCustomerDemand(${idx}, this.value)">
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <input type="time" class="cell-inp" style="width: 74px; font-size: 11px; padding: 4px 5px;" value="${minutesToTime(c.ready_time != null ? c.ready_time : 0)}" 
+                onchange="updateVrptwTimeWindow(${idx}, 'ready', this.value)">
+              <span style="color: var(--text-muted);">-</span>
+              <input type="time" class="cell-inp" style="width: 74px; font-size: 11px; padding: 4px 5px;" value="${minutesToTime(c.due_time != null ? c.due_time : 480)}" 
+                onchange="updateVrptwTimeWindow(${idx}, 'due', this.value)">
+            </div>
+          </td>
+          <td>
+            <input type="number" class="cell-inp" style="width: 58px;" min="5" step="5" value="${c.service_time != null ? c.service_time : 15}" 
+              onchange="updateVrptwServiceTime(${idx}, this.value)"> min
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeVrptwCustomer(${idx})">&times;</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   }
 
   // 2. Tabella Veicoli VRPTW
@@ -1286,9 +1439,11 @@ function renderVrptwTables() {
 }
 
 function updateVrptwDepot(field, val) {
-  if (!State.vrptwConfig || !State.vrptwConfig.depot) return;
+  if (!State.vrptwConfig) return;
+  if (!State.vrptwConfig.depot) State.vrptwConfig.depot = {};
   if (field === 'lat' || field === 'lon') {
-    State.vrptwConfig.depot[field] = parseFloat(val) || 0;
+    const num = parseFloat(val);
+    State.vrptwConfig.depot[field] = isNaN(num) ? null : num;
   } else {
     State.vrptwConfig.depot[field] = val;
   }
@@ -1307,7 +1462,8 @@ function updateVrptwCustomerField(idx, field, val) {
 
 function updateVrptwCustomerCoord(idx, coord, val) {
   if (!State.vrptwConfig || !State.vrptwConfig.customers || !State.vrptwConfig.customers[idx]) return;
-  State.vrptwConfig.customers[idx][coord] = parseFloat(val) || 0;
+  const num = parseFloat(val);
+  State.vrptwConfig.customers[idx][coord] = isNaN(num) ? null : num;
   drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
 }
 
@@ -1371,15 +1527,18 @@ function addVrptwCustomerRow() {
   const service = prompt('Tempo di scarico sul posto (minuti):', '20');
 
   const dep = State.vrptwConfig.depot;
+  const baseLat = (dep && typeof dep.lat === 'number' && !isNaN(dep.lat) && dep.lat !== null) ? dep.lat : 45.4642;
+  const baseLon = (dep && typeof dep.lon === 'number' && !isNaN(dep.lon) && dep.lon !== null) ? dep.lon : 9.1900;
   const offsetLat = (Math.random() - 0.5) * 0.12;
   const offsetLon = (Math.random() - 0.5) * 0.18;
 
+  if (!State.vrptwConfig.customers) State.vrptwConfig.customers = [];
   const newId = State.vrptwConfig.customers.length + 1;
   State.vrptwConfig.customers.push({
     id: newId,
     name: name,
-    lat: Number((dep.lat + offsetLat).toFixed(4)),
-    lon: Number((dep.lon + offsetLon).toFixed(4)),
+    lat: Number((baseLat + offsetLat).toFixed(4)),
+    lon: Number((baseLon + offsetLon).toFixed(4)),
     demand: parseFloat(demand) || 300,
     ready_time: 60,
     due_time: 300,
@@ -1517,6 +1676,16 @@ function filterVrptwCustomersByCapacity(andSolve = false) {
 }
 
 async function solveVrptw() {
+  if (!State.vrptwConfig || !State.vrptwConfig.customers || State.vrptwConfig.customers.length === 0) {
+    showToast('⚠️ Inserisci almeno una destinazione e l\'hub prima di avviare il calcolo!');
+    return;
+  }
+  const dep = State.vrptwConfig.depot;
+  if (!dep || dep.lat == null || dep.lon == null || isNaN(dep.lat) || isNaN(dep.lon)) {
+    showToast('⚠️ Inserisci le coordinate dell\'hub logistico prima di avviare il calcolo!');
+    return;
+  }
+
   const btn = document.getElementById('btnSolveVrptw');
   if (btn) {
     btn.innerText = '⏳ Calcolo Orari & Tappe...';
@@ -1745,7 +1914,7 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
   const bounds = L.latLngBounds();
 
   function addPoint(lat, lon) {
-    if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+    if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon) && lat !== null && lon !== null) {
       bounds.extend([lat, lon]);
     }
   }
@@ -1753,6 +1922,7 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
   // 1. GESTIONE DEI DEPOSITI
   if (type === 'mdvrp') {
     (config.depots || []).forEach((d, idx) => {
+      if (typeof d.lat !== 'number' || typeof d.lon !== 'number' || isNaN(d.lat) || isNaN(d.lon) || d.lat === null || d.lon === null) return;
       addPoint(d.lat, d.lon);
       const depColor = d.color || State.vehicleColors[idx % State.vehicleColors.length];
       const icon = createCustomMarkerIcon('🏢', depColor, '#ffffff', 32);
@@ -1760,7 +1930,7 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
         .bindPopup(`<b>🏢 Deposito Base: ${d.name || d.id}</b><br>ID: ${d.id}<br>GPS: ${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}`)
         .addTo(map._routeLayerGroup);
     });
-  } else if (config.depot) {
+  } else if (config.depot && typeof config.depot.lat === 'number' && typeof config.depot.lon === 'number' && !isNaN(config.depot.lat) && !isNaN(config.depot.lon) && config.depot.lat !== null && config.depot.lon !== null) {
     addPoint(config.depot.lat, config.depot.lon);
     const icon = createCustomMarkerIcon('🏢', '#ef4444', '#ffffff', 32);
     let popupHtml = `<b>🏢 Hub / Deposito Centrale</b><br><b>${config.depot.name || 'Hub'}</b><br>GPS: ${config.depot.lat.toFixed(5)}, ${config.depot.lon.toFixed(5)}`;
@@ -1776,6 +1946,7 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
   if (type === 'ev' && (config.intermediate_facilities || config.facilities)) {
     const facs = config.intermediate_facilities || config.facilities || [];
     facs.forEach(f => {
+      if (typeof f.lat !== 'number' || typeof f.lon !== 'number' || isNaN(f.lat) || isNaN(f.lon) || f.lat === null || f.lon === null) return;
       addPoint(f.lat, f.lon);
       const icon = createCustomMarkerIcon('⚡', '#059669', '#34d399', 28);
       L.marker([f.lat, f.lon], { icon })
@@ -1787,21 +1958,21 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
   // 3. GESTIONE RICHIESTE RITIRO/CONSEGNA (VRPPD)
   if (type === 'vrppd' && config.requests) {
     config.requests.forEach(req => {
-      if (req.pickup) {
+      if (req.pickup && typeof req.pickup.lat === 'number' && typeof req.pickup.lon === 'number' && !isNaN(req.pickup.lat) && !isNaN(req.pickup.lon) && req.pickup.lat !== null && req.pickup.lon !== null) {
         addPoint(req.pickup.lat, req.pickup.lon);
         const iconP = createCustomMarkerIcon('P', '#10b981', '#ffffff', 26);
         L.marker([req.pickup.lat, req.pickup.lon], { icon: iconP })
           .bindPopup(`<b>🟢 Ritiro (${req.id})</b><br><b>${req.pickup.name}</b><br>Carico da prelevare: <b>+${req.demand_kg} kg</b><br>GPS: ${req.pickup.lat.toFixed(5)}, ${req.pickup.lon.toFixed(5)}`)
           .addTo(map._routeLayerGroup);
       }
-      if (req.delivery) {
+      if (req.delivery && typeof req.delivery.lat === 'number' && typeof req.delivery.lon === 'number' && !isNaN(req.delivery.lat) && !isNaN(req.delivery.lon) && req.delivery.lat !== null && req.delivery.lon !== null) {
         addPoint(req.delivery.lat, req.delivery.lon);
         const iconD = createCustomMarkerIcon('D', '#f59e0b', '#ffffff', 26);
         L.marker([req.delivery.lat, req.delivery.lon], { icon: iconD })
           .bindPopup(`<b>🟠 Consegna (${req.id})</b><br><b>${req.delivery.name}</b><br>Carico da recapitare: <b>-${req.demand_kg} kg</b><br>GPS: ${req.delivery.lat.toFixed(5)}, ${req.delivery.lon.toFixed(5)}`)
           .addTo(map._routeLayerGroup);
       }
-      if (req.pickup && req.delivery) {
+      if (req.pickup && req.delivery && typeof req.pickup.lat === 'number' && typeof req.delivery.lat === 'number' && !isNaN(req.pickup.lat) && !isNaN(req.delivery.lat)) {
         L.polyline([[req.pickup.lat, req.pickup.lon], [req.delivery.lat, req.delivery.lon]], {
           color: '#94a3b8',
           weight: 1.5,
@@ -1815,9 +1986,10 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
   // 4. GESTIONE CLIENTI NORMALI (CVRP, VRPTW, EV, MDVRP)
   if (config.customers && type !== 'vrppd') {
     config.customers.forEach(c => {
+      if (typeof c.lat !== 'number' || typeof c.lon !== 'number' || isNaN(c.lat) || isNaN(c.lon) || c.lat === null || c.lon === null) return;
       addPoint(c.lat, c.lon);
       const icon = createCustomMarkerIcon(c.id, '#0284c7', '#ffffff', 24);
-      let popupHtml = `<b>📍 Cliente #${c.id}: ${c.name}</b><br>Carico Richiesto: <b>${c.demand_kg} kg</b><br>GPS: ${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`;
+      let popupHtml = `<b>📍 Cliente #${c.id}: ${c.name}</b><br>Carico Richiesto: <b>${c.demand_kg || c.demand || 0} kg</b><br>GPS: ${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`;
       if (type === 'vrptw') {
         popupHtml += `<br>Finestra Oraria: <b>${formatMinutesToTime(c.ready_time)} - ${formatMinutesToTime(c.due_time)}</b><br>Tempo scarico: ${c.service_time} min`;
       }
@@ -1922,8 +2094,12 @@ function drawRouteCanvas(canvasId, config, solution) {
 
   // Bounding box
   const allPoints = [];
-  if (config.depot) allPoints.push(config.depot);
-  if (config.customers && config.customers.length > 0) allPoints.push(...config.customers);
+  if (config.depot && typeof config.depot.lat === 'number' && !isNaN(config.depot.lat) && config.depot.lat !== null) allPoints.push(config.depot);
+  if (config.customers && config.customers.length > 0) {
+    config.customers.forEach(c => {
+      if (typeof c.lat === 'number' && !isNaN(c.lat) && c.lat !== null) allPoints.push(c);
+    });
+  }
   if (allPoints.length === 0) return;
 
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
@@ -2048,46 +2224,84 @@ function drawArrow(ctx, x, y, angle, color) {
 // 5. MODELLO CARP: RACCOLTA PORTA A PORTA & RETE STRADALE
 // ==========================================
 async function loadCarpConfig() {
-  try {
-    const res = await fetch('/api/config');
-    State.carpConfig = await res.json();
+  if (!State.hasImportedConfigFile && !State.carpConfig) {
+    State.carpConfig = {
+      name: 'CARP Servizio Stradale',
+      depot: { name: '', lat: null, lon: null, node_id: 1 },
+      streets: [],
+      vehicles: getWizardConcreteVehicles().map(v => ({
+        name: v.name,
+        capacity_kg: v.capacity_kg,
+        fixed_cost: v.fixed_cost,
+        description: v.category
+      }))
+    };
+    State.carpResult = null;
     renderCarpTables();
-  } catch (e) {
-    console.error('Errore caricamento CARP:', e);
+    return;
   }
+  if (!State.carpConfig) {
+    try {
+      const res = await fetch('/api/config');
+      State.carpConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento CARP:', e);
+    }
+  }
+  renderCarpTables();
 }
 
 function renderCarpTables() {
   if (!State.carpConfig) return;
 
+  // 0. Deposito CARP
+  const dep = State.carpConfig.depot;
+  const nameInp = document.getElementById('carpDepotName');
+  const latInp = document.getElementById('carpDepotLat');
+  const lonInp = document.getElementById('carpDepotLon');
+  if (nameInp) nameInp.value = (dep && dep.name) ? dep.name : '';
+  if (latInp) latInp.value = (dep && dep.lat !== null && dep.lat !== undefined && !isNaN(dep.lat) && dep.lat !== '') ? dep.lat : '';
+  if (lonInp) lonInp.value = (dep && dep.lon !== null && dep.lon !== undefined && !isNaN(dep.lon) && dep.lon !== '') ? dep.lon : '';
+
   // 1. Tabella Strade
   const tbody = document.getElementById('carpStreetsBody');
   const countEl = document.getElementById('carpStreetsCount');
-  if (countEl && State.carpConfig.streets) {
-    countEl.innerText = `${State.carpConfig.streets.length} tratte viarie`;
+  const streets = State.carpConfig.streets || [];
+  if (countEl) {
+    countEl.innerText = `${streets.length} tratte viarie`;
   }
 
-  if (tbody && State.carpConfig.streets) {
+  if (tbody) {
     tbody.innerHTML = '';
-    State.carpConfig.streets.forEach((s, idx) => {
-      const tr = document.createElement('tr');
-      tr.className = 'carp-street-row';
-      tr.dataset.name = (s.name || '').toLowerCase();
-      tr.dataset.nodes = `${s.u}-${s.v}`;
-      tr.innerHTML = `
-        <td><b>${s.name}</b><br><small style="color:var(--text-muted);">${s.description || ''}</small></td>
-        <td><span class="code-tag">${s.u} &rarr; ${s.v}</span></td>
-        <td>
-          <input type="number" class="cell-inp" min="0" step="50" value="${s.demand_kg}"
-            onchange="updateCarpStreetDemand(${idx}, this.value)">
-        </td>
-        <td>
-          <input type="number" class="cell-inp" min="0.5" step="0.5" value="${s.transit_cost}"
-            onchange="updateCarpStreetTransit(${idx}, this.value)">
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    if (streets.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 22px;">Nessuna tratta stradale caricata. Clicca su <b>🌍 Importa da OpenStreetMap</b> per caricare la rete viaria della tua zona.</td></tr>';
+    } else {
+      streets.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'carp-street-row';
+        tr.dataset.name = (s.name || '').toLowerCase();
+        tr.dataset.nodes = `${s.u}-${s.v}`;
+        tr.innerHTML = `
+          <td><b>${s.name}</b><br><small style="color:var(--text-muted);">${s.description || ''}</small></td>
+          <td><span class="code-tag">${s.u} &rarr; ${s.v}</span></td>
+          <td>
+            <input type="number" class="cell-inp" min="0" step="50" value="${s.demand_kg}"
+              onchange="updateCarpStreetDemand(${idx}, this.value)">
+          </td>
+          <td>
+            <input type="number" class="cell-inp" min="0.5" step="0.5" value="${s.transit_cost}"
+              onchange="updateCarpStreetTransit(${idx}, this.value)">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  // Mappa Iframe Folium: se vuota o non ancora calcolata, mostra stato vuoto
+  const iframe = document.getElementById('carpMapIframe');
+  if (iframe && !State.carpResult && streets.length === 0) {
+    iframe.srcdoc = `<!DOCTYPE html><html><body style="background:#080d18;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;"><div><span style="font-size:36px;">🗺️</span><br><br><b style="color:#e2e8f0;font-size:14px;">Mappa GIS CARP Vuota</b><br><span style="color:#64748b;font-size:12px;">Nessuna tratta stradale presente.<br>Clicca su '🌍 Importa da OpenStreetMap' per scaricare la rete viaria della tua zona.</span></div></body></html>`;
   }
 
   // 2. Tabella Veicoli / Compattatori
@@ -2156,6 +2370,17 @@ function updateCarpFleetCapacitySummary() {
       <span style="color: #34d399; font-weight: 700;">✅ Flotta Idonea:</span> 
       Portata Flotta <b>${totalCapacity.toLocaleString()} kg</b> per <b>${totalDemand.toLocaleString()} kg</b> di rifiuti stimati (Margine sicurezza: +${marginPct}%).
     `;
+  }
+}
+
+function updateCarpDepot(field, val) {
+  if (!State.carpConfig) return;
+  if (!State.carpConfig.depot) State.carpConfig.depot = {};
+  if (field === 'lat' || field === 'lon') {
+    const num = parseFloat(val);
+    State.carpConfig.depot[field] = isNaN(num) ? null : num;
+  } else {
+    State.carpConfig.depot[field] = val;
   }
 }
 
@@ -2319,6 +2544,11 @@ async function applyCarpSectorSize(val) {
 }
 
 async function solveCarp() {
+  if (!State.carpConfig || !State.carpConfig.streets || State.carpConfig.streets.length === 0) {
+    showToast('⚠️ Nessuna tratta stradale presente. Importa prima la rete da OpenStreetMap!');
+    return;
+  }
+
   const btn = document.getElementById('btnSolveCarp');
   if (btn) {
     btn.innerText = '⏳ Risoluzione MILP...';
@@ -2381,6 +2611,7 @@ async function solveCarp() {
     // Ricarica Iframe Mappa Folium
     const iframe = document.getElementById('carpMapIframe');
     if (iframe) {
+      iframe.removeAttribute('srcdoc');
       iframe.src = '/output/percorso_raccolta.html?t=' + Date.now();
     }
     showToast('CARP risolto: mappa GIS e report mezzi aggiornati!');
@@ -2523,14 +2754,38 @@ function renderCarpVehicleReport(data) {
 // 6. MODELLO EV-VRP & WCVRPTW-IF (SCARICHI INTERMEDI & FLOTTE ELETTRICHE)
 // ==========================================
 async function loadEvConfig() {
-  try {
-    const res = await fetch('/api/ev_vrp/config');
-    State.evConfig = await res.json();
+  if (!State.hasImportedConfigFile && !State.evConfig) {
+    State.evConfig = {
+      name: 'EV-VRP Flotta',
+      depot: { name: '', lat: null, lon: null },
+      kwh_cost: 0.28,
+      kwh_per_km: 0.35,
+      customers: [],
+      intermediate_facilities: [],
+      vehicles: getWizardConcreteVehicles().map((v, idx) => ({
+        name: v.name,
+        capacity: v.capacity,
+        battery_kwh: 60 + (idx * 10),
+        fixed_cost: v.fixed_cost
+      }))
+    };
+    State.evResult = null;
     renderEvTables();
-    drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
-  } catch (e) {
-    console.error('Errore caricamento EV-VRP:', e);
+    renderLeafletRouteMap('evMap', 'ev', State.evConfig, null);
+    drawEvCanvas('evCanvas', State.evConfig, null);
+    return;
   }
+  if (!State.evConfig) {
+    try {
+      const res = await fetch('/api/ev_vrp/config');
+      State.evConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento EV-VRP:', e);
+    }
+  }
+  renderEvTables();
+  renderLeafletRouteMap('evMap', 'ev', State.evConfig, State.evResult || null);
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
 }
 
 function renderEvTables() {
@@ -2538,19 +2793,18 @@ function renderEvTables() {
 
   // 0. Deposito EV
   const dep = State.evConfig.depot;
-  if (dep) {
-    const nameInp = document.getElementById('evDepotName');
-    const latInp = document.getElementById('evDepotLat');
-    const lonInp = document.getElementById('evDepotLon');
-    if (nameInp) nameInp.value = dep.name || 'Hub Flotta EV';
-    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
-    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
-  }
+  const nameInp = document.getElementById('evDepotName');
+  const latInp = document.getElementById('evDepotLat');
+  const lonInp = document.getElementById('evDepotLon');
+  if (nameInp) nameInp.value = (dep && dep.name) ? dep.name : '';
+  if (latInp) latInp.value = (dep && dep.lat !== null && dep.lat !== undefined && !isNaN(dep.lat) && dep.lat !== '') ? dep.lat : '';
+  if (lonInp) lonInp.value = (dep && dep.lon !== null && dep.lon !== undefined && !isNaN(dep.lon) && dep.lon !== '') ? dep.lon : '';
 
   // Conteggio Clienti
   const countEl = document.getElementById('evCustomerCount');
-  if (countEl && State.evConfig.customers) {
-    countEl.innerText = `${State.evConfig.customers.length} clienti / punti`;
+  const custs = State.evConfig.customers || [];
+  if (countEl) {
+    countEl.innerText = `${custs.length} clienti / punti`;
   }
 
   // Costo kWh e Consumo
@@ -2565,67 +2819,76 @@ function renderEvTables() {
 
   // 1. Tabella Clienti con Coordinate Modificabili
   const cBody = document.getElementById('evCustomersBody');
-  if (cBody && State.evConfig.customers) {
+  if (cBody) {
     cBody.innerHTML = '';
-    State.evConfig.customers.forEach((c, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}"
-            onchange="updateEvCustomerField(${idx}, 'name', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lat}"
-            onchange="updateEvCustomerCoord(${idx}, 'lat', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lon}"
-            onchange="updateEvCustomerCoord(${idx}, 'lon', this.value)">
-        </td>
-        <td>
-          <input type="number" class="cell-inp" style="width: 80px;" min="10" step="50" value="${c.demand}"
-            onchange="updateEvCustomerDemand(${idx}, this.value)">
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeEvCustomer(${idx})">&times;</button>
-        </td>
-      `;
-      cBody.appendChild(tr);
-    });
+    if (custs.length === 0) {
+      cBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Nessun cliente presente. Clicca su <b>+ Nuovo Cliente</b> per inserire destinazioni.</td></tr>';
+    } else {
+      custs.forEach((c, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}"
+              onchange="updateEvCustomerField(${idx}, 'name', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lat != null ? c.lat : ''}"
+              onchange="updateEvCustomerCoord(${idx}, 'lat', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lon != null ? c.lon : ''}"
+              onchange="updateEvCustomerCoord(${idx}, 'lon', this.value)">
+          </td>
+          <td>
+            <input type="number" class="cell-inp" style="width: 80px;" min="10" step="50" value="${c.demand || ''}"
+              onchange="updateEvCustomerDemand(${idx}, this.value)">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeEvCustomer(${idx})">&times;</button>
+          </td>
+        `;
+        cBody.appendChild(tr);
+      });
+    }
   }
 
   // 2. Tabella Impianti Intermedi con Coordinate Modificabili
   const fBody = document.getElementById('evFacilitiesBody');
-  if (fBody && State.evConfig.intermediate_facilities) {
+  if (fBody) {
     fBody.innerHTML = '';
-    State.evConfig.intermediate_facilities.forEach((f, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${f.name || ''}"
-            onchange="updateEvFacilityField(${idx}, 'name', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${f.lat}"
-            onchange="updateEvFacilityCoord(${idx}, 'lat', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${f.lon}"
-            onchange="updateEvFacilityCoord(${idx}, 'lon', this.value)">
-        </td>
-        <td>
-          <select class="cell-inp" style="width: 100%;" onchange="updateEvFacilityField(${idx}, 'type', this.value)">
-            <option value="recharge" ${f.type === 'recharge' ? 'selected' : ''}>⚡ Colonnina DC 150kW</option>
-            <option value="dump" ${f.type === 'dump' ? 'selected' : ''}>🔄 Scarico TMB Rifiuti</option>
-            <option value="both" ${f.type === 'both' ? 'selected' : ''}>⚡🔄 Multi-servizio</option>
-          </select>
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-danger-outline" title="Rimuovi impianto" onclick="removeEvFacility(${idx})">&times;</button>
-        </td>
-      `;
-      fBody.appendChild(tr);
-    });
+    const facs = State.evConfig.intermediate_facilities || [];
+    if (facs.length === 0) {
+      fBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 14px;">Nessun impianto intermedio configurato. Clicca su <b>+ Impianto</b> per aggiungerne uno.</td></tr>';
+    } else {
+      facs.forEach((f, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${f.name || ''}"
+              onchange="updateEvFacilityField(${idx}, 'name', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${f.lat != null ? f.lat : ''}"
+              onchange="updateEvFacilityCoord(${idx}, 'lat', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${f.lon != null ? f.lon : ''}"
+              onchange="updateEvFacilityCoord(${idx}, 'lon', this.value)">
+          </td>
+          <td>
+            <select class="cell-inp" style="width: 100%;" onchange="updateEvFacilityField(${idx}, 'type', this.value)">
+              <option value="recharge" ${f.type === 'recharge' ? 'selected' : ''}>⚡ Colonnina DC 150kW</option>
+              <option value="dump" ${f.type === 'dump' ? 'selected' : ''}>🔄 Scarico TMB Rifiuti</option>
+              <option value="both" ${f.type === 'both' ? 'selected' : ''}>⚡🔄 Multi-servizio</option>
+            </select>
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-danger-outline" title="Rimuovi impianto" onclick="removeEvFacility(${idx})">&times;</button>
+          </td>
+        `;
+        fBody.appendChild(tr);
+      });
+    }
   }
 
   // 3. Tabella Flotta Veicoli EV
@@ -2699,9 +2962,11 @@ function updateEvFleetCapacitySummary() {
 }
 
 function updateEvDepot(field, val) {
-  if (!State.evConfig || !State.evConfig.depot) return;
+  if (!State.evConfig) return;
+  if (!State.evConfig.depot) State.evConfig.depot = {};
   if (field === 'lat' || field === 'lon') {
-    State.evConfig.depot[field] = parseFloat(val) || 0;
+    const num = parseFloat(val);
+    State.evConfig.depot[field] = isNaN(num) ? null : num;
   } else {
     State.evConfig.depot[field] = val;
   }
@@ -2715,7 +2980,8 @@ function updateEvCustomerField(idx, field, val) {
 
 function updateEvCustomerCoord(idx, coord, val) {
   if (!State.evConfig || !State.evConfig.customers || !State.evConfig.customers[idx]) return;
-  State.evConfig.customers[idx][coord] = parseFloat(val) || 0;
+  const num = parseFloat(val);
+  State.evConfig.customers[idx][coord] = isNaN(num) ? null : num;
   drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
 }
 
@@ -2727,7 +2993,8 @@ function updateEvFacilityField(idx, field, val) {
 
 function updateEvFacilityCoord(idx, coord, val) {
   if (!State.evConfig || !State.evConfig.intermediate_facilities || !State.evConfig.intermediate_facilities[idx]) return;
-  State.evConfig.intermediate_facilities[idx][coord] = parseFloat(val) || 0;
+  const num = parseFloat(val);
+  State.evConfig.intermediate_facilities[idx][coord] = isNaN(num) ? null : num;
   drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
 }
 
@@ -2765,15 +3032,18 @@ function addEvCustomerRow() {
   const demand = prompt('Domanda merci (kg):', '300');
 
   const dep = State.evConfig.depot;
+  const baseLat = (dep && typeof dep.lat === 'number' && !isNaN(dep.lat) && dep.lat !== null) ? dep.lat : 45.4642;
+  const baseLon = (dep && typeof dep.lon === 'number' && !isNaN(dep.lon) && dep.lon !== null) ? dep.lon : 9.1900;
   const offsetLat = (Math.random() - 0.5) * 0.14;
   const offsetLon = (Math.random() - 0.5) * 0.20;
 
+  if (!State.evConfig.customers) State.evConfig.customers = [];
   const newId = State.evConfig.customers.length + 10;
   State.evConfig.customers.push({
     id: newId,
     name: name,
-    lat: Number((dep.lat + offsetLat).toFixed(4)),
-    lon: Number((dep.lon + offsetLon).toFixed(4)),
+    lat: Number((baseLat + offsetLat).toFixed(4)),
+    lon: Number((baseLon + offsetLon).toFixed(4)),
     demand: parseFloat(demand) || 250
   });
   renderEvTables();
@@ -2794,16 +3064,19 @@ function addEvFacilityRow() {
   if (!name) return;
 
   const dep = State.evConfig.depot;
+  const baseLat = (dep && typeof dep.lat === 'number' && !isNaN(dep.lat) && dep.lat !== null) ? dep.lat : 45.4642;
+  const baseLon = (dep && typeof dep.lon === 'number' && !isNaN(dep.lon) && dep.lon !== null) ? dep.lon : 9.1900;
   const offsetLat = (Math.random() - 0.5) * 0.10;
   const offsetLon = (Math.random() - 0.5) * 0.12;
 
+  if (!State.evConfig.intermediate_facilities) State.evConfig.intermediate_facilities = [];
   const newId = (State.evConfig.intermediate_facilities || []).length + 100;
   State.evConfig.intermediate_facilities.push({
     id: newId,
     name: name,
     type: 'recharge',
-    lat: Number((dep.lat + offsetLat).toFixed(4)),
-    lon: Number((dep.lon + offsetLon).toFixed(4))
+    lat: Number((baseLat + offsetLat).toFixed(4)),
+    lon: Number((baseLon + offsetLon).toFixed(4))
   });
   renderEvTables();
   drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
@@ -2901,6 +3174,21 @@ function filterEvCustomersByCapacity(andSolve = false) {
 }
 
 async function solveEvVrp() {
+  if (!State.evConfig || !State.evConfig.customers || State.evConfig.customers.length === 0) {
+    showToast('⚠️ Inserisci almeno un cliente per ottimizzare il modello EV-VRP!', 4000);
+    return;
+  }
+  const depotLat = parseFloat(State.evConfig.depot?.lat);
+  const depotLon = parseFloat(State.evConfig.depot?.lon);
+  if (isNaN(depotLat) || isNaN(depotLon)) {
+    showToast('⚠️ Inserisci le coordinate del deposito principale (Latitudine e Longitudine)!', 4000);
+    return;
+  }
+  if (!State.evConfig.vehicles || State.evConfig.vehicles.length === 0) {
+    showToast('⚠️ Aggiungi almeno un veicolo elettrico alla flotta!', 4000);
+    return;
+  }
+
   const btn = document.getElementById('btnSolveEv');
   if (btn) {
     btn.innerText = '⏳ Calcolo Cicli & Ricariche...';
@@ -3162,15 +3450,40 @@ function drawEvCanvas(canvasId, config, solution) {
 // 5. MODELLO VRPPD (PICKUP AND DELIVERY PROBLEM)
 // ==========================================
 async function loadVrppdConfig() {
-  try {
-    const res = await fetch('/api/vrppd/config');
-    State.vrppdConfig = await res.json();
+  if (!State.hasImportedConfigFile && !State.vrppdConfig) {
+    const wizardVehs = getWizardConcreteVehicles();
+    State.vrppdConfig = {
+      depot: { id: 'DEPOT', name: '', lat: null, lon: null },
+      cost_per_km: 1.25,
+      requests: [],
+      vehicles: wizardVehs.length > 0 ? wizardVehs.map(v => ({
+        name: v.name,
+        capacity: v.capacity,
+        fixed_cost: v.fixed_cost,
+        description: v.category || 'Furgone'
+      })) : [
+        { name: 'Furgone_Express_1', capacity: 900.0, fixed_cost: 85.0, description: 'Furgone per ritiri e consegne' }
+      ]
+    };
+    State.vrppdResult = null;
     renderVrppdTables();
-    drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
-  } catch (e) {
-    console.error('Errore caricamento VRPPD:', e);
-    showToast('Errore nel caricamento della configurazione VRPPD');
+    renderLeafletRouteMap('vrppdMap', 'vrppd', State.vrppdConfig, null);
+    drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, null);
+    return;
   }
+
+  if (!State.vrppdConfig) {
+    try {
+      const res = await fetch('/api/vrppd/config');
+      State.vrppdConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento VRPPD:', e);
+      showToast('Errore nel caricamento della configurazione VRPPD');
+    }
+  }
+  renderVrppdTables();
+  renderLeafletRouteMap('vrppdMap', 'vrppd', State.vrppdConfig, State.vrppdResult || null);
+  drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
 }
 
 function renderVrppdTables() {
@@ -3182,9 +3495,9 @@ function renderVrppdTables() {
     const nameInp = document.getElementById('vrppdDepotName');
     const latInp = document.getElementById('vrppdDepotLat');
     const lonInp = document.getElementById('vrppdDepotLon');
-    if (nameInp) nameInp.value = dep.name || 'Hub Centrale';
-    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
-    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
+    if (nameInp) nameInp.value = dep.name || '';
+    if (latInp) latInp.value = (dep.lat !== undefined && dep.lat !== null) ? dep.lat : '';
+    if (lonInp) lonInp.value = (dep.lon !== undefined && dep.lon !== null) ? dep.lon : '';
   }
 
   // 1. Tabella Richieste Accoppiate (P & D) con Coordinate Modificabili
@@ -3195,40 +3508,50 @@ function renderVrppdTables() {
     const countEl = document.getElementById('vrppdReqCount');
     if (countEl) countEl.innerText = `${reqs.length} richieste`;
 
-    reqs.forEach((r, idx) => {
+    if (reqs.length === 0) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${r.name}" onchange="updateVrppdRequest(${idx}, 'name', this.value)">
-          <small style="color: var(--text-muted); font-size: 11px;">ID: ${r.id}</small>
-        </td>
-        <td>
-          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="1" max="10000" step="10" value="${r.demand_kg}" onchange="updateVrppdRequest(${idx}, 'demand_kg', parseFloat(this.value)||10)">
-        </td>
-        <td>
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <input type="text" class="cell-inp" style="width: 100%; font-size: 11.5px; font-weight:600; color:#34d399;" value="${r.pickup.name || ''}" placeholder="Nome Ritiro" onchange="updateVrppdPoint(${idx}, 'pickup', 'name', this.value)">
-            <div style="display: flex; gap: 4px; font-size: 11px;">
-              <span>Lat: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.pickup.lat}" onchange="updateVrppdPoint(${idx}, 'pickup', 'lat', this.value)"></span>
-              <span>Lon: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.pickup.lon}" onchange="updateVrppdPoint(${idx}, 'pickup', 'lon', this.value)"></span>
-            </div>
-          </div>
-        </td>
-        <td>
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <input type="text" class="cell-inp" style="width: 100%; font-size: 11.5px; font-weight:600; color:#fb923c;" value="${r.delivery.name || ''}" placeholder="Nome Consegna" onchange="updateVrppdPoint(${idx}, 'delivery', 'name', this.value)">
-            <div style="display: flex; gap: 4px; font-size: 11px;">
-              <span>Lat: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.delivery.lat}" onchange="updateVrppdPoint(${idx}, 'delivery', 'lat', this.value)"></span>
-              <span>Lon: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.delivery.lon}" onchange="updateVrppdPoint(${idx}, 'delivery', 'lon', this.value)"></span>
-            </div>
-          </div>
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-del" onclick="removeVrppdRequest(${idx})" title="Rimuovi richiesta">✕</button>
+        <td colspan="5" style="text-align: center; padding: 22px 10px; color: var(--text-muted); font-style: italic;">
+          Nessuna spedizione registrata. Clicca su "+ Aggiungi Richiesta (P&D)" per inserire mittente e destinatario o importa un file.
         </td>
       `;
       reqBody.appendChild(tr);
-    });
+    } else {
+      reqs.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${r.name || ''}" placeholder="Spedizione" onchange="updateVrppdRequest(${idx}, 'name', this.value)">
+            <small style="color: var(--text-muted); font-size: 11px;">ID: ${r.id}</small>
+          </td>
+          <td>
+            <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="1" max="10000" step="10" value="${r.demand_kg || 10}" onchange="updateVrppdRequest(${idx}, 'demand_kg', parseFloat(this.value)||10)">
+          </td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <input type="text" class="cell-inp" style="width: 100%; font-size: 11.5px; font-weight:600; color:#34d399;" value="${r.pickup.name || ''}" placeholder="Nome Ritiro" onchange="updateVrppdPoint(${idx}, 'pickup', 'name', this.value)">
+              <div style="display: flex; gap: 4px; font-size: 11px;">
+                <span>Lat: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${(r.pickup.lat !== undefined && r.pickup.lat !== null) ? r.pickup.lat : ''}" placeholder="Lat" onchange="updateVrppdPoint(${idx}, 'pickup', 'lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${(r.pickup.lon !== undefined && r.pickup.lon !== null) ? r.pickup.lon : ''}" placeholder="Lon" onchange="updateVrppdPoint(${idx}, 'pickup', 'lon', this.value)"></span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <input type="text" class="cell-inp" style="width: 100%; font-size: 11.5px; font-weight:600; color:#fb923c;" value="${r.delivery.name || ''}" placeholder="Nome Consegna" onchange="updateVrppdPoint(${idx}, 'delivery', 'name', this.value)">
+              <div style="display: flex; gap: 4px; font-size: 11px;">
+                <span>Lat: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${(r.delivery.lat !== undefined && r.delivery.lat !== null) ? r.delivery.lat : ''}" placeholder="Lat" onchange="updateVrppdPoint(${idx}, 'delivery', 'lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${(r.delivery.lon !== undefined && r.delivery.lon !== null) ? r.delivery.lon : ''}" placeholder="Lon" onchange="updateVrppdPoint(${idx}, 'delivery', 'lon', this.value)"></span>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-del" onclick="removeVrppdRequest(${idx})" title="Rimuovi richiesta">✕</button>
+          </td>
+        `;
+        reqBody.appendChild(tr);
+      });
+    }
   }
 
   // 2. Tabella Veicoli VRPPD
@@ -3360,9 +3683,11 @@ function filterVrppdRequestsByCapacity(andSolve = false) {
 }
 
 function updateVrppdDepot(field, val) {
-  if (!State.vrppdConfig || !State.vrppdConfig.depot) return;
+  if (!State.vrppdConfig) return;
+  if (!State.vrppdConfig.depot) State.vrppdConfig.depot = { id: 'DEPOT', name: '', lat: null, lon: null };
   if (field === 'lat' || field === 'lon') {
-    State.vrppdConfig.depot[field] = parseFloat(val) || 0;
+    const num = parseFloat(val);
+    State.vrppdConfig.depot[field] = isNaN(num) ? null : num;
   } else {
     State.vrppdConfig.depot[field] = val;
   }
@@ -3374,7 +3699,8 @@ function updateVrppdPoint(reqIdx, pointType, field, val) {
   const pt = State.vrppdConfig.requests[reqIdx][pointType];
   if (!pt) return;
   if (field === 'lat' || field === 'lon') {
-    pt[field] = parseFloat(val) || 0;
+    const num = parseFloat(val);
+    pt[field] = isNaN(num) ? null : num;
   } else {
     pt[field] = val;
   }
@@ -3390,10 +3716,6 @@ function updateVrppdRequest(idx, field, val) {
 
 function removeVrppdRequest(idx) {
   if (!State.vrppdConfig || !State.vrppdConfig.requests) return;
-  if (State.vrppdConfig.requests.length <= 1) {
-    showToast('È necessario mantenere almeno una richiesta di ritiro/consegna!');
-    return;
-  }
   State.vrppdConfig.requests.splice(idx, 1);
   renderVrppdTables();
   drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
@@ -3403,13 +3725,15 @@ function removeVrppdRequest(idx) {
 function addVrppdRequestRow() {
   if (!State.vrppdConfig) return;
   if (!State.vrppdConfig.requests) State.vrppdConfig.requests = [];
-  const dep = State.vrppdConfig.depot;
+  const dep = State.vrppdConfig.depot || {};
+  const baseLat = (typeof dep.lat === 'number' && !isNaN(dep.lat) && dep.lat !== null) ? dep.lat : 45.4642;
+  const baseLon = (typeof dep.lon === 'number' && !isNaN(dep.lon) && dep.lon !== null) ? dep.lon : 9.1900;
   const num = State.vrppdConfig.requests.length + 1;
 
-  const pLat = Number((dep.lat + (Math.random() - 0.5) * 0.08).toFixed(4));
-  const pLon = Number((dep.lon + (Math.random() - 0.5) * 0.10).toFixed(4));
-  const dLat = Number((dep.lat + (Math.random() - 0.5) * 0.08).toFixed(4));
-  const dLon = Number((dep.lon + (Math.random() - 0.5) * 0.10).toFixed(4));
+  const pLat = Number((baseLat + (Math.random() - 0.5) * 0.08).toFixed(4));
+  const pLon = Number((baseLon + (Math.random() - 0.5) * 0.10).toFixed(4));
+  const dLat = Number((baseLat + (Math.random() - 0.5) * 0.08).toFixed(4));
+  const dLon = Number((baseLon + (Math.random() - 0.5) * 0.10).toFixed(4));
 
   State.vrppdConfig.requests.push({
     id: `REQ_${num}`,
@@ -3443,10 +3767,6 @@ function updateVrppdVehicle(idx, field, val) {
 
 function removeVrppdVehicle(idx) {
   if (!State.vrppdConfig || !State.vrppdConfig.vehicles) return;
-  if (State.vrppdConfig.vehicles.length <= 1) {
-    showToast('È necessario mantenere almeno un veicolo nella flotta VRPPD!');
-    return;
-  }
   State.vrppdConfig.vehicles.splice(idx, 1);
   renderVrppdTables();
   showToast('Veicolo VRPPD rimosso');
@@ -3473,6 +3793,21 @@ function updateVrppdCostPerKm(val) {
 }
 
 async function solveVrppd() {
+  if (!State.vrppdConfig || !State.vrppdConfig.requests || State.vrppdConfig.requests.length === 0) {
+    showToast('⚠️ Inserisci almeno una richiesta di trasporto (Ritiro e Consegna)!', 4000);
+    return;
+  }
+  const depotLat = parseFloat(State.vrppdConfig.depot?.lat);
+  const depotLon = parseFloat(State.vrppdConfig.depot?.lon);
+  if (isNaN(depotLat) || isNaN(depotLon)) {
+    showToast('⚠️ Inserisci le coordinate del deposito VRPPD (Latitudine e Longitudine)!', 4000);
+    return;
+  }
+  if (!State.vrppdConfig.vehicles || State.vrppdConfig.vehicles.length === 0) {
+    showToast('⚠️ Aggiungi almeno un veicolo alla flotta VRPPD!', 4000);
+    return;
+  }
+
   const btn = document.getElementById('btnSolveVrppd');
   if (btn) {
     btn.disabled = true;
@@ -3637,11 +3972,26 @@ function drawVrppdCanvas(canvasId, config, result) {
   ctx.clearRect(0, 0, w, h);
 
   // Raccolta coordinate
-  const pts = [config.depot];
+  const pts = [];
+  if (config.depot && typeof config.depot.lat === 'number' && !isNaN(config.depot.lat) && config.depot.lat !== null) pts.push(config.depot);
   (config.requests || []).forEach(r => {
-    pts.push(r.pickup);
-    pts.push(r.delivery);
+    if (r.pickup && typeof r.pickup.lat === 'number' && !isNaN(r.pickup.lat) && r.pickup.lat !== null) pts.push(r.pickup);
+    if (r.delivery && typeof r.delivery.lat === 'number' && !isNaN(r.delivery.lat) && r.delivery.lat !== null) pts.push(r.delivery);
   });
+
+  if (pts.length === 0) {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(20, 14, w - 40, 28);
+    ctx.strokeRect(20, 14, w - 40, 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '600 12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nessuna coordinata impostata. Inserisci il deposito e le richieste (P&D) per visualizzarle.', w / 2, 32);
+    ctx.textAlign = 'left';
+    return;
+  }
 
   const lats = pts.map(p => p.lat);
   const lons = pts.map(p => p.lon);
@@ -3801,15 +4151,41 @@ function drawVrppdCanvas(canvasId, config, result) {
 // 6. MODELLO MDVRP (MULTI-DEPOT VRP)
 // ==========================================
 async function loadMdvrpConfig() {
-  try {
-    const res = await fetch('/api/mdvrp/config');
-    State.mdvrpConfig = await res.json();
+  if (!State.hasImportedConfigFile && !State.mdvrpConfig) {
+    const wizardVehs = getWizardConcreteVehicles();
+    State.mdvrpConfig = {
+      name: 'MDVRP Flotta Personalizzata',
+      cost_per_km: 1.20,
+      depots: [],
+      customers: [],
+      vehicles: wizardVehs.length > 0 ? wizardVehs.map(v => ({
+        name: v.name,
+        home_depot: '',
+        capacity: v.capacity,
+        fixed_cost: v.fixed_cost
+      })) : [
+        { name: 'Camion_MD_1', home_depot: '', capacity: 2500.0, fixed_cost: 80.0 }
+      ]
+    };
+    State.mdvrpResult = null;
     renderMdvrpTables();
-    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
-  } catch (e) {
-    console.error('Errore caricamento MDVRP:', e);
-    showToast('Errore nel caricamento della configurazione MDVRP');
+    renderLeafletRouteMap('mdvrpMap', 'mdvrp', State.mdvrpConfig, null);
+    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, null);
+    return;
   }
+
+  if (!State.mdvrpConfig) {
+    try {
+      const res = await fetch('/api/mdvrp/config');
+      State.mdvrpConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento MDVRP:', e);
+      showToast('Errore nel caricamento della configurazione MDVRP');
+    }
+  }
+  renderMdvrpTables();
+  renderLeafletRouteMap('mdvrpMap', 'mdvrp', State.mdvrpConfig, State.mdvrpResult || null);
+  drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
 }
 
 function renderMdvrpTables() {
@@ -3821,28 +4197,38 @@ function renderMdvrpTables() {
     depBody.innerHTML = '';
     const deps = State.mdvrpConfig.depots || [];
 
-    deps.forEach((d, idx) => {
+    if (deps.length === 0) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${d.name}" onchange="updateMdvrpDepot(${idx}, 'name', this.value)">
-          <small style="color: var(--text-muted); font-size: 11px;">ID: ${d.id}</small>
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${d.lat}" onchange="updateMdvrpDepotCoord(${idx}, 'lat', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${d.lon}" onchange="updateMdvrpDepotCoord(${idx}, 'lon', this.value)">
-        </td>
-        <td>
-          <input type="color" value="${d.color || '#3b82f6'}" style="width: 32px; height: 24px; border: none; background: none; cursor: pointer;" onchange="updateMdvrpDepot(${idx}, 'color', this.value)">
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-del" onclick="removeMdvrpDepot(${idx})" title="Rimuovi deposito">✕</button>
+        <td colspan="5" style="text-align: center; padding: 20px 10px; color: var(--text-muted); font-style: italic;">
+          Nessun deposito impostato. Clicca su "+ Aggiungi Deposito" o importa un file per iniziare.
         </td>
       `;
       depBody.appendChild(tr);
-    });
+    } else {
+      deps.forEach((d, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${d.name || ''}" placeholder="Nome Deposito" onchange="updateMdvrpDepot(${idx}, 'name', this.value)">
+            <small style="color: var(--text-muted); font-size: 11px;">ID: ${d.id}</small>
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${(d.lat !== undefined && d.lat !== null) ? d.lat : ''}" placeholder="Lat" onchange="updateMdvrpDepotCoord(${idx}, 'lat', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${(d.lon !== undefined && d.lon !== null) ? d.lon : ''}" placeholder="Lon" onchange="updateMdvrpDepotCoord(${idx}, 'lon', this.value)">
+          </td>
+          <td>
+            <input type="color" value="${d.color || '#3b82f6'}" style="width: 32px; height: 24px; border: none; background: none; cursor: pointer;" onchange="updateMdvrpDepot(${idx}, 'color', this.value)">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-del" onclick="removeMdvrpDepot(${idx})" title="Rimuovi deposito">✕</button>
+          </td>
+        `;
+        depBody.appendChild(tr);
+      });
+    }
   }
 
   // 2. Tabella Clienti
@@ -3851,28 +4237,38 @@ function renderMdvrpTables() {
     custBody.innerHTML = '';
     const custs = State.mdvrpConfig.customers || [];
 
-    custs.forEach((c, idx) => {
+    if (custs.length === 0) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name}" onchange="updateMdvrpCustomer(${idx}, 'name', this.value)">
-          <small style="color: var(--text-muted); font-size: 11px;">ID: ${c.id}</small>
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lat}" onchange="updateMdvrpCustomerCoord(${idx}, 'lat', this.value)">
-        </td>
-        <td>
-          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lon}" onchange="updateMdvrpCustomerCoord(${idx}, 'lon', this.value)">
-        </td>
-        <td>
-          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="10" max="20000" step="50" value="${c.demand}" onchange="updateMdvrpCustomer(${idx}, 'demand', parseFloat(this.value)||100)">
-        </td>
-        <td style="text-align: center;">
-          <button class="btn-del" onclick="removeMdvrpCustomer(${idx})" title="Rimuovi cliente">✕</button>
+        <td colspan="5" style="text-align: center; padding: 20px 10px; color: var(--text-muted); font-style: italic;">
+          Nessun cliente inserito. Clicca su "+ Aggiungi Cliente" o importa un file per iniziare.
         </td>
       `;
       custBody.appendChild(tr);
-    });
+    } else {
+      custs.forEach((c, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" placeholder="Nome Cliente" onchange="updateMdvrpCustomer(${idx}, 'name', this.value)">
+            <small style="color: var(--text-muted); font-size: 11px;">ID: ${c.id}</small>
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${(c.lat !== undefined && c.lat !== null) ? c.lat : ''}" placeholder="Lat" onchange="updateMdvrpCustomerCoord(${idx}, 'lat', this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${(c.lon !== undefined && c.lon !== null) ? c.lon : ''}" placeholder="Lon" onchange="updateMdvrpCustomerCoord(${idx}, 'lon', this.value)">
+          </td>
+          <td>
+            <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="10" max="20000" step="50" value="${c.demand || 0}" onchange="updateMdvrpCustomer(${idx}, 'demand', parseFloat(this.value)||100)">
+          </td>
+          <td style="text-align: center;">
+            <button class="btn-del" onclick="removeMdvrpCustomer(${idx})" title="Rimuovi cliente">✕</button>
+          </td>
+        `;
+        custBody.appendChild(tr);
+      });
+    }
   }
 
   // 3. Tabella Veicoli con selettore Home Depot
@@ -3883,15 +4279,15 @@ function renderMdvrpTables() {
     const deps = State.mdvrpConfig.depots || [];
 
     vehs.forEach((v, idx) => {
-      let depotOptions = '';
+      let depotOptions = '<option value="">-- Seleziona Deposito --</option>';
       deps.forEach(d => {
-        depotOptions += `<option value="${d.id}" ${v.home_depot === d.id ? 'selected' : ''}>${d.name}</option>`;
+        depotOptions += `<option value="${d.id}" ${v.home_depot === d.id ? 'selected' : ''}>${d.name || d.id}</option>`;
       });
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${v.name}" onchange="updateMdvrpVehicle(${idx}, 'name', this.value)">
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${v.name || ''}" onchange="updateMdvrpVehicle(${idx}, 'name', this.value)">
         </td>
         <td>
           <select class="cell-inp" style="width: 100%;" onchange="updateMdvrpVehicle(${idx}, 'home_depot', this.value)">
@@ -4026,24 +4422,18 @@ function updateMdvrpDepot(idx, field, val) {
 function updateMdvrpDepotCoord(idx, coord, val) {
   if (State.mdvrpConfig && State.mdvrpConfig.depots && State.mdvrpConfig.depots[idx]) {
     const num = parseFloat(val);
-    if (!isNaN(num)) {
-      State.mdvrpConfig.depots[idx][coord] = num;
-      drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
-    }
+    State.mdvrpConfig.depots[idx][coord] = isNaN(num) ? null : num;
+    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   }
 }
 
 function removeMdvrpDepot(idx) {
   if (!State.mdvrpConfig || !State.mdvrpConfig.depots) return;
-  if (State.mdvrpConfig.depots.length <= 1) {
-    showToast('È necessario mantenere almeno un deposito nel modello MDVRP!');
-    return;
-  }
   const removedId = State.mdvrpConfig.depots[idx].id;
   State.mdvrpConfig.depots.splice(idx, 1);
 
-  // Se qualche veicolo aveva questo home_depot, riassegnalo al primo disponibile
-  const fallback = State.mdvrpConfig.depots[0].id;
+  // Se qualche veicolo aveva questo home_depot, riassegnalo al primo disponibile o vuoto
+  const fallback = State.mdvrpConfig.depots.length > 0 ? State.mdvrpConfig.depots[0].id : '';
   (State.mdvrpConfig.vehicles || []).forEach(v => {
     if (v.home_depot === removedId) v.home_depot = fallback;
   });
@@ -4058,15 +4448,22 @@ function addMdvrpDepotRow() {
   if (!State.mdvrpConfig.depots) State.mdvrpConfig.depots = [];
   const num = State.mdvrpConfig.depots.length + 1;
   const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#f59e0b'];
-  const baseLat = State.mdvrpConfig.depots[0] ? State.mdvrpConfig.depots[0].lat : 45.75;
-  const baseLon = State.mdvrpConfig.depots[0] ? State.mdvrpConfig.depots[0].lon : 12.25;
+  const firstDep = State.mdvrpConfig.depots.find(d => typeof d.lat === 'number' && !isNaN(d.lat) && d.lat !== null);
+  const baseLat = firstDep ? firstDep.lat : 45.4642;
+  const baseLon = firstDep ? firstDep.lon : 9.1900;
 
+  const newDepId = `DEP_${num}`;
   State.mdvrpConfig.depots.push({
-    id: `DEP_${num}`,
+    id: newDepId,
     name: `Magazzino Hub ${num}`,
     lat: Number((baseLat + (Math.random() - 0.5) * 0.15).toFixed(4)),
     lon: Number((baseLon + (Math.random() - 0.5) * 0.18).toFixed(4)),
     color: colors[(num - 1) % colors.length]
+  });
+
+  // Se ci sono veicoli senza deposito, assegna questo nuovo deposito
+  (State.mdvrpConfig.vehicles || []).forEach(v => {
+    if (!v.home_depot) v.home_depot = newDepId;
   });
 
   renderMdvrpTables();
@@ -4084,19 +4481,13 @@ function updateMdvrpCustomer(idx, field, val) {
 function updateMdvrpCustomerCoord(idx, coord, val) {
   if (State.mdvrpConfig && State.mdvrpConfig.customers && State.mdvrpConfig.customers[idx]) {
     const num = parseFloat(val);
-    if (!isNaN(num)) {
-      State.mdvrpConfig.customers[idx][coord] = num;
-      drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
-    }
+    State.mdvrpConfig.customers[idx][coord] = isNaN(num) ? null : num;
+    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   }
 }
 
 function removeMdvrpCustomer(idx) {
   if (!State.mdvrpConfig || !State.mdvrpConfig.customers) return;
-  if (State.mdvrpConfig.customers.length <= 1) {
-    showToast('È necessario mantenere almeno un cliente!');
-    return;
-  }
   State.mdvrpConfig.customers.splice(idx, 1);
   renderMdvrpTables();
   drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
@@ -4107,8 +4498,9 @@ function addMdvrpCustomerRow() {
   if (!State.mdvrpConfig) return;
   if (!State.mdvrpConfig.customers) State.mdvrpConfig.customers = [];
   const num = State.mdvrpConfig.customers.length + 1;
-  const baseLat = State.mdvrpConfig.depots[0] ? State.mdvrpConfig.depots[0].lat : 45.75;
-  const baseLon = State.mdvrpConfig.depots[0] ? State.mdvrpConfig.depots[0].lon : 12.25;
+  const firstDep = (State.mdvrpConfig.depots || []).find(d => typeof d.lat === 'number' && !isNaN(d.lat) && d.lat !== null);
+  const baseLat = firstDep ? firstDep.lat : 45.4642;
+  const baseLon = firstDep ? firstDep.lon : 9.1900;
 
   State.mdvrpConfig.customers.push({
     id: `CUST_${num}`,
@@ -4132,10 +4524,6 @@ function updateMdvrpVehicle(idx, field, val) {
 
 function removeMdvrpVehicle(idx) {
   if (!State.mdvrpConfig || !State.mdvrpConfig.vehicles) return;
-  if (State.mdvrpConfig.vehicles.length <= 1) {
-    showToast('È necessario mantenere almeno un veicolo nella flotta MDVRP!');
-    return;
-  }
   State.mdvrpConfig.vehicles.splice(idx, 1);
   renderMdvrpTables();
   showToast('Veicolo MDVRP rimosso');
@@ -4145,7 +4533,7 @@ function addMdvrpVehicleRow() {
   if (!State.mdvrpConfig) return;
   if (!State.mdvrpConfig.vehicles) State.mdvrpConfig.vehicles = [];
   const nextNum = State.mdvrpConfig.vehicles.length + 1;
-  const defaultDep = (State.mdvrpConfig.depots && State.mdvrpConfig.depots[0]) ? State.mdvrpConfig.depots[0].id : 'DEP_1';
+  const defaultDep = (State.mdvrpConfig.depots && State.mdvrpConfig.depots[0]) ? State.mdvrpConfig.depots[0].id : '';
 
   State.mdvrpConfig.vehicles.push({
     name: `Camion_MD_${nextNum}`,
@@ -4165,6 +4553,24 @@ function updateMdvrpCostPerKm(val) {
 }
 
 async function solveMdvrp() {
+  if (!State.mdvrpConfig || !State.mdvrpConfig.depots || State.mdvrpConfig.depots.length === 0) {
+    showToast('⚠️ Inserisci almeno un deposito base per il modello MDVRP!', 4000);
+    return;
+  }
+  const hasValidDepot = State.mdvrpConfig.depots.some(d => typeof d.lat === 'number' && !isNaN(d.lat) && d.lat !== null && typeof d.lon === 'number' && !isNaN(d.lon) && d.lon !== null);
+  if (!hasValidDepot) {
+    showToast('⚠️ Inserisci le coordinate valide (Lat/Lon) per almeno un deposito!', 4000);
+    return;
+  }
+  if (!State.mdvrpConfig.customers || State.mdvrpConfig.customers.length === 0) {
+    showToast('⚠️ Inserisci almeno un cliente per ottimizzare il modello MDVRP!', 4000);
+    return;
+  }
+  if (!State.mdvrpConfig.vehicles || State.mdvrpConfig.vehicles.length === 0) {
+    showToast('⚠️ Aggiungi almeno un veicolo alla flotta MDVRP!', 4000);
+    return;
+  }
+
   const btn = document.getElementById('btnSolveMdvrp');
   if (btn) {
     btn.disabled = true;
@@ -4331,7 +4737,28 @@ function drawMdvrpCanvas(canvasId, config, result) {
 
   ctx.clearRect(0, 0, w, h);
 
-  const pts = [...(config.depots || []), ...(config.customers || [])];
+  const pts = [];
+  (config.depots || []).forEach(d => {
+    if (typeof d.lat === 'number' && !isNaN(d.lat) && d.lat !== null) pts.push(d);
+  });
+  (config.customers || []).forEach(c => {
+    if (typeof c.lat === 'number' && !isNaN(c.lat) && c.lat !== null) pts.push(c);
+  });
+
+  if (pts.length === 0) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(w / 2 - 230, 16, 460, 32);
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+    ctx.strokeRect(w / 2 - 230, 16, 460, 32);
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = '12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nessuna coordinata impostata. Inserisci i depositi e i clienti per visualizzarli.', w / 2, 36);
+    ctx.restore();
+    return;
+  }
+
   const lats = pts.map(p => p.lat);
   const lons = pts.map(p => p.lon);
   const minLat = Math.min(...lats);
@@ -4597,9 +5024,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (hash && document.getElementById(hash) && hash !== 'tab-selector' && hash !== 'tab-faq') {
     switchMainTab(hash);
   } else {
-    const sel = document.getElementById('headerModelSelect');
-    const defaultModel = (sel && sel.value) ? sel.value : 'tab-carp';
-    switchMainTab(defaultModel);
+    switchMainTab('tab-selector');
   }
   renderWizardFleetTable();
   calculateRoi();

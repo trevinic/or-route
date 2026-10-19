@@ -419,12 +419,12 @@
                 <span style="font-size: 18px;">🏠</span>
                 <div>
                   <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Hub Centrale:</span>
-                  <input type="text" id="cvrpDepotName" class="cell-inp" style="width: 130px; margin-left: 6px; font-weight: 600;" onchange="updateCvrpDepot('name', this.value)">
+                  <input type="text" id="cvrpDepotName" class="cell-inp" style="width: 130px; margin-left: 6px; font-weight: 600;" placeholder="es. Hub Centrale" onchange="updateCvrpDepot('name', this.value)">
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
-                <span>Lat: <input type="number" step="0.0001" id="cvrpDepotLat" class="cell-inp" style="width: 82px;" onchange="updateCvrpDepot('lat', this.value)"></span>
-                <span>Lon: <input type="number" step="0.0001" id="cvrpDepotLon" class="cell-inp" style="width: 82px;" onchange="updateCvrpDepot('lon', this.value)"></span>
+                <span>Lat: <input type="number" step="0.0001" id="cvrpDepotLat" class="cell-inp" style="width: 82px;" placeholder="es. 45.4642" onchange="updateCvrpDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="cvrpDepotLon" class="cell-inp" style="width: 82px;" placeholder="es. 9.1900" onchange="updateCvrpDepot('lon', this.value)"></span>
               </div>
             </div>
 
@@ -572,12 +572,12 @@
                 <span style="font-size: 18px;">🏠</span>
                 <div>
                   <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">Hub Centrale:</span>
-                  <input type="text" id="vrptwDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" onchange="updateVrptwDepot('name', this.value)">
+                  <input type="text" id="vrptwDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" placeholder="es. Hub Logistico" onchange="updateVrptwDepot('name', this.value)">
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; flex-wrap: wrap;">
-                <span>Lat: <input type="number" step="0.0001" id="vrptwDepotLat" class="cell-inp" style="width: 78px;" onchange="updateVrptwDepot('lat', this.value)"></span>
-                <span>Lon: <input type="number" step="0.0001" id="vrptwDepotLon" class="cell-inp" style="width: 78px;" onchange="updateVrptwDepot('lon', this.value)"></span>
+                <span>Lat: <input type="number" step="0.0001" id="vrptwDepotLat" class="cell-inp" style="width: 78px;" placeholder="es. 45.4642" onchange="updateVrptwDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="vrptwDepotLon" class="cell-inp" style="width: 78px;" placeholder="es. 9.1900" onchange="updateVrptwDepot('lon', this.value)"></span>
                 <span>Apertura: <input type="time" id="vrptwDepotReady" class="cell-inp" style="width: 74px;" onchange="updateVrptwDepotTime('ready_time', this.value)"></span>
                 <span>Chiusura: <input type="time" id="vrptwDepotDue" class="cell-inp" style="width: 74px;" onchange="updateVrptwDepotTime('due_time', this.value)"></span>
               </div>
@@ -738,6 +738,21 @@
         <div class="grid-2col">
           <!-- Colonna Sinistra: Tabella Strade & Tabella Flotta Compattatori -->
           <div>
+            <!-- Deposito / Base Operativa Mezzi CARP -->
+            <div class="depot-banner">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🏠</span>
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Base Operativa / Deposito:</span>
+                  <input type="text" id="carpDepotName" class="cell-inp" style="width: 140px; margin-left: 6px; font-weight: 600;" placeholder="es. Base Operativa RSU" onchange="updateCarpDepot('name', this.value)">
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
+                <span>Lat: <input type="number" step="0.0001" id="carpDepotLat" class="cell-inp" style="width: 82px;" placeholder="es. 45.4642" onchange="updateCarpDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="carpDepotLon" class="cell-inp" style="width: 82px;" placeholder="es. 9.1900" onchange="updateCarpDepot('lon', this.value)"></span>
+              </div>
+            </div>
+
             <!-- Intestazione Strade con Filtro di Ricerca -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <h4 style="font-size: 14px; color: #38bdf8;">🛣️ Rete Stradale & Domanda Rifiuti (kg)</h4>
@@ -833,7 +848,7 @@
                 <b>🗺️ Mappa GIS Interattiva (Folium &mdash; Apertura su Stradario)</b>
                 <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--primary); text-decoration: none;">Schermo Intero &nearr;</a>
               </div>
-              <iframe id="carpMapIframe" src="/output/percorso_raccolta.html" style="width: 100%; height: 380px; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18;"></iframe>
+              <iframe id="carpMapIframe" src="about:blank" style="width: 100%; height: 380px; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18;"></iframe>
             </div>
 
             <!-- Report Dettaglio Mezzi Utilizzati & Specifiche di Costo -->
@@ -885,12 +900,12 @@
                 <span style="font-size: 18px;">🏠</span>
                 <div>
                   <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Hub Flotta EV:</span>
-                  <input type="text" id="evDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" onchange="updateEvDepot('name', this.value)">
+                  <input type="text" id="evDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" placeholder="es. Hub Flotta EV" onchange="updateEvDepot('name', this.value)">
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
-                <span>Lat: <input type="number" step="0.0001" id="evDepotLat" class="cell-inp" style="width: 82px;" onchange="updateEvDepot('lat', this.value)"></span>
-                <span>Lon: <input type="number" step="0.0001" id="evDepotLon" class="cell-inp" style="width: 82px;" onchange="updateEvDepot('lon', this.value)"></span>
+                <span>Lat: <input type="number" step="0.0001" id="evDepotLat" class="cell-inp" style="width: 82px;" placeholder="es. 45.4642" onchange="updateEvDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="evDepotLon" class="cell-inp" style="width: 82px;" placeholder="es. 9.1900" onchange="updateEvDepot('lon', this.value)"></span>
               </div>
             </div>
 
@@ -1073,12 +1088,12 @@
                 <span style="font-size: 18px;">🏠</span>
                 <div>
                   <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">Hub Centrale:</span>
-                  <input type="text" id="vrppdDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" onchange="updateVrppdDepot('name', this.value)">
+                  <input type="text" id="vrppdDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" placeholder="es. Hub Centrale" onchange="updateVrppdDepot('name', this.value)">
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
-                <span>Lat: <input type="number" step="0.0001" id="vrppdDepotLat" class="cell-inp" style="width: 82px;" onchange="updateVrppdDepot('lat', this.value)"></span>
-                <span>Lon: <input type="number" step="0.0001" id="vrppdDepotLon" class="cell-inp" style="width: 82px;" onchange="updateVrppdDepot('lon', this.value)"></span>
+                <span>Lat: <input type="number" step="0.0001" id="vrppdDepotLat" class="cell-inp" style="width: 82px;" placeholder="es. 45.4642" onchange="updateVrppdDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="vrppdDepotLon" class="cell-inp" style="width: 82px;" placeholder="es. 9.1900" onchange="updateVrppdDepot('lon', this.value)"></span>
               </div>
             </div>
 
