@@ -9,7 +9,7 @@
     {
       "id": "REQ_1",
       "name": "Pacco Ricambi Meccanici",
-      "demand_kg": 250.0,
+      "demand_kg": 250,
       "pickup": {
         "id": "P1",
         "name": "Officina Meccanica Rossi (P1)",
@@ -26,7 +26,7 @@
     {
       "id": "REQ_2",
       "name": "Scatole Materiale Elettrico",
-      "demand_kg": 400.0,
+      "demand_kg": 400,
       "pickup": {
         "id": "P2",
         "name": "Magazzino ElettroForniture (P2)",
@@ -43,7 +43,7 @@
     {
       "id": "REQ_3",
       "name": "Fornitura Tessile / Abbigliamento",
-      "demand_kg": 350.0,
+      "demand_kg": 350,
       "pickup": {
         "id": "P3",
         "name": "Laboratorio Sartoriale (P3)",
@@ -60,7 +60,7 @@
     {
       "id": "REQ_4",
       "name": "Campioni Laboratorio Analisi",
-      "demand_kg": 150.0,
+      "demand_kg": 150,
       "pickup": {
         "id": "P4",
         "name": "Clinica Diagnostica Est (P4)",
@@ -77,7 +77,7 @@
     {
       "id": "REQ_5",
       "name": "Componenti Elettronici",
-      "demand_kg": 300.0,
+      "demand_kg": 300,
       "pickup": {
         "id": "P5",
         "name": "Produttore Schede PCB (P5)",
@@ -95,14 +95,14 @@
   "vehicles": [
     {
       "name": "Furgone_Express_1",
-      "capacity": 800.0,
-      "fixed_cost": 75.0,
+      "capacity": 800,
+      "fixed_cost": 75,
       "description": "Furgone compatto per ritiri/consegne rapide"
     },
     {
       "name": "Furgone_Express_2",
-      "capacity": 900.0,
-      "fixed_cost": 85.0,
+      "capacity": 900,
+      "fixed_cost": 85,
       "description": "Furgone medio per ritiri e consegne voluminose"
     }
   ],

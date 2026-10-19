@@ -148,6 +148,69 @@ header.app-header {
   gap: 14px;
 }
 
+.header-model-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-select {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.header-select:hover, .header-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+  background: rgba(20, 32, 58, 0.95);
+}
+
+.header-select option {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 8px;
+}
+
+.depot-banner {
+  background: rgba(14, 22, 38, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn-del {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 3px 8px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.btn-del:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--danger);
+}
+
 .badge-free {
   font-size: 11.5px;
   font-weight: 700;

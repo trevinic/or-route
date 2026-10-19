@@ -39,15 +39,24 @@ function showToast(message, duration = 3500) {
 // ==========================================
 // TAB SWITCHER
 // ==========================================
+function switchModelFromDropdown(tabId) {
+  switchMainTab(tabId, null);
+}
+
 function switchMainTab(tabId, btnElement) {
   State.activeTab = tabId;
   
-  // Aggiorna classi bottoni navigazione
+  // Sincronizza il menù a tendina Modelli nella barra header
+  const headerSelect = document.getElementById('headerModelSelect');
+  if (headerSelect && headerSelect.value !== tabId) {
+    headerSelect.value = tabId;
+  }
+
+  // Aggiorna classi bottoni navigazione se presenti
   document.querySelectorAll('.model-tab').forEach(b => b.classList.remove('active'));
   if (btnElement && btnElement.classList && btnElement.classList.contains('model-tab')) {
     btnElement.classList.add('active');
   } else {
-    // Prova a sincronizzare il bottone corrispondente nella barra di navigazione
     const navBtn = document.getElementById('tabBtn' + tabId.replace('tab-', '').charAt(0).toUpperCase() + tabId.replace('tab-', '').slice(1)) 
                 || document.querySelector(`.model-tab[onclick*="'${tabId}'"]`);
     if (navBtn) navBtn.classList.add('active');
@@ -74,24 +83,24 @@ function switchMainTab(tabId, btnElement) {
     }
   } catch (_) {}
 
-  // Render o caricamento se non ancora eseguito
+  // Render o caricamento se non ancora eseguito (SENZA auto-solving)
   if (tabId === 'tab-cvrp') {
     if (!State.cvrpConfig) loadCvrpConfig();
-    else if (State.cvrpResult) drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult);
+    else drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
   } else if (tabId === 'tab-vrptw') {
     if (!State.vrptwConfig) loadVrptwConfig();
-    else if (State.vrptwResult) drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult);
+    else drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
   } else if (tabId === 'tab-carp') {
     if (!State.carpConfig) loadCarpConfig();
   } else if (tabId === 'tab-intermediate') {
     if (!State.evConfig) loadEvConfig();
-    else if (State.evResult) drawEvCanvas('evCanvas', State.evConfig, State.evResult);
+    else drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
   } else if (tabId === 'tab-vrppd') {
     if (!State.vrppdConfig) loadVrppdConfig();
-    else if (State.vrppdResult) drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult);
+    else drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
   } else if (tabId === 'tab-mdvrp') {
     if (!State.mdvrpConfig) loadMdvrpConfig();
-    else if (State.mdvrpResult) drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult);
+    else drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   }
 }
 
@@ -479,9 +488,8 @@ async function applyWizardParametersToModel() {
       } catch (e) { console.warn('Errore salvataggio config CARP:', e); }
     }
     renderCarpTables();
-    switchMainTab('tab-carp', document.getElementById('tabBtnCarp'));
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CARP!`);
-    solveCarp();
+    switchMainTab('tab-carp', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CARP! Verifica le tratte, poi premi 'Risolvi'.`);
 
   } else if (model === 'vrppd') {
     if (!State.vrppdConfig) await loadVrppdConfig();
@@ -502,9 +510,8 @@ async function applyWizardParametersToModel() {
       } catch (e) { console.warn('Errore salvataggio VRPPD:', e); }
     }
     renderVrppdTables();
-    switchMainTab('tab-vrppd', document.getElementById('tabBtnVrppd'));
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al VRPPD!`);
-    solveVrppd();
+    switchMainTab('tab-vrppd', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al VRPPD! Inserisci o verifica le coordinate, poi premi 'Risolvi'.`);
 
   } else if (model === 'mdvrp') {
     if (!State.mdvrpConfig) await loadMdvrpConfig();
@@ -527,9 +534,8 @@ async function applyWizardParametersToModel() {
       } catch (e) { console.warn('Errore salvataggio MDVRP:', e); }
     }
     renderMdvrpTables();
-    switchMainTab('tab-mdvrp', document.getElementById('tabBtnMdvrp'));
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) ripartita sui depositi MDVRP!`);
-    solveMdvrp();
+    switchMainTab('tab-mdvrp', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) ripartita su MDVRP! Inserisci o verifica le coordinate, poi premi 'Risolvi'.`);
 
   } else if (model === 'vrptw') {
     if (!State.vrptwConfig) await loadVrptwConfig();
@@ -549,9 +555,8 @@ async function applyWizardParametersToModel() {
       } catch (e) { console.warn('Errore salvataggio VRPTW:', e); }
     }
     renderVrptwTables();
-    switchMainTab('tab-vrptw', document.getElementById('tabBtnVrptw'));
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al VRPTW!`);
-    solveVrptw();
+    switchMainTab('tab-vrptw', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al VRPTW! Inserisci o verifica orari e coordinate, poi premi 'Risolvi'.`);
 
   } else if (model === 'intermediate') {
     if (!State.evConfig) await loadEvConfig();
@@ -571,9 +576,8 @@ async function applyWizardParametersToModel() {
       } catch (e) { console.warn('Errore salvataggio EV-VRP:', e); }
     }
     renderEvTables();
-    switchMainTab('tab-intermediate', document.getElementById('tabBtnIntermediate'));
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata a WCVRPTW-IF / EV-VRP!`);
-    solveEvVrp();
+    switchMainTab('tab-intermediate', null);
+    showToast(`Flotta (${totVehicles} mezzi) applicata a WCVRPTW-IF / EV-VRP! Inserisci o verifica le coordinate, poi premi 'Risolvi'.`);
 
   } else {
     // CVRP
@@ -594,9 +598,8 @@ async function applyWizardParametersToModel() {
       } catch (e) { console.warn('Errore salvataggio CVRP:', e); }
     }
     renderCvrpTables();
-    switchMainTab('tab-cvrp', document.getElementById('tabBtnCvrp'));
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CVRP!`);
-    solveCvrp();
+    switchMainTab('tab-cvrp', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CVRP! Inserisci o verifica le coordinate, poi premi 'Risolvi'.`);
   }
 
   saveToLocalStorage();
@@ -761,7 +764,7 @@ async function loadCvrpConfig() {
     const res = await fetch('/api/cvrp/config');
     State.cvrpConfig = await res.json();
     renderCvrpTables();
-    solveCvrp();
+    drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
   } catch (e) {
     console.error('Errore caricamento CVRP:', e);
   }
@@ -769,6 +772,17 @@ async function loadCvrpConfig() {
 
 function renderCvrpTables() {
   if (!State.cvrpConfig) return;
+
+  // 0. Deposito CVRP
+  const dep = State.cvrpConfig.depot;
+  if (dep) {
+    const nameInp = document.getElementById('cvrpDepotName');
+    const latInp = document.getElementById('cvrpDepotLat');
+    const lonInp = document.getElementById('cvrpDepotLon');
+    if (nameInp) nameInp.value = dep.name || 'Hub Centrale';
+    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
+    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
+  }
 
   // Conteggio Clienti
   const countEl = document.getElementById('cvrpCustomerCount');
@@ -782,20 +796,30 @@ function renderCvrpTables() {
     costPerKmInput.value = State.cvrpConfig.cost_per_km;
   }
 
-  // 1. Tabella Clienti
+  // 1. Tabella Clienti con Coordinate Modificabili
   const tbody = document.getElementById('cvrpCustomersBody');
   if (tbody && State.cvrpConfig.customers) {
     tbody.innerHTML = '';
     State.cvrpConfig.customers.forEach((c, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><b>${c.name}</b></td>
-        <td><span class="code-tag">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</span></td>
         <td>
-          <input type="number" class="cell-inp" min="10" step="20" value="${c.demand}" 
-            onchange="updateCvrpCustomerDemand(${idx}, this.value)">
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" 
+            onchange="updateCvrpCustomerField(${idx}, 'name', this.value)">
         </td>
         <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 82px;" value="${c.lat}" 
+            onchange="updateCvrpCustomerCoord(${idx}, 'lat', this.value)">
+        </td>
+        <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 82px;" value="${c.lon}" 
+            onchange="updateCvrpCustomerCoord(${idx}, 'lon', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 80px;" min="10" step="20" value="${c.demand}" 
+            onchange="updateCvrpCustomerDemand(${idx}, this.value)">
+        </td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeCvrpCustomer(${idx})">&times;</button>
         </td>
       `;
@@ -819,7 +843,7 @@ function renderCvrpTables() {
           <input type="number" class="cell-inp" min="0" step="5" value="${v.fixed_cost}" 
             onchange="updateCvrpVehicleCost(${idx}, this.value)">
         </td>
-        <td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi veicolo" onclick="removeCvrpVehicle(${idx})">&times;</button>
         </td>
       `;
@@ -829,6 +853,27 @@ function renderCvrpTables() {
 
   // 3. Bilancio Capacità Flotta vs Domanda Merci
   updateCvrpFleetCapacitySummary();
+}
+
+function updateCvrpDepot(field, val) {
+  if (!State.cvrpConfig || !State.cvrpConfig.depot) return;
+  if (field === 'lat' || field === 'lon') {
+    State.cvrpConfig.depot[field] = parseFloat(val) || 0;
+  } else {
+    State.cvrpConfig.depot[field] = val;
+  }
+  drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
+}
+
+function updateCvrpCustomerField(idx, field, val) {
+  if (!State.cvrpConfig || !State.cvrpConfig.customers || !State.cvrpConfig.customers[idx]) return;
+  State.cvrpConfig.customers[idx][field] = val;
+}
+
+function updateCvrpCustomerCoord(idx, coord, val) {
+  if (!State.cvrpConfig || !State.cvrpConfig.customers || !State.cvrpConfig.customers[idx]) return;
+  State.cvrpConfig.customers[idx][coord] = parseFloat(val) || 0;
+  drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
 }
 
 function updateCvrpFleetCapacitySummary() {
@@ -906,6 +951,7 @@ function addCvrpCustomer() {
     demand: parseFloat(demand) || 200
   });
   renderCvrpTables();
+  drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
   showToast('Nuovo cliente aggiunto!');
 }
 
@@ -913,6 +959,7 @@ function removeCvrpCustomer(idx) {
   if (confirm(`Rimuovere il cliente '${State.cvrpConfig.customers[idx].name}'?`)) {
     State.cvrpConfig.customers.splice(idx, 1);
     renderCvrpTables();
+    drawRouteCanvas('cvrpCanvas', State.cvrpConfig, State.cvrpResult || null);
   }
 }
 
@@ -1087,7 +1134,7 @@ async function loadVrptwConfig() {
     const res = await fetch('/api/vrptw/config');
     State.vrptwConfig = await res.json();
     renderVrptwTables();
-    solveVrptw();
+    drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
   } catch (e) {
     console.error('Errore caricamento VRPTW:', e);
   }
@@ -1095,6 +1142,21 @@ async function loadVrptwConfig() {
 
 function renderVrptwTables() {
   if (!State.vrptwConfig) return;
+
+  // 0. Deposito VRPTW
+  const dep = State.vrptwConfig.depot;
+  if (dep) {
+    const nameInp = document.getElementById('vrptwDepotName');
+    const latInp = document.getElementById('vrptwDepotLat');
+    const lonInp = document.getElementById('vrptwDepotLon');
+    const readyInp = document.getElementById('vrptwDepotReady');
+    const dueInp = document.getElementById('vrptwDepotDue');
+    if (nameInp) nameInp.value = dep.name || 'Hub Logistico';
+    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
+    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
+    if (readyInp) readyInp.value = minutesToTime(dep.ready_time !== undefined ? dep.ready_time : 0);
+    if (dueInp) dueInp.value = minutesToTime(dep.due_time !== undefined ? dep.due_time : 480);
+  }
 
   // Input Costo al km e Velocità Media
   const costPerKmInput = document.getElementById('vrptwCostPerKm');
@@ -1106,26 +1168,43 @@ function renderVrptwTables() {
     speedInput.value = State.vrptwConfig.speed_kmh;
   }
 
-  // 1. Tabella Clienti & Finestre
+  // 1. Tabella Clienti & Finestre con Coordinate ed Orari Modificabili
   const tbody = document.getElementById('vrptwCustomersBody');
   if (tbody && State.vrptwConfig.customers) {
     tbody.innerHTML = '';
     State.vrptwConfig.customers.forEach((c, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><b>${c.name}</b></td>
         <td>
-          <input type="number" class="cell-inp" min="10" step="20" value="${c.demand}" 
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}" 
+            onchange="updateVrptwCustomerField(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 76px;" value="${c.lat}" 
+            onchange="updateVrptwCustomerCoord(${idx}, 'lat', this.value)">
+        </td>
+        <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 76px;" value="${c.lon}" 
+            onchange="updateVrptwCustomerCoord(${idx}, 'lon', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 74px;" min="10" step="20" value="${c.demand}" 
             onchange="updateVrptwCustomerDemand(${idx}, this.value)">
         </td>
         <td>
-          <span class="code-tag">${minutesToTime(c.ready_time)} - ${minutesToTime(c.due_time)}</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="time" class="cell-inp" style="width: 74px; font-size: 11px; padding: 4px 5px;" value="${minutesToTime(c.ready_time)}" 
+              onchange="updateVrptwTimeWindow(${idx}, 'ready', this.value)">
+            <span style="color: var(--text-muted);">-</span>
+            <input type="time" class="cell-inp" style="width: 74px; font-size: 11px; padding: 4px 5px;" value="${minutesToTime(c.due_time)}" 
+              onchange="updateVrptwTimeWindow(${idx}, 'due', this.value)">
+          </div>
         </td>
         <td>
-          <input type="number" class="cell-inp" min="5" step="5" value="${c.service_time}" 
+          <input type="number" class="cell-inp" style="width: 58px;" min="5" step="5" value="${c.service_time}" 
             onchange="updateVrptwServiceTime(${idx}, this.value)"> min
         </td>
-        <td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeVrptwCustomer(${idx})">&times;</button>
         </td>
       `;
@@ -1149,7 +1228,7 @@ function renderVrptwTables() {
           <input type="number" class="cell-inp" min="0" step="5" value="${v.fixed_cost}" 
             onchange="updateVrptwVehicleCost(${idx}, this.value)">
         </td>
-        <td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi veicolo" onclick="removeVrptwVehicle(${idx})">&times;</button>
         </td>
       `;
@@ -1161,42 +1240,48 @@ function renderVrptwTables() {
   updateVrptwFleetCapacitySummary();
 }
 
-function updateVrptwFleetCapacitySummary() {
-  const sumEl = document.getElementById('vrptwFleetCapacitySummary');
-  if (!sumEl || !State.vrptwConfig) return;
-
-  const totalDemand = (State.vrptwConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
-  const totalCapacity = (State.vrptwConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
-
-  if (totalCapacity < totalDemand) {
-    const missing = totalDemand - totalCapacity;
-    sumEl.style.background = 'rgba(239, 68, 68, 0.15)';
-    sumEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-    sumEl.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <div>
-          <span style="color: #f87171; font-weight: 700;">⚠️ Capacità Flotta Insufficiente!</span> 
-          Portata: <b>${totalCapacity.toLocaleString()} kg</b> &lt; Richiesta: <b>${totalDemand.toLocaleString()} kg</b> (Mancano ${missing.toLocaleString()} kg).
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-sm btn-primary" onclick="autoScaleVrptwFleet()" style="font-size: 11.5px; padding: 4px 10px;">
-            ⚡ Adatta Flotta Automaticamente
-          </button>
-          <button class="btn btn-sm btn-secondary" onclick="filterVrptwCustomersByCapacity()" style="font-size: 11.5px; padding: 4px 10px;">
-            ✂️ Riduci Destinazioni per Flotta Attuale
-          </button>
-        </div>
-      </div>
-    `;
+function updateVrptwDepot(field, val) {
+  if (!State.vrptwConfig || !State.vrptwConfig.depot) return;
+  if (field === 'lat' || field === 'lon') {
+    State.vrptwConfig.depot[field] = parseFloat(val) || 0;
   } else {
-    const marginPct = totalDemand > 0 ? (((totalCapacity / totalDemand) - 1) * 100).toFixed(0) : 0;
-    sumEl.style.background = 'rgba(16, 185, 129, 0.1)';
-    sumEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-    sumEl.innerHTML = `
-      <span style="color: #34d399; font-weight: 700;">✅ Flotta Refrigerata Idonea:</span> 
-      Portata Flotta <b>${totalCapacity.toLocaleString()} kg</b> per <b>${totalDemand.toLocaleString()} kg</b> di merce (Margine sicurezza: +${marginPct}%).
-    `;
+    State.vrptwConfig.depot[field] = val;
   }
+  drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
+}
+
+function updateVrptwDepotTime(field, timeStr) {
+  if (!State.vrptwConfig || !State.vrptwConfig.depot) return;
+  State.vrptwConfig.depot[field] = timeToMinutes(timeStr, 8);
+}
+
+function updateVrptwCustomerField(idx, field, val) {
+  if (!State.vrptwConfig || !State.vrptwConfig.customers || !State.vrptwConfig.customers[idx]) return;
+  State.vrptwConfig.customers[idx][field] = val;
+}
+
+function updateVrptwCustomerCoord(idx, coord, val) {
+  if (!State.vrptwConfig || !State.vrptwConfig.customers || !State.vrptwConfig.customers[idx]) return;
+  State.vrptwConfig.customers[idx][coord] = parseFloat(val) || 0;
+  drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
+}
+
+function updateVrptwTimeWindow(idx, type, timeStr) {
+  if (!State.vrptwConfig || !State.vrptwConfig.customers || !State.vrptwConfig.customers[idx]) return;
+  const mins = timeToMinutes(timeStr, 8);
+  if (type === 'ready') {
+    State.vrptwConfig.customers[idx].ready_time = mins;
+  } else {
+    State.vrptwConfig.customers[idx].due_time = mins;
+  }
+}
+
+function timeToMinutes(timeStr, baseH = 8) {
+  if (!timeStr) return 0;
+  const parts = timeStr.split(':');
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  return Math.max(0, ((h * 60) + m) - (baseH * 60));
 }
 
 function minutesToTime(mins, baseH = 8) {
@@ -1256,6 +1341,7 @@ function addVrptwCustomerRow() {
     service_time: parseFloat(service) || 20
   });
   renderVrptwTables();
+  drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
   showToast('Nuovo punto consegna VRPTW aggiunto!');
 }
 
@@ -1263,6 +1349,7 @@ function removeVrptwCustomer(idx) {
   if (confirm(`Rimuovere '${State.vrptwConfig.customers[idx].name}'?`)) {
     State.vrptwConfig.customers.splice(idx, 1);
     renderVrptwTables();
+    drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
   }
 }
 
@@ -1465,7 +1552,7 @@ function renderVrptwTimeline(data) {
 // ==========================================
 function drawRouteCanvas(canvasId, config, solution) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !config || !solution) return;
+  if (!canvas || !config) return;
   const ctx = canvas.getContext('2d');
   
   const rect = canvas.getBoundingClientRect();
@@ -1481,44 +1568,69 @@ function drawRouteCanvas(canvasId, config, solution) {
   ctx.fillRect(0, 0, w, h);
 
   // Bounding box
-  const allPoints = [config.depot, ...config.customers];
+  const allPoints = [];
+  if (config.depot) allPoints.push(config.depot);
+  if (config.customers && config.customers.length > 0) allPoints.push(...config.customers);
+  if (allPoints.length === 0) return;
+
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
   allPoints.forEach(p => {
-    if (p.lat < minLat) minLat = p.lat;
-    if (p.lat > maxLat) maxLat = p.lat;
-    if (p.lon < minLon) minLon = p.lon;
-    if (p.lon > maxLon) maxLon = p.lon;
+    if (typeof p.lat === 'number') {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+    }
+    if (typeof p.lon === 'number') {
+      if (p.lon < minLon) minLon = p.lon;
+      if (p.lon > maxLon) maxLon = p.lon;
+    }
   });
+
+  if (minLat === maxLat) { minLat -= 0.05; maxLat += 0.05; }
+  if (minLon === maxLon) { minLon -= 0.05; maxLon += 0.05; }
 
   const pad = 50;
   const scaleX = (lon) => pad + ((lon - minLon) / (maxLon - minLon || 1)) * (w - pad * 2);
   const scaleY = (lat) => h - (pad + ((lat - minLat) / (maxLat - minLat || 1)) * (h - pad * 2));
 
   // 1. Percorsi Veicoli
-  Object.entries(solution.vehicles || {}).forEach(([vName, vInfo], vIdx) => {
-    if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
-    const color = State.vehicleColors[vIdx % State.vehicleColors.length];
+  if (solution && solution.vehicles) {
+    Object.entries(solution.vehicles || {}).forEach(([vName, vInfo], vIdx) => {
+      if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
+      const color = State.vehicleColors[vIdx % State.vehicleColors.length];
 
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([]);
-    ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([]);
+      ctx.beginPath();
 
-    vInfo.stops.forEach((stop, i) => {
-      const x = scaleX(stop.lon);
-      const y = scaleY(stop.lat);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      vInfo.stops.forEach((stop, i) => {
+        const x = scaleX(stop.lon);
+        const y = scaleY(stop.lat);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      ctx.stroke();
+
+      for (let i = 0; i < vInfo.stops.length - 1; i++) {
+        const p1 = { x: scaleX(vInfo.stops[i].lon), y: scaleY(vInfo.stops[i].lat) };
+        const p2 = { x: scaleX(vInfo.stops[i + 1].lon), y: scaleY(vInfo.stops[i + 1].lat) };
+        drawArrow(ctx, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.atan2(p2.y - p1.y, p2.x - p1.x), color);
+      }
     });
-
-    ctx.stroke();
-
-    for (let i = 0; i < vInfo.stops.length - 1; i++) {
-      const p1 = { x: scaleX(vInfo.stops[i].lon), y: scaleY(vInfo.stops[i].lat) };
-      const p2 = { x: scaleX(vInfo.stops[i + 1].lon), y: scaleY(vInfo.stops[i + 1].lat) };
-      drawArrow(ctx, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.atan2(p2.y - p1.y, p2.x - p1.x), color);
-    }
-  });
+  } else {
+    // Banner informativo su canvas: non ancora calcolato
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(20, 14, w - 40, 28);
+    ctx.strokeRect(20, 14, w - 40, 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '600 12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📍 Coordinate posizionate sulla mappa. Modifica i parametri, poi premi "⚡ Risolvi" per tracciare i percorsi.', w / 2, 32);
+    ctx.textAlign = 'left';
+  }
 
   // 2. Nodi Clienti
   config.customers.forEach((c) => {
@@ -1587,7 +1699,6 @@ async function loadCarpConfig() {
     const res = await fetch('/api/config');
     State.carpConfig = await res.json();
     renderCarpTables();
-    solveCarp();
   } catch (e) {
     console.error('Errore caricamento CARP:', e);
   }
@@ -2027,7 +2138,7 @@ async function loadEvConfig() {
     const res = await fetch('/api/ev_vrp/config');
     State.evConfig = await res.json();
     renderEvTables();
-    solveEvVrp();
+    drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
   } catch (e) {
     console.error('Errore caricamento EV-VRP:', e);
   }
@@ -2035,6 +2146,17 @@ async function loadEvConfig() {
 
 function renderEvTables() {
   if (!State.evConfig) return;
+
+  // 0. Deposito EV
+  const dep = State.evConfig.depot;
+  if (dep) {
+    const nameInp = document.getElementById('evDepotName');
+    const latInp = document.getElementById('evDepotLat');
+    const lonInp = document.getElementById('evDepotLon');
+    if (nameInp) nameInp.value = dep.name || 'Hub Flotta EV';
+    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
+    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
+  }
 
   // Conteggio Clienti
   const countEl = document.getElementById('evCustomerCount');
@@ -2052,19 +2174,30 @@ function renderEvTables() {
     kwhPerKmInp.value = State.evConfig.kwh_per_km;
   }
 
-  // 1. Tabella Clienti
+  // 1. Tabella Clienti con Coordinate Modificabili
   const cBody = document.getElementById('evCustomersBody');
   if (cBody && State.evConfig.customers) {
     cBody.innerHTML = '';
     State.evConfig.customers.forEach((c, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><b>${c.name}</b></td>
         <td>
-          <input type="number" class="cell-inp" min="10" step="50" value="${c.demand}"
-            onchange="updateEvCustomerDemand(${idx}, this.value)">
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${c.name || ''}"
+            onchange="updateEvCustomerField(${idx}, 'name', this.value)">
         </td>
         <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lat}"
+            onchange="updateEvCustomerCoord(${idx}, 'lat', this.value)">
+        </td>
+        <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lon}"
+            onchange="updateEvCustomerCoord(${idx}, 'lon', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 80px;" min="10" step="50" value="${c.demand}"
+            onchange="updateEvCustomerDemand(${idx}, this.value)">
+        </td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi cliente" onclick="removeEvCustomer(${idx})">&times;</button>
         </td>
       `;
@@ -2072,23 +2205,33 @@ function renderEvTables() {
     });
   }
 
-  // 2. Tabella Impianti Intermedi
+  // 2. Tabella Impianti Intermedi con Coordinate Modificabili
   const fBody = document.getElementById('evFacilitiesBody');
   if (fBody && State.evConfig.intermediate_facilities) {
     fBody.innerHTML = '';
     State.evConfig.intermediate_facilities.forEach((f, idx) => {
       const tr = document.createElement('tr');
-      const isRecharge = f.type === 'recharge' || f.type === 'both';
       tr.innerHTML = `
         <td>
-          <b>${isRecharge ? '⚡' : '🔄'} ${f.name}</b>
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${f.name || ''}"
+            onchange="updateEvFacilityField(${idx}, 'name', this.value)">
         </td>
         <td>
-          <span class="code-tag" style="color: ${isRecharge ? '#38bdf8' : '#fbbf24'};">
-            ${f.type === 'recharge' ? 'Colonnina DC 150kW' : (f.type === 'dump' ? 'Scarico TMB Rifiuti' : 'Multi-servizio')}
-          </span>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${f.lat}"
+            onchange="updateEvFacilityCoord(${idx}, 'lat', this.value)">
         </td>
         <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${f.lon}"
+            onchange="updateEvFacilityCoord(${idx}, 'lon', this.value)">
+        </td>
+        <td>
+          <select class="cell-inp" style="width: 100%;" onchange="updateEvFacilityField(${idx}, 'type', this.value)">
+            <option value="recharge" ${f.type === 'recharge' ? 'selected' : ''}>⚡ Colonnina DC 150kW</option>
+            <option value="dump" ${f.type === 'dump' ? 'selected' : ''}>🔄 Scarico TMB Rifiuti</option>
+            <option value="both" ${f.type === 'both' ? 'selected' : ''}>⚡🔄 Multi-servizio</option>
+          </select>
+        </td>
+        <td style="text-align: center;">
           <button class="btn-danger-outline" title="Rimuovi impianto" onclick="removeEvFacility(${idx})">&times;</button>
         </td>
       `;
@@ -2166,6 +2309,39 @@ function updateEvFleetCapacitySummary() {
   }
 }
 
+function updateEvDepot(field, val) {
+  if (!State.evConfig || !State.evConfig.depot) return;
+  if (field === 'lat' || field === 'lon') {
+    State.evConfig.depot[field] = parseFloat(val) || 0;
+  } else {
+    State.evConfig.depot[field] = val;
+  }
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
+}
+
+function updateEvCustomerField(idx, field, val) {
+  if (!State.evConfig || !State.evConfig.customers || !State.evConfig.customers[idx]) return;
+  State.evConfig.customers[idx][field] = val;
+}
+
+function updateEvCustomerCoord(idx, coord, val) {
+  if (!State.evConfig || !State.evConfig.customers || !State.evConfig.customers[idx]) return;
+  State.evConfig.customers[idx][coord] = parseFloat(val) || 0;
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
+}
+
+function updateEvFacilityField(idx, field, val) {
+  if (!State.evConfig || !State.evConfig.intermediate_facilities || !State.evConfig.intermediate_facilities[idx]) return;
+  State.evConfig.intermediate_facilities[idx][field] = val;
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
+}
+
+function updateEvFacilityCoord(idx, coord, val) {
+  if (!State.evConfig || !State.evConfig.intermediate_facilities || !State.evConfig.intermediate_facilities[idx]) return;
+  State.evConfig.intermediate_facilities[idx][coord] = parseFloat(val) || 0;
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
+}
+
 function updateEvCustomerDemand(idx, val) {
   State.evConfig.customers[idx].demand = parseFloat(val) || 100;
   updateEvFleetCapacitySummary();
@@ -2212,6 +2388,7 @@ function addEvCustomerRow() {
     demand: parseFloat(demand) || 250
   });
   renderEvTables();
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
   showToast('Nuovo cliente EV aggiunto!');
 }
 
@@ -2219,6 +2396,7 @@ function removeEvCustomer(idx) {
   if (confirm(`Rimuovere '${State.evConfig.customers[idx].name}'?`)) {
     State.evConfig.customers.splice(idx, 1);
     renderEvTables();
+    drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
   }
 }
 
@@ -2239,6 +2417,7 @@ function addEvFacilityRow() {
     lon: Number((dep.lon + offsetLon).toFixed(4))
   });
   renderEvTables();
+  drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
   showToast('Nuovo impianto di ricarica intermedio aggiunto!');
 }
 
@@ -2246,6 +2425,7 @@ function removeEvFacility(idx) {
   if (confirm(`Rimuovere l'impianto '${State.evConfig.intermediate_facilities[idx].name}'?`)) {
     State.evConfig.intermediate_facilities.splice(idx, 1);
     renderEvTables();
+    drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
   }
 }
 
@@ -2417,7 +2597,7 @@ function renderEvVehicleReport(data) {
 
 function drawEvCanvas(canvasId, config, solution) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !config || !solution) return;
+  if (!canvas || !config) return;
   const ctx = canvas.getContext('2d');
 
   const rect = canvas.getBoundingClientRect();
@@ -2431,43 +2611,69 @@ function drawEvCanvas(canvasId, config, solution) {
   ctx.fillStyle = '#080d18';
   ctx.fillRect(0, 0, w, h);
 
-  const allPoints = [config.depot, ...(config.intermediate_facilities || []), ...config.customers];
+  const allPoints = [];
+  if (config.depot) allPoints.push(config.depot);
+  if (config.intermediate_facilities && config.intermediate_facilities.length > 0) allPoints.push(...config.intermediate_facilities);
+  if (config.customers && config.customers.length > 0) allPoints.push(...config.customers);
+  if (allPoints.length === 0) return;
+
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
   allPoints.forEach(p => {
-    if (p.lat < minLat) minLat = p.lat;
-    if (p.lat > maxLat) maxLat = p.lat;
-    if (p.lon < minLon) minLon = p.lon;
-    if (p.lon > maxLon) maxLon = p.lon;
+    if (typeof p.lat === 'number') {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+    }
+    if (typeof p.lon === 'number') {
+      if (p.lon < minLon) minLon = p.lon;
+      if (p.lon > maxLon) maxLon = p.lon;
+    }
   });
+
+  if (minLat === maxLat) { minLat -= 0.05; maxLat += 0.05; }
+  if (minLon === maxLon) { minLon -= 0.05; maxLon += 0.05; }
 
   const pad = 50;
   const scaleX = (lon) => pad + ((lon - minLon) / (maxLon - minLon || 1)) * (w - pad * 2);
   const scaleY = (lat) => h - (pad + ((lat - minLat) / (maxLat - minLat || 1)) * (h - pad * 2));
 
   // 1. Tracciati Veicoli EV
-  Object.entries(solution.vehicles || {}).forEach(([vName, vInfo], vIdx) => {
-    if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
-    const color = State.vehicleColors[vIdx % State.vehicleColors.length];
+  if (solution && solution.vehicles) {
+    Object.entries(solution.vehicles || {}).forEach(([vName, vInfo], vIdx) => {
+      if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
+      const color = State.vehicleColors[vIdx % State.vehicleColors.length];
 
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
 
-    vInfo.stops.forEach((stop, i) => {
-      const x = scaleX(stop.lon);
-      const y = scaleY(stop.lat);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      vInfo.stops.forEach((stop, i) => {
+        const x = scaleX(stop.lon);
+        const y = scaleY(stop.lat);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      ctx.stroke();
+
+      for (let i = 0; i < vInfo.stops.length - 1; i++) {
+        const p1 = { x: scaleX(vInfo.stops[i].lon), y: scaleY(vInfo.stops[i].lat) };
+        const p2 = { x: scaleX(vInfo.stops[i + 1].lon), y: scaleY(vInfo.stops[i + 1].lat) };
+        drawArrow(ctx, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.atan2(p2.y - p1.y, p2.x - p1.x), color);
+      }
     });
-
-    ctx.stroke();
-
-    for (let i = 0; i < vInfo.stops.length - 1; i++) {
-      const p1 = { x: scaleX(vInfo.stops[i].lon), y: scaleY(vInfo.stops[i].lat) };
-      const p2 = { x: scaleX(vInfo.stops[i + 1].lon), y: scaleY(vInfo.stops[i + 1].lat) };
-      drawArrow(ctx, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.atan2(p2.y - p1.y, p2.x - p1.x), color);
-    }
-  });
+  } else {
+    // Banner informativo su canvas
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(20, 14, w - 40, 28);
+    ctx.strokeRect(20, 14, w - 40, 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '600 12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📍 Nodi EV e impianti caricati. Modifica o aggiungi coordinate, poi premi "⚡ Risolvi" per ottimizzare.', w / 2, 32);
+    ctx.textAlign = 'left';
+  }
 
   // 2. Clienti
   config.customers.forEach((c) => {
@@ -2540,9 +2746,7 @@ async function loadVrppdConfig() {
     const res = await fetch('/api/vrppd/config');
     State.vrppdConfig = await res.json();
     renderVrppdTables();
-    if (!State.vrppdResult) {
-      await solveVrppd();
-    }
+    drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
   } catch (e) {
     console.error('Errore caricamento VRPPD:', e);
     showToast('Errore nel caricamento della configurazione VRPPD');
@@ -2552,7 +2756,18 @@ async function loadVrppdConfig() {
 function renderVrppdTables() {
   if (!State.vrppdConfig) return;
 
-  // 1. Tabella Richieste Accoppiate (P & D)
+  // 0. Deposito VRPPD
+  const dep = State.vrppdConfig.depot;
+  if (dep) {
+    const nameInp = document.getElementById('vrppdDepotName');
+    const latInp = document.getElementById('vrppdDepotLat');
+    const lonInp = document.getElementById('vrppdDepotLon');
+    if (nameInp) nameInp.value = dep.name || 'Hub Centrale';
+    if (latInp) latInp.value = dep.lat !== undefined ? dep.lat : 45.4642;
+    if (lonInp) lonInp.value = dep.lon !== undefined ? dep.lon : 9.1900;
+  }
+
+  // 1. Tabella Richieste Accoppiate (P & D) con Coordinate Modificabili
   const reqBody = document.getElementById('vrppdRequestsBody');
   if (reqBody) {
     reqBody.innerHTML = '';
@@ -2571,12 +2786,22 @@ function renderVrppdTables() {
           <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="1" max="10000" step="10" value="${r.demand_kg}" onchange="updateVrppdRequest(${idx}, 'demand_kg', parseFloat(this.value)||10)">
         </td>
         <td>
-          <span style="color: #34d399; font-weight: 700;">🟢 ${r.pickup.name}</span>
-          <div style="font-size: 10.5px; color: var(--text-muted);">${r.pickup.lat.toFixed(4)}, ${r.pickup.lon.toFixed(4)}</div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <input type="text" class="cell-inp" style="width: 100%; font-size: 11.5px; font-weight:600; color:#34d399;" value="${r.pickup.name || ''}" placeholder="Nome Ritiro" onchange="updateVrppdPoint(${idx}, 'pickup', 'name', this.value)">
+            <div style="display: flex; gap: 4px; font-size: 11px;">
+              <span>Lat: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.pickup.lat}" onchange="updateVrppdPoint(${idx}, 'pickup', 'lat', this.value)"></span>
+              <span>Lon: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.pickup.lon}" onchange="updateVrppdPoint(${idx}, 'pickup', 'lon', this.value)"></span>
+            </div>
+          </div>
         </td>
         <td>
-          <span style="color: #fb923c; font-weight: 700;">🟠 ${r.delivery.name}</span>
-          <div style="font-size: 10.5px; color: var(--text-muted);">${r.delivery.lat.toFixed(4)}, ${r.delivery.lon.toFixed(4)}</div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <input type="text" class="cell-inp" style="width: 100%; font-size: 11.5px; font-weight:600; color:#fb923c;" value="${r.delivery.name || ''}" placeholder="Nome Consegna" onchange="updateVrppdPoint(${idx}, 'delivery', 'name', this.value)">
+            <div style="display: flex; gap: 4px; font-size: 11px;">
+              <span>Lat: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.delivery.lat}" onchange="updateVrppdPoint(${idx}, 'delivery', 'lat', this.value)"></span>
+              <span>Lon: <input type="number" step="0.0001" class="cell-inp" style="width: 72px;" value="${r.delivery.lon}" onchange="updateVrppdPoint(${idx}, 'delivery', 'lon', this.value)"></span>
+            </div>
+          </div>
         </td>
         <td style="text-align: center;">
           <button class="btn-del" onclick="removeVrppdRequest(${idx})" title="Rimuovi richiesta">✕</button>
@@ -2627,6 +2852,28 @@ function renderVrppdTables() {
   }
 }
 
+function updateVrppdDepot(field, val) {
+  if (!State.vrppdConfig || !State.vrppdConfig.depot) return;
+  if (field === 'lat' || field === 'lon') {
+    State.vrppdConfig.depot[field] = parseFloat(val) || 0;
+  } else {
+    State.vrppdConfig.depot[field] = val;
+  }
+  drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
+}
+
+function updateVrppdPoint(reqIdx, pointType, field, val) {
+  if (!State.vrppdConfig || !State.vrppdConfig.requests || !State.vrppdConfig.requests[reqIdx]) return;
+  const pt = State.vrppdConfig.requests[reqIdx][pointType];
+  if (!pt) return;
+  if (field === 'lat' || field === 'lon') {
+    pt[field] = parseFloat(val) || 0;
+  } else {
+    pt[field] = val;
+  }
+  drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
+}
+
 function updateVrppdRequest(idx, field, val) {
   if (State.vrppdConfig && State.vrppdConfig.requests && State.vrppdConfig.requests[idx]) {
     State.vrppdConfig.requests[idx][field] = val;
@@ -2642,6 +2889,7 @@ function removeVrppdRequest(idx) {
   }
   State.vrppdConfig.requests.splice(idx, 1);
   renderVrppdTables();
+  drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
   showToast('Richiesta VRPPD rimossa');
 }
 
@@ -2675,6 +2923,7 @@ function addVrppdRequestRow() {
   });
 
   renderVrppdTables();
+  drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, State.vrppdResult || null);
   showToast(`Nuova richiesta di ritiro e consegna aggiunta!`);
 }
 
@@ -2943,6 +3192,18 @@ function drawVrppdCanvas(canvasId, config, result) {
       }
       ctx.restore();
     });
+  } else {
+    // Banner informativo su canvas per VRPPD
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(20, 14, w - 40, 28);
+    ctx.strokeRect(20, 14, w - 40, 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '600 12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📍 Richieste caricate sulla mappa. Modifica o aggiungi punti P/D, poi premi "⚡ Risolvi" per calcolare i percorsi.', w / 2, 32);
+    ctx.textAlign = 'left';
   }
 
   // 3. Disegna nodi Ritiro (P)
@@ -3011,9 +3272,7 @@ async function loadMdvrpConfig() {
     const res = await fetch('/api/mdvrp/config');
     State.mdvrpConfig = await res.json();
     renderMdvrpTables();
-    if (!State.mdvrpResult) {
-      await solveMdvrp();
-    }
+    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   } catch (e) {
     console.error('Errore caricamento MDVRP:', e);
     showToast('Errore nel caricamento della configurazione MDVRP');
@@ -3037,7 +3296,10 @@ function renderMdvrpTables() {
           <small style="color: var(--text-muted); font-size: 11px;">ID: ${d.id}</small>
         </td>
         <td>
-          <div style="font-size: 11px; color: var(--text-secondary);">${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}</div>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${d.lat}" onchange="updateMdvrpDepotCoord(${idx}, 'lat', this.value)">
+        </td>
+        <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${d.lon}" onchange="updateMdvrpDepotCoord(${idx}, 'lon', this.value)">
         </td>
         <td>
           <input type="color" value="${d.color || '#3b82f6'}" style="width: 32px; height: 24px; border: none; background: none; cursor: pointer;" onchange="updateMdvrpDepot(${idx}, 'color', this.value)">
@@ -3064,7 +3326,10 @@ function renderMdvrpTables() {
           <small style="color: var(--text-muted); font-size: 11px;">ID: ${c.id}</small>
         </td>
         <td>
-          <div style="font-size: 11px; color: var(--text-secondary);">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lat}" onchange="updateMdvrpCustomerCoord(${idx}, 'lat', this.value)">
+        </td>
+        <td>
+          <input type="number" step="0.0001" class="cell-inp" style="width: 78px;" value="${c.lon}" onchange="updateMdvrpCustomerCoord(${idx}, 'lon', this.value)">
         </td>
         <td>
           <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="10" max="20000" step="50" value="${c.demand}" onchange="updateMdvrpCustomer(${idx}, 'demand', parseFloat(this.value)||100)">
@@ -3132,7 +3397,17 @@ function renderMdvrpTables() {
 function updateMdvrpDepot(idx, field, val) {
   if (State.mdvrpConfig && State.mdvrpConfig.depots && State.mdvrpConfig.depots[idx]) {
     State.mdvrpConfig.depots[idx][field] = val;
-    renderMdvrpTables();
+    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
+  }
+}
+
+function updateMdvrpDepotCoord(idx, coord, val) {
+  if (State.mdvrpConfig && State.mdvrpConfig.depots && State.mdvrpConfig.depots[idx]) {
+    const num = parseFloat(val);
+    if (!isNaN(num)) {
+      State.mdvrpConfig.depots[idx][coord] = num;
+      drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
+    }
   }
 }
 
@@ -3152,6 +3427,7 @@ function removeMdvrpDepot(idx) {
   });
 
   renderMdvrpTables();
+  drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   showToast('Deposito MDVRP rimosso');
 }
 
@@ -3172,13 +3448,24 @@ function addMdvrpDepotRow() {
   });
 
   renderMdvrpTables();
+  drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   showToast(`Nuovo magazzino hub aggiunto!`);
 }
 
 function updateMdvrpCustomer(idx, field, val) {
   if (State.mdvrpConfig && State.mdvrpConfig.customers && State.mdvrpConfig.customers[idx]) {
     State.mdvrpConfig.customers[idx][field] = val;
-    renderMdvrpTables();
+    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
+  }
+}
+
+function updateMdvrpCustomerCoord(idx, coord, val) {
+  if (State.mdvrpConfig && State.mdvrpConfig.customers && State.mdvrpConfig.customers[idx]) {
+    const num = parseFloat(val);
+    if (!isNaN(num)) {
+      State.mdvrpConfig.customers[idx][coord] = num;
+      drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
+    }
   }
 }
 
@@ -3190,6 +3477,7 @@ function removeMdvrpCustomer(idx) {
   }
   State.mdvrpConfig.customers.splice(idx, 1);
   renderMdvrpTables();
+  drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   showToast('Cliente MDVRP rimosso');
 }
 
@@ -3209,6 +3497,7 @@ function addMdvrpCustomerRow() {
   });
 
   renderMdvrpTables();
+  drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   showToast(`Nuovo cliente MDVRP aggiunto!`);
 }
 
@@ -3464,6 +3753,18 @@ function drawMdvrpCanvas(canvasId, config, result) {
       }
       ctx.restore();
     });
+  } else {
+    // Banner indicatore stato coordinate
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(w / 2 - 230, 16, 460, 32);
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+    ctx.strokeRect(w / 2 - 230, 16, 460, 32);
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = '12px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📍 Coordinate caricate sulla mappa. Premi "⚡ Risolvi" per calcolare i percorsi', w / 2, 36);
+    ctx.restore();
   }
 
   // 2. Disegna Clienti

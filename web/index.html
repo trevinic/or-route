@@ -32,7 +32,20 @@
         </div>
       </div>
       <div class="header-meta" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <span class="badge-free">🚀 100% Gratuito & Open Tools</span>
+        <div class="header-model-selector" style="display: flex; align-items: center; gap: 8px;">
+          <label for="headerModelSelect" style="font-size: 12.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Modelli:</label>
+          <select id="headerModelSelect" class="header-select" onchange="switchModelFromDropdown(this.value)">
+            <option value="tab-selector">🧭 Selettore Guidato & Flotta Eterogenea</option>
+            <option value="tab-cvrp">📦 1. CVRP (Consegne Merci & Corrieri)</option>
+            <option value="tab-vrptw">⏱️ 2. VRPTW (Finestre Orarie Tassative)</option>
+            <option value="tab-carp">🚛 3. CARP (Servizi Stradali & Rifiuti)</option>
+            <option value="tab-intermediate">🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)</option>
+            <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)</option>
+            <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
+            <option value="tab-roi">📊 Calcolatore Risparmio ROI Flotta</option>
+            <option value="tab-faq">📚 FAQ & Dispensa Teorica</option>
+          </select>
+        </div>
         <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON con tutte le impostazioni, costi e mappe della tua flotta">
           📥 Esporta Backup (.json)
         </button>
@@ -40,10 +53,10 @@
           📤 Importa Backup
         </button>
         <input type="file" id="importConfigFileInput" accept=".json" style="display: none;" onchange="handleImportConfigFile(event)">
-        <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', document.getElementById('tabBtnRoi'))">
+        <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)">
           📊 Calcola Risparmio ROI
         </button>
-        <button class="btn btn-warning btn-sm" onclick="switchMainTab('tab-faq', document.getElementById('tabBtnFaq'))" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600; cursor: pointer;">
+        <button class="btn btn-warning btn-sm" onclick="switchMainTab('tab-faq', null)" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600; cursor: pointer;">
           📚 FAQ & Dispensa
         </button>
       </div>
@@ -74,40 +87,6 @@
     </div>
   </div>
 
-  <!-- =========================================================================
-       3. BARRA DI NAVIGAZIONE MODELLI & STRUMENTI
-       ========================================================================= -->
-  <nav class="nav-section">
-    <div class="nav-container">
-      <button id="tabBtnSelector" class="model-tab active primary" onclick="switchMainTab('tab-selector', this)">
-        🧭 Quale Modello Scegliere?
-      </button>
-      <button id="tabBtnCvrp" class="model-tab" onclick="switchMainTab('tab-cvrp', this)">
-        📦 1. CVRP (Consegne Merci & Corrieri)
-      </button>
-      <button id="tabBtnVrptw" class="model-tab" onclick="switchMainTab('tab-vrptw', this)">
-        ⏱️ 2. VRPTW (Finestre Orarie Tassative)
-      </button>
-      <button id="tabBtnCarp" class="model-tab" onclick="switchMainTab('tab-carp', this)">
-        🚛 3. CARP (Servizi Stradali & Rifiuti)
-      </button>
-      <button id="tabBtnIntermediate" class="model-tab" onclick="switchMainTab('tab-intermediate', this)">
-        🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)
-      </button>
-      <button id="tabBtnVrppd" class="model-tab" onclick="switchMainTab('tab-vrppd', this)">
-        📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)
-      </button>
-      <button id="tabBtnMdvrp" class="model-tab" onclick="switchMainTab('tab-mdvrp', this)">
-        🏢🏢 6. MDVRP (Multi-Deposito)
-      </button>
-      <button id="tabBtnRoi" class="model-tab" onclick="switchMainTab('tab-roi', this)">
-        💰 Calcolatore Risparmio ROI Flotta
-      </button>
-      <button id="tabBtnFaq" class="model-tab" onclick="switchMainTab('tab-faq', this)" style="border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.08); color: #fbbf24; font-weight: 700;">
-        📚 FAQ & Dispensa Teorica
-      </button>
-    </div>
-  </nav>
 
   <!-- =========================================================================
        4. CONTENUTO PRINCIPALE (SEZIONI MULTI-MODELLO)
@@ -435,6 +414,21 @@
         <div class="grid-2col">
           <!-- Colonna Sinistra: Tabelle Clienti & Flotta -->
           <div>
+            <!-- Deposito / Hub Centrale CVRP -->
+            <div class="depot-banner">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🏠</span>
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Hub Centrale:</span>
+                  <input type="text" id="cvrpDepotName" class="cell-inp" style="width: 130px; margin-left: 6px; font-weight: 600;" onchange="updateCvrpDepot('name', this.value)">
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
+                <span>Lat: <input type="number" step="0.0001" id="cvrpDepotLat" class="cell-inp" style="width: 82px;" onchange="updateCvrpDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="cvrpDepotLon" class="cell-inp" style="width: 82px;" onchange="updateCvrpDepot('lon', this.value)"></span>
+              </div>
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <h4 style="font-size: 14px; color: #38bdf8;">🏢 Clienti & Richiesta Merci (kg)</h4>
               <span id="cvrpCustomerCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- clienti</span>
@@ -444,8 +438,9 @@
                 <thead>
                   <tr>
                     <th>Cliente / Destinazione</th>
-                    <th>Coordinate</th>
-                    <th>Carico (kg)</th>
+                    <th style="width: 85px;">Lat</th>
+                    <th style="width: 85px;">Lon</th>
+                    <th style="width: 85px;">Carico (kg)</th>
                     <th style="width: 38px;"></th>
                   </tr>
                 </thead>
@@ -571,6 +566,23 @@
         <div class="grid-2col">
           <!-- Colonna Sinistra: Configurazione Clienti & Finestre -->
           <div>
+            <!-- Deposito / Hub Centrale VRPTW -->
+            <div class="depot-banner">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🏠</span>
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">Hub Centrale:</span>
+                  <input type="text" id="vrptwDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" onchange="updateVrptwDepot('name', this.value)">
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; flex-wrap: wrap;">
+                <span>Lat: <input type="number" step="0.0001" id="vrptwDepotLat" class="cell-inp" style="width: 78px;" onchange="updateVrptwDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="vrptwDepotLon" class="cell-inp" style="width: 78px;" onchange="updateVrptwDepot('lon', this.value)"></span>
+                <span>Apertura: <input type="time" id="vrptwDepotReady" class="cell-inp" style="width: 74px;" onchange="updateVrptwDepotTime('ready_time', this.value)"></span>
+                <span>Chiusura: <input type="time" id="vrptwDepotDue" class="cell-inp" style="width: 74px;" onchange="updateVrptwDepotTime('due_time', this.value)"></span>
+              </div>
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <h4 style="font-size: 14px; color: #38bdf8;">📍 Destinazioni, Finestre Temporali & Tempi Sosta</h4>
               <button class="btn btn-secondary btn-sm" onclick="addVrptwCustomerRow()" style="font-size: 11.5px; padding: 4px 10px;">
@@ -582,9 +594,11 @@
                 <thead>
                   <tr>
                     <th>Punto Consegna</th>
-                    <th>Carico (kg)</th>
-                    <th>Finestra Oraria [a, b]</th>
-                    <th>Tempo Scarico</th>
+                    <th style="width: 78px;">Lat</th>
+                    <th style="width: 78px;">Lon</th>
+                    <th style="width: 78px;">Carico (kg)</th>
+                    <th style="min-width: 165px;">Finestra [Inizio - Fine]</th>
+                    <th style="width: 70px;">Sosta</th>
                     <th style="width: 38px;"></th>
                   </tr>
                 </thead>
@@ -866,6 +880,21 @@
         <div class="grid-2col">
           <!-- Colonna Sinistra: Tabelle Destinazioni, Impianti e Flotta EV -->
           <div>
+            <!-- Deposito / Hub Flotta EV -->
+            <div class="depot-banner">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🏠</span>
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Hub Flotta EV:</span>
+                  <input type="text" id="evDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" onchange="updateEvDepot('name', this.value)">
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
+                <span>Lat: <input type="number" step="0.0001" id="evDepotLat" class="cell-inp" style="width: 82px;" onchange="updateEvDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="evDepotLon" class="cell-inp" style="width: 82px;" onchange="updateEvDepot('lon', this.value)"></span>
+              </div>
+            </div>
+
             <!-- Tabella Destinazioni / Punti Raccolta -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <h4 style="font-size: 14px; color: #38bdf8;">🏢 Clienti / Punti Servizio</h4>
@@ -876,7 +905,9 @@
                 <thead>
                   <tr>
                     <th>Destinazione</th>
-                    <th>Domanda (kg)</th>
+                    <th style="width: 82px;">Lat</th>
+                    <th style="width: 82px;">Lon</th>
+                    <th style="width: 88px;">Domanda (kg)</th>
                     <th style="width: 38px;"></th>
                   </tr>
                 </thead>
@@ -893,6 +924,8 @@
                 <thead>
                   <tr>
                     <th>Impianto / Colonnina</th>
+                    <th style="width: 82px;">Lat</th>
+                    <th style="width: 82px;">Lon</th>
                     <th>Tipologia Servizio</th>
                     <th style="width: 38px;"></th>
                   </tr>
@@ -1034,6 +1067,21 @@
         <div class="grid-2col">
           <!-- Colonna Sinistra: Tabelle Richieste & Flotta -->
           <div>
+            <!-- Deposito / Hub Centrale VRPPD -->
+            <div class="depot-banner">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🏠</span>
+                <div>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">Hub Centrale:</span>
+                  <input type="text" id="vrppdDepotName" class="cell-inp" style="width: 120px; margin-left: 6px; font-weight: 600;" onchange="updateVrppdDepot('name', this.value)">
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap;">
+                <span>Lat: <input type="number" step="0.0001" id="vrppdDepotLat" class="cell-inp" style="width: 82px;" onchange="updateVrppdDepot('lat', this.value)"></span>
+                <span>Lon: <input type="number" step="0.0001" id="vrppdDepotLon" class="cell-inp" style="width: 82px;" onchange="updateVrppdDepot('lon', this.value)"></span>
+              </div>
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <h4 style="font-size: 14px; color: #38bdf8;">📦 Richieste Accoppiate di Ritiro & Consegna</h4>
               <span id="vrppdReqCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- richieste</span>
@@ -1043,9 +1091,9 @@
                 <thead>
                   <tr>
                     <th>Richiesta / Merce</th>
-                    <th>Carico (kg)</th>
-                    <th>Punto Ritiro (P)</th>
-                    <th>Punto Consegna (D)</th>
+                    <th style="width: 75px;">Carico</th>
+                    <th>🟢 Ritiro (Nome, Lat, Lon)</th>
+                    <th>🟠 Consegna (Nome, Lat, Lon)</th>
                     <th style="width: 38px;"></th>
                   </tr>
                 </thead>
@@ -1189,8 +1237,9 @@
                 <thead>
                   <tr>
                     <th>Nome Deposito</th>
-                    <th>Coordinate</th>
-                    <th>Colore</th>
+                    <th style="width: 82px;">Lat</th>
+                    <th style="width: 82px;">Lon</th>
+                    <th style="width: 48px;">Colore</th>
                     <th style="width: 38px;"></th>
                   </tr>
                 </thead>
@@ -1210,8 +1259,9 @@
                 <thead>
                   <tr>
                     <th>Cliente / Indirizzo</th>
-                    <th>Coordinate</th>
-                    <th>Carico (kg)</th>
+                    <th style="width: 82px;">Lat</th>
+                    <th style="width: 82px;">Lon</th>
+                    <th style="width: 88px;">Carico (kg)</th>
                     <th style="width: 38px;"></th>
                   </tr>
                 </thead>
