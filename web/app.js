@@ -57,6 +57,16 @@ function switchMainTab(tabId, btnElement) {
     headerSelect.value = hasOption ? tabId : '';
   }
 
+  // Sincronizza lo stato attivo del tasto Home nella barra header
+  const btnHome = document.getElementById('btnHeaderHome');
+  if (btnHome) {
+    if (tabId === 'tab-selector') {
+      btnHome.classList.add('active');
+    } else {
+      btnHome.classList.remove('active');
+    }
+  }
+
   // Aggiorna classi bottoni navigazione se presenti
   document.querySelectorAll('.model-tab').forEach(b => b.classList.remove('active'));
   if (btnElement && btnElement.classList && btnElement.classList.contains('model-tab')) {
