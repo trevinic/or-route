@@ -24,7 +24,7 @@
        ========================================================================= -->
   <header class="app-header">
     <div class="header-container">
-      <div class="logo-group">
+      <div class="logo-group" onclick="switchMainTab('tab-selector', null)" style="cursor: pointer;" title="Torna al Selettore Guidato & Flotta">
         <div class="logo-badge">📐</div>
         <div class="logo-text">
           <h1>OR-<span class="highlight">Route</span></h1>
@@ -35,15 +35,13 @@
         <div class="header-model-selector" style="display: flex; align-items: center; gap: 8px;">
           <label for="headerModelSelect" style="font-size: 12.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Modelli:</label>
           <select id="headerModelSelect" class="header-select" onchange="switchModelFromDropdown(this.value)">
-            <option value="tab-selector">🧭 Selettore Guidato & Flotta Eterogenea</option>
+            <option value="" disabled selected hidden>-- Scegli Modello --</option>
             <option value="tab-cvrp">📦 1. CVRP (Consegne Merci & Corrieri)</option>
             <option value="tab-vrptw">⏱️ 2. VRPTW (Finestre Orarie Tassative)</option>
             <option value="tab-carp">🚛 3. CARP (Servizi Stradali & Rifiuti)</option>
             <option value="tab-intermediate">🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)</option>
             <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)</option>
             <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
-            <option value="tab-roi">📊 Calcolatore Risparmio ROI Flotta</option>
-            <option value="tab-faq">📚 FAQ & Dispensa Teorica</option>
           </select>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON con tutte le impostazioni, costi e mappe della tua flotta">

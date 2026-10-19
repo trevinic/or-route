@@ -40,7 +40,9 @@ function showToast(message, duration = 3500) {
 // TAB SWITCHER
 // ==========================================
 function switchModelFromDropdown(tabId) {
-  switchMainTab(tabId, null);
+  if (tabId) {
+    switchMainTab(tabId, null);
+  }
 }
 
 function switchMainTab(tabId, btnElement) {
@@ -48,8 +50,9 @@ function switchMainTab(tabId, btnElement) {
   
   // Sincronizza il menù a tendina Modelli nella barra header
   const headerSelect = document.getElementById('headerModelSelect');
-  if (headerSelect && headerSelect.value !== tabId) {
-    headerSelect.value = tabId;
+  if (headerSelect) {
+    const hasOption = !!headerSelect.querySelector(`option[value="${tabId}"]`);
+    headerSelect.value = hasOption ? tabId : '';
   }
 
   // Aggiorna classi bottoni navigazione se presenti
