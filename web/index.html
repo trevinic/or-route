@@ -14,6 +14,10 @@
   <!-- Foglio di Stile Personalizzato -->
   <link rel="stylesheet" href="style.css">
 
+  <!-- Libreria Cartografica Interattiva Leaflet GIS (OSM Stradario) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <!-- GOOGLE ADSENSE INTEGRATION (Sostituisci ca-pub-XXXXXXXXXXXXXXXX con il tuo ID Editore) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 </head>
@@ -24,7 +28,7 @@
        ========================================================================= -->
   <header class="app-header">
     <div class="header-container">
-      <div class="logo-group" onclick="switchMainTab('tab-selector', null)" style="cursor: pointer;" title="Torna al Selettore Guidato & Flotta">
+      <div class="logo-group">
         <div class="logo-badge">📐</div>
         <div class="logo-text">
           <h1>OR-<span class="highlight">Route</span></h1>
@@ -53,9 +57,6 @@
         <input type="file" id="importConfigFileInput" accept=".json" style="display: none;" onchange="handleImportConfigFile(event)">
         <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)">
           📊 Calcola Risparmio ROI
-        </button>
-        <button class="btn btn-warning btn-sm" onclick="switchMainTab('tab-faq', null)" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600; cursor: pointer;">
-          📚 FAQ & Dispensa
         </button>
       </div>
     </div>
@@ -520,14 +521,15 @@
               </div>
             </div>
 
-            <!-- Canvas Interattivo dei Percorsi -->
+            <!-- Mappa Stradale Interattiva dei Percorsi (Stradario) -->
             <div class="card" style="padding: 12px; margin-bottom: 14px;">
               <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                <span>🗺️ Visualizzazione Vettoriale Tratte Ottimizzate</span>
+                <span>🗺️ Mappa Stradale Interattiva Percorsi (Stradario)</span>
                 <span style="font-size: 11px; color: var(--text-muted);">Hub Centrale &rarr; Clienti</span>
               </div>
               <div class="canvas-holder">
-                <canvas id="cvrpCanvas" class="map-canvas"></canvas>
+                <div id="cvrpMap" class="map-canvas"></div>
+                <canvas id="cvrpCanvas" class="map-canvas" style="display: none;"></canvas>
               </div>
             </div>
 
@@ -681,13 +683,15 @@
               </div>
             </div>
 
-            <!-- Canvas VRPTW -->
+            <!-- Mappa Stradale VRPTW (Stradario) -->
             <div class="card" style="padding: 12px; margin-bottom: 14px;">
-              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">
-                🗺️ Tracciato Itinerari con Sequenza Oraria
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>🗺️ Mappa Stradale Interattiva con Finestre Orarie (Stradario)</span>
+                <span style="font-size: 11px; color: var(--text-muted);">Sequenza Oraria Fermate</span>
               </div>
               <div class="canvas-holder">
-                <canvas id="vrptwCanvas" class="map-canvas"></canvas>
+                <div id="vrptwMap" class="map-canvas"></div>
+                <canvas id="vrptwCanvas" class="map-canvas" style="display: none;"></canvas>
               </div>
             </div>
 
@@ -718,9 +722,6 @@
             <span>Modello CARP &mdash; Raccolta Rifiuti Porta a Porta & Servizi Stradali</span>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-warning btn-sm" onclick="switchMainTab('tab-faq', document.getElementById('tabBtnFaq'))" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600;">
-              📚 FAQ & Dispensa
-            </button>
             <button class="btn btn-secondary btn-sm" onclick="openImportModal()">🌍 Importa da OpenStreetMap</button>
             <button id="btnSolveCarp" class="btn btn-primary btn-sm" onclick="solveCarp()">⚡ Risolvi & Aggiorna Mappa GIS</button>
           </div>
@@ -829,7 +830,7 @@
             <!-- Iframe Mappa Folium GIS reale -->
             <div class="card" style="padding: 12px; margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;">
-                <b>🗺️ Mappa GIS Interattiva (OpenStreetMap / Folium)</b>
+                <b>🗺️ Mappa GIS Interattiva (Folium &mdash; Apertura su Stradario)</b>
                 <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--primary); text-decoration: none;">Schermo Intero &nearr;</a>
               </div>
               <iframe id="carpMapIframe" src="/output/percorso_raccolta.html" style="width: 100%; height: 380px; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18;"></iframe>
@@ -1016,14 +1017,15 @@
               </div>
             </div>
 
-            <!-- Canvas Tracciato Mappa EV -->
+            <!-- Mappa Stradale Interattiva Flotta EV (Stradario) -->
             <div class="card" style="padding: 12px; margin-bottom: 14px;">
               <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                <span>🗺️ Tracciato Itinerari con Impianti di Ricarica/Scarico</span>
+                <span>🗺️ Mappa Stradale Interattiva Flotta EV & Ricariche (Stradario)</span>
                 <span style="font-size: 11px; color: var(--text-muted);">Hub Centrale &rarr; Impianti ⚡ &rarr; Clienti</span>
               </div>
               <div class="canvas-holder">
-                <canvas id="evCanvas" class="map-canvas"></canvas>
+                <div id="evMap" class="map-canvas"></div>
+                <canvas id="evCanvas" class="map-canvas" style="display: none;"></canvas>
               </div>
             </div>
 
@@ -1173,14 +1175,15 @@
               </div>
             </div>
 
-            <!-- Canvas Tracciato Mappa VRPPD -->
+            <!-- Mappa Stradale Interattiva VRPPD (Stradario) -->
             <div class="card" style="padding: 12px; margin-bottom: 14px;">
               <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                <span>🗺️ Tracciato Itinerari con Coppie Ritiro (P) ➔ Consegna (D)</span>
+                <span>🗺️ Mappa Stradale Interattiva Ritiri & Consegne Accoppiati (Stradario)</span>
                 <span style="font-size: 11px; color: var(--text-muted);">🟢 Ritiro &rarr; 🟠 Consegna</span>
               </div>
               <div class="canvas-holder">
-                <canvas id="vrppdCanvas" class="map-canvas"></canvas>
+                <div id="vrppdMap" class="map-canvas"></div>
+                <canvas id="vrppdCanvas" class="map-canvas" style="display: none;"></canvas>
               </div>
             </div>
 
@@ -1342,14 +1345,15 @@
               </div>
             </div>
 
-            <!-- Canvas Tracciato Mappa MDVRP -->
+            <!-- Mappa Stradale Interattiva MDVRP (Stradario) -->
             <div class="card" style="padding: 12px; margin-bottom: 14px;">
               <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                <span>🗺️ Tracciato Itinerari Multi-Polo</span>
+                <span>🗺️ Mappa Stradale Interattiva Multi-Polo (Stradario)</span>
                 <span style="font-size: 11px; color: var(--text-muted);">Depositi 🏢 &rarr; Clienti 📍</span>
               </div>
               <div class="canvas-holder">
-                <canvas id="mdvrpCanvas" class="map-canvas"></canvas>
+                <div id="mdvrpMap" class="map-canvas"></div>
+                <canvas id="mdvrpCanvas" class="map-canvas" style="display: none;"></canvas>
               </div>
             </div>
 

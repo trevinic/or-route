@@ -190,7 +190,7 @@ def genera_mappa_percorso(
     # Provider di mappe: Stradario aperto di default (OpenStreetMap)
     folium.TileLayer(
         tiles="OpenStreetMap",
-        name="Mappa Stradale (OpenStreetMap)",
+        name="Stradario (OpenStreetMap)",
         show=True,
         control=True
     ).add_to(m)

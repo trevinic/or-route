@@ -6,7 +6,7 @@
 
 // Stato Applicazione Globale
 const State = {
-  activeTab: 'tab-selector',
+  activeTab: 'tab-carp',
   cvrpConfig: null,
   cvrpResult: null,
   vrptwConfig: null,
@@ -19,7 +19,8 @@ const State = {
   vrppdResult: null,
   mdvrpConfig: null,
   mdvrpResult: null,
-  vehicleColors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6', '#f97316']
+  vehicleColors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6', '#f97316'],
+  leafletMaps: {}
 };
 
 // ==========================================
@@ -105,6 +106,21 @@ function switchMainTab(tabId, btnElement) {
     if (!State.mdvrpConfig) loadMdvrpConfig();
     else drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
   }
+
+  // Invalida dimensione mappa Leaflet dopo la visualizzazione per garantire il rendering fluido delle mattonelle Stradario
+  setTimeout(() => {
+    const mapIdMap = {
+      'tab-cvrp': 'cvrpMap',
+      'tab-vrptw': 'vrptwMap',
+      'tab-intermediate': 'evMap',
+      'tab-vrppd': 'vrppdMap',
+      'tab-mdvrp': 'mdvrpMap'
+    };
+    const targetMapId = mapIdMap[tabId];
+    if (targetMapId && State.leafletMaps && State.leafletMaps[targetMapId]) {
+      try { State.leafletMaps[targetMapId].invalidateSize(); } catch (_) {}
+    }
+  }, 120);
 }
 
 // ==========================================
@@ -1640,10 +1656,254 @@ function renderVrptwTimeline(data) {
   });
 }
 
+function formatMinutesToTime(min) {
+  if (typeof min !== 'number' || isNaN(min)) return '';
+  const h = Math.floor(min / 60);
+  const m = Math.floor(min % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 // ==========================================
-// 4. CANVAS ROUTE RENDERER (CVRP & VRPTW)
+// 4. MOTORE MAPPE INTERATTIVE GIS (LEAFLET)
+// Apertura predefinita su Stradario (OpenStreetMap)
+// ==========================================
+function createCustomMarkerIcon(content, bg, borderColor = '#ffffff', size = 28) {
+  return L.divIcon({
+    className: 'custom-leaflet-marker',
+    html: `<div style="
+      width: ${size}px; height: ${size}px;
+      background: ${bg};
+      border: 2px solid ${borderColor};
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: ${size * 0.48}px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      color: #ffffff;
+      font-weight: 700;
+      line-height: 1;
+    ">${content}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+}
+
+function getOrCreateLeafletMap(mapId) {
+  const container = document.getElementById(mapId);
+  if (!container || !window.L) return null;
+
+  if (State.leafletMaps && State.leafletMaps[mapId]) {
+    return State.leafletMaps[mapId];
+  }
+
+  const map = L.map(mapId, {
+    zoomControl: true,
+    preferCanvas: true
+  });
+
+  // 1. Stradario (OpenStreetMap) - APERTURA PREDEFINITA
+  const stradarioLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+  });
+
+  // 2. Mappa Stradale Esri
+  const esriStreetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18,
+    attribution: 'Tiles &copy; Esri'
+  });
+
+  // 3. Satellite Esri
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18,
+    attribution: 'Tiles &copy; Esri'
+  });
+
+  // Apertura predefinita su Stradario
+  stradarioLayer.addTo(map);
+
+  // Controllo Layer (Stradario / Esri / Satellite)
+  const baseLayers = {
+    "🗺️ Stradario (OpenStreetMap)": stradarioLayer,
+    "🛣️ Mappa Stradale (Esri)": esriStreetLayer,
+    "🛰️ Satellite (Esri)": satelliteLayer
+  };
+  L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(map);
+
+  // LayerGroup dinamico per marker e rotte
+  map._routeLayerGroup = L.layerGroup().addTo(map);
+
+  State.leafletMaps[mapId] = map;
+  return map;
+}
+
+function renderLeafletRouteMap(mapId, type, config, solution) {
+  const map = getOrCreateLeafletMap(mapId);
+  if (!map || !config) return;
+
+  map._routeLayerGroup.clearLayers();
+  const bounds = L.latLngBounds();
+
+  function addPoint(lat, lon) {
+    if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+      bounds.extend([lat, lon]);
+    }
+  }
+
+  // 1. GESTIONE DEI DEPOSITI
+  if (type === 'mdvrp') {
+    (config.depots || []).forEach((d, idx) => {
+      addPoint(d.lat, d.lon);
+      const depColor = d.color || State.vehicleColors[idx % State.vehicleColors.length];
+      const icon = createCustomMarkerIcon('🏢', depColor, '#ffffff', 32);
+      L.marker([d.lat, d.lon], { icon })
+        .bindPopup(`<b>🏢 Deposito Base: ${d.name || d.id}</b><br>ID: ${d.id}<br>GPS: ${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}`)
+        .addTo(map._routeLayerGroup);
+    });
+  } else if (config.depot) {
+    addPoint(config.depot.lat, config.depot.lon);
+    const icon = createCustomMarkerIcon('🏢', '#ef4444', '#ffffff', 32);
+    let popupHtml = `<b>🏢 Hub / Deposito Centrale</b><br><b>${config.depot.name || 'Hub'}</b><br>GPS: ${config.depot.lat.toFixed(5)}, ${config.depot.lon.toFixed(5)}`;
+    if (type === 'vrptw' && config.depot.open_min !== undefined) {
+      popupHtml += `<br>Orario Hub: <b>${formatMinutesToTime(config.depot.open_min)} - ${formatMinutesToTime(config.depot.close_min)}</b>`;
+    }
+    L.marker([config.depot.lat, config.depot.lon], { icon })
+      .bindPopup(popupHtml)
+      .addTo(map._routeLayerGroup);
+  }
+
+  // 2. GESTIONE IMPIANTI INTERMEDI (EV-VRP)
+  if (type === 'ev' && (config.intermediate_facilities || config.facilities)) {
+    const facs = config.intermediate_facilities || config.facilities || [];
+    facs.forEach(f => {
+      addPoint(f.lat, f.lon);
+      const icon = createCustomMarkerIcon('⚡', '#059669', '#34d399', 28);
+      L.marker([f.lat, f.lon], { icon })
+        .bindPopup(`<b>⚡ Impianto / Ricarica ${f.id}</b><br><b>${f.name}</b><br>Tipo: ${f.type || 'Ricarica Fast'}<br>Potenza: ${f.power_kw || 100} kW<br>GPS: ${f.lat.toFixed(5)}, ${f.lon.toFixed(5)}`)
+        .addTo(map._routeLayerGroup);
+    });
+  }
+
+  // 3. GESTIONE RICHIESTE RITIRO/CONSEGNA (VRPPD)
+  if (type === 'vrppd' && config.requests) {
+    config.requests.forEach(req => {
+      if (req.pickup) {
+        addPoint(req.pickup.lat, req.pickup.lon);
+        const iconP = createCustomMarkerIcon('P', '#10b981', '#ffffff', 26);
+        L.marker([req.pickup.lat, req.pickup.lon], { icon: iconP })
+          .bindPopup(`<b>🟢 Ritiro (${req.id})</b><br><b>${req.pickup.name}</b><br>Carico da prelevare: <b>+${req.demand_kg} kg</b><br>GPS: ${req.pickup.lat.toFixed(5)}, ${req.pickup.lon.toFixed(5)}`)
+          .addTo(map._routeLayerGroup);
+      }
+      if (req.delivery) {
+        addPoint(req.delivery.lat, req.delivery.lon);
+        const iconD = createCustomMarkerIcon('D', '#f59e0b', '#ffffff', 26);
+        L.marker([req.delivery.lat, req.delivery.lon], { icon: iconD })
+          .bindPopup(`<b>🟠 Consegna (${req.id})</b><br><b>${req.delivery.name}</b><br>Carico da recapitare: <b>-${req.demand_kg} kg</b><br>GPS: ${req.delivery.lat.toFixed(5)}, ${req.delivery.lon.toFixed(5)}`)
+          .addTo(map._routeLayerGroup);
+      }
+      if (req.pickup && req.delivery) {
+        L.polyline([[req.pickup.lat, req.pickup.lon], [req.delivery.lat, req.delivery.lon]], {
+          color: '#94a3b8',
+          weight: 1.5,
+          dashArray: '5, 6',
+          opacity: 0.5
+        }).addTo(map._routeLayerGroup);
+      }
+    });
+  }
+
+  // 4. GESTIONE CLIENTI NORMALI (CVRP, VRPTW, EV, MDVRP)
+  if (config.customers && type !== 'vrppd') {
+    config.customers.forEach(c => {
+      addPoint(c.lat, c.lon);
+      const icon = createCustomMarkerIcon(c.id, '#0284c7', '#ffffff', 24);
+      let popupHtml = `<b>📍 Cliente #${c.id}: ${c.name}</b><br>Carico Richiesto: <b>${c.demand_kg} kg</b><br>GPS: ${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`;
+      if (type === 'vrptw') {
+        popupHtml += `<br>Finestra Oraria: <b>${formatMinutesToTime(c.ready_time)} - ${formatMinutesToTime(c.due_time)}</b><br>Tempo scarico: ${c.service_time} min`;
+      }
+      L.marker([c.lat, c.lon], { icon })
+        .bindPopup(popupHtml)
+        .addTo(map._routeLayerGroup);
+    });
+  }
+
+  // 5. TRACCIAMENTO DEI PERCORSI VEICOLI RISOLTI
+  if (solution) {
+    if (type === 'vrppd' || type === 'mdvrp') {
+      const nodesMap = {};
+      if (type === 'vrppd') {
+        if (config.depot) nodesMap[config.depot.id] = config.depot;
+        (config.requests || []).forEach(r => {
+          if (r.pickup) nodesMap[r.pickup.id] = r.pickup;
+          if (r.delivery) nodesMap[r.delivery.id] = r.delivery;
+        });
+      } else {
+        (config.depots || []).forEach(d => nodesMap[d.id] = d);
+        (config.customers || []).forEach(c => nodesMap[c.id] = c);
+      }
+
+      (solution.vehicles || []).forEach((v, vIdx) => {
+        if (!v.used || !v.route_nodes || v.route_nodes.length < 2) return;
+        const color = State.vehicleColors[vIdx % State.vehicleColors.length];
+        const latLngs = [];
+        v.route_nodes.forEach(nid => {
+          const nd = nodesMap[nid];
+          if (nd && typeof nd.lat === 'number' && typeof nd.lon === 'number') {
+            latLngs.push([nd.lat, nd.lon]);
+          }
+        });
+        if (latLngs.length >= 2) {
+          const polyline = L.polyline(latLngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.9,
+            lineJoin: 'round'
+          }).addTo(map._routeLayerGroup);
+          polyline.bindTooltip(`<b>${v.name || v.id || ('Mezzo ' + (vIdx + 1))}</b> (${v.route_nodes.length} tappe)`, { sticky: true });
+        }
+      });
+    } else if (solution.vehicles) {
+      Object.entries(solution.vehicles).forEach(([vName, vInfo], vIdx) => {
+        if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
+        const color = State.vehicleColors[vIdx % State.vehicleColors.length];
+        const latLngs = [];
+        vInfo.stops.forEach(s => {
+          if (typeof s.lat === 'number' && typeof s.lon === 'number') {
+            latLngs.push([s.lat, s.lon]);
+          }
+        });
+        if (latLngs.length >= 2) {
+          const polyline = L.polyline(latLngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.9,
+            lineJoin: 'round'
+          }).addTo(map._routeLayerGroup);
+          const totalLoad = vInfo.total_demand || vInfo.total_load || vInfo.total_collected || 0;
+          polyline.bindTooltip(`<b>${vName}</b> &mdash; Carico: ${totalLoad} kg (${latLngs.length} fermate)`, { sticky: true });
+        }
+      });
+    }
+  }
+
+  // 6. CENTRATURA AUTOMATICA SULLE COORDINATE
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [35, 35], maxZoom: 16 });
+  } else {
+    map.setView([45.4642, 9.1900], 12);
+  }
+}
+
+// ==========================================
+// 4. CANVAS / LEAFLET ROUTE RENDERER (CVRP & VRPTW)
 // ==========================================
 function drawRouteCanvas(canvasId, config, solution) {
+  const mapId = (canvasId === 'cvrpCanvas') ? 'cvrpMap' : (canvasId === 'vrptwCanvas' ? 'vrptwMap' : null);
+  if (mapId && window.L && document.getElementById(mapId)) {
+    renderLeafletRouteMap(mapId, canvasId === 'cvrpCanvas' ? 'cvrp' : 'vrptw', config, solution);
+    return;
+  }
+
   const canvas = document.getElementById(canvasId);
   if (!canvas || !config) return;
   const ctx = canvas.getContext('2d');
@@ -2751,6 +3011,11 @@ function renderEvVehicleReport(data) {
 }
 
 function drawEvCanvas(canvasId, config, solution) {
+  if (canvasId === 'evCanvas' && window.L && document.getElementById('evMap')) {
+    renderLeafletRouteMap('evMap', 'ev', config, solution);
+    return;
+  }
+
   const canvas = document.getElementById(canvasId);
   if (!canvas || !config) return;
   const ctx = canvas.getContext('2d');
@@ -3358,6 +3623,11 @@ function renderVrppdReportList(res) {
 }
 
 function drawVrppdCanvas(canvasId, config, result) {
+  if (canvasId === 'vrppdCanvas' && window.L && document.getElementById('vrppdMap')) {
+    renderLeafletRouteMap('vrppdMap', 'vrppd', config, result);
+    return;
+  }
+
   const canvas = document.getElementById(canvasId);
   if (!canvas || !config) return;
   const ctx = canvas.getContext('2d');
@@ -4048,6 +4318,11 @@ function renderMdvrpReportList(res) {
 }
 
 function drawMdvrpCanvas(canvasId, config, result) {
+  if (canvasId === 'mdvrpCanvas' && window.L && document.getElementById('mdvrpMap')) {
+    renderLeafletRouteMap('mdvrpMap', 'mdvrp', config, result);
+    return;
+  }
+
   const canvas = document.getElementById(canvasId);
   if (!canvas || !config) return;
   const ctx = canvas.getContext('2d');
@@ -4319,12 +4594,12 @@ function closeFleetCapacityModal() {
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
   const hash = (window.location.hash || '').replace('#', '');
-  if (hash === 'tab-faq' || hash === 'faq') {
-    switchMainTab('tab-faq', document.getElementById('tabBtnFaq'));
-  } else if (hash && document.getElementById(hash)) {
+  if (hash && document.getElementById(hash) && hash !== 'tab-selector' && hash !== 'tab-faq') {
     switchMainTab(hash);
   } else {
-    switchMainTab('tab-selector', document.getElementById('tabBtnSelector'));
+    const sel = document.getElementById('headerModelSelect');
+    const defaultModel = (sel && sel.value) ? sel.value : 'tab-carp';
+    switchMainTab(defaultModel);
   }
   renderWizardFleetTable();
   calculateRoi();

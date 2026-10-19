@@ -716,10 +716,27 @@ input.cell-inp:focus {
   overflow: hidden;
 }
 
-canvas.map-canvas {
+canvas.map-canvas, div.map-canvas {
   width: 100%;
   height: 100%;
   display: block;
+  z-index: 1;
+}
+
+/* Stili personalizzati Leaflet nei modelli di calcolo */
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95) !important;
+}
+.leaflet-container {
+  font-family: 'Outfit', sans-serif !important;
 }
 
 /* Timeline & Route Steps */
