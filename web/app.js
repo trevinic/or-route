@@ -993,7 +993,7 @@ function removeCvrpVehicle(idx) {
   }
 }
 
-function autoScaleCvrpFleet() {
+function autoScaleCvrpFleet(andSolve = false) {
   if (!State.cvrpConfig) return;
   const totalDemand = (State.cvrpConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
   const totalCapacity = (State.cvrpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
@@ -1010,11 +1010,13 @@ function autoScaleCvrpFleet() {
     });
   }
   renderCvrpTables();
-  solveCvrp();
   showToast(`Aggiunti ${numToAdd} furgoni per coprire l'intera domanda merci!`);
+  if (andSolve) {
+    solveCvrp();
+  }
 }
 
-function filterCvrpCustomersByCapacity() {
+function filterCvrpCustomersByCapacity(andSolve = false) {
   if (!State.cvrpConfig) return;
   const totalCapacity = (State.cvrpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
   const dep = State.cvrpConfig.depot;
@@ -1038,8 +1040,11 @@ function filterCvrpCustomersByCapacity() {
 
   State.cvrpConfig.customers = kept;
   renderCvrpTables();
-  solveCvrp();
+  drawRouteCanvas('cvrpCanvas', State.cvrpConfig, null);
   showToast(`Area ridotta a ${kept.length} clienti compatibili con la flotta attuale.`);
+  if (andSolve) {
+    solveCvrp();
+  }
 }
 
 async function solveCvrp() {
@@ -1058,6 +1063,27 @@ async function solveCvrp() {
     });
     const data = await res.json();
     State.cvrpResult = data;
+
+    const totalDemand = (State.cvrpConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
+    const totalCapacity = (State.cvrpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
+
+    // Se non ottimale o flotta insufficiente, segnala e proponi alternative
+    if (!data.is_optimal || data.status === 'Infeasible' || totalCapacity < totalDemand) {
+      if (document.getElementById('cvrpStatus')) {
+        document.getElementById('cvrpStatus').innerText = data.status || 'Infeasible';
+        document.getElementById('cvrpStatus').className = 'kpi-val red';
+      }
+      showFleetShortageModal('cvrp', {
+        modelName: 'CVRP (Consegne Merci)',
+        totalDemand: totalDemand,
+        totalCapacity: totalCapacity,
+        numVehicles: (State.cvrpConfig.vehicles || []).length,
+        avgVehCap: 1200,
+        onAutoScale: autoScaleCvrpFleet,
+        onCrop: filterCvrpCustomersByCapacity
+      });
+      return;
+    }
 
     // Aggiornamento KPI
     document.getElementById('cvrpStatus').innerText = data.status;
@@ -1383,7 +1409,45 @@ function removeVrptwVehicle(idx) {
   }
 }
 
-function autoScaleVrptwFleet() {
+function updateVrptwFleetCapacitySummary() {
+  const sumEl = document.getElementById('vrptwFleetCapacitySummary');
+  if (!sumEl || !State.vrptwConfig) return;
+
+  const totalDemand = (State.vrptwConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
+  const totalCapacity = (State.vrptwConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
+
+  if (totalCapacity < totalDemand) {
+    const missing = totalDemand - totalCapacity;
+    sumEl.style.background = 'rgba(239, 68, 68, 0.15)';
+    sumEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    sumEl.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <span style="color: #f87171; font-weight: 700;">⚠️ Portata Flotta Insufficiente per le consegne con finestre orarie!</span> 
+          Portata: <b>${totalCapacity.toLocaleString()} kg</b> &lt; Richiesta: <b>${totalDemand.toLocaleString()} kg</b> (Mancano ${missing.toLocaleString()} kg).
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" onclick="autoScaleVrptwFleet(false)" style="font-size: 11.5px; padding: 4px 10px;">
+            ⚡ Adatta Flotta Automaticamente
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="filterVrptwCustomersByCapacity(false)" style="font-size: 11.5px; padding: 4px 10px;">
+            ✂️ Riduci Destinazioni per Flotta Attuale
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    const marginPct = totalDemand > 0 ? (((totalCapacity / totalDemand) - 1) * 100).toFixed(0) : 0;
+    sumEl.style.background = 'rgba(16, 185, 129, 0.1)';
+    sumEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    sumEl.innerHTML = `
+      <span style="color: #34d399; font-weight: 700;">✅ Flotta Idonea:</span> 
+      Portata Flotta <b>${totalCapacity.toLocaleString()} kg</b> per <b>${totalDemand.toLocaleString()} kg</b> di merce (Margine sicurezza: +${marginPct}%).
+    `;
+  }
+}
+
+function autoScaleVrptwFleet(andSolve = false) {
   if (!State.vrptwConfig) return;
   const totalDemand = (State.vrptwConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
   const totalCapacity = (State.vrptwConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
@@ -1400,11 +1464,13 @@ function autoScaleVrptwFleet() {
     });
   }
   renderVrptwTables();
-  solveVrptw();
   showToast(`Aggiunti ${numToAdd} furgoni refrigerati per coprire le consegne!`);
+  if (andSolve) {
+    solveVrptw();
+  }
 }
 
-function filterVrptwCustomersByCapacity() {
+function filterVrptwCustomersByCapacity(andSolve = false) {
   if (!State.vrptwConfig) return;
   const totalCapacity = (State.vrptwConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
   const dep = State.vrptwConfig.depot;
@@ -1427,8 +1493,11 @@ function filterVrptwCustomersByCapacity() {
 
   State.vrptwConfig.customers = kept;
   renderVrptwTables();
-  solveVrptw();
+  drawRouteCanvas('vrptwCanvas', State.vrptwConfig, null);
   showToast(`Destinazioni ridotte a ${kept.length} per la flotta attuale.`);
+  if (andSolve) {
+    solveVrptw();
+  }
 }
 
 async function solveVrptw() {
@@ -1447,6 +1516,27 @@ async function solveVrptw() {
     });
     const data = await res.json();
     State.vrptwResult = data;
+
+    const totalDemand = (State.vrptwConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
+    const totalCapacity = (State.vrptwConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
+
+    // Se non ottimale o flotta insufficiente, segnala e proponi alternative
+    if (!data.is_optimal || data.status === 'Infeasible' || totalCapacity < totalDemand) {
+      if (document.getElementById('vrptwStatus')) {
+        document.getElementById('vrptwStatus').innerText = data.status || 'Infeasible';
+        document.getElementById('vrptwStatus').className = 'kpi-val red';
+      }
+      showFleetShortageModal('vrptw', {
+        modelName: 'VRPTW (Finestre Orarie Tassative)',
+        totalDemand: totalDemand,
+        totalCapacity: totalCapacity,
+        numVehicles: (State.vrptwConfig.vehicles || []).length,
+        avgVehCap: 1500,
+        onAutoScale: autoScaleVrptwFleet,
+        onCrop: filterVrptwCustomersByCapacity
+      });
+      return;
+    }
 
     // Aggiornamento KPI
     document.getElementById('vrptwStatus').innerText = data.status;
@@ -1871,7 +1961,7 @@ function updateCarpStreetTransit(idx, val) {
   State.carpConfig.streets[idx].transit_cost = parseFloat(val) || 1.0;
 }
 
-function autoScaleCarpFleet() {
+function autoScaleCarpFleet(andSolve = false) {
   if (!State.carpConfig) return;
   const totalDemand = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
   const totalCapacity = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
@@ -1889,11 +1979,13 @@ function autoScaleCarpFleet() {
     });
   }
   renderCarpTables();
-  solveCarp();
   showToast(`Flotta aumentata automaticamente di ${numToAdd} compattatori per coprire l'intera area!`);
+  if (andSolve) {
+    solveCarp();
+  }
 }
 
-async function cropCarpSectorByCurrentCapacity() {
+async function cropCarpSectorByCurrentCapacity(andSolve = false) {
   if (!State.carpConfig) return;
   const totalCapacity = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
   showToast('Riduzione area in corso per la capacità attuale dei mezzi...');
@@ -1907,8 +1999,10 @@ async function cropCarpSectorByCurrentCapacity() {
     if (data.success) {
       State.carpConfig = data.config;
       renderCarpTables();
-      solveCarp();
       showToast(`Area ridotta con successo attorno al deposito per i mezzi attuali (${totalCapacity.toLocaleString()} kg).`);
+      if (andSolve) {
+        solveCarp();
+      }
     } else {
       if (typeof showErrorModal === 'function') {
         showErrorModal('Errore Riduzione Area', 'Non è stato possibile ridurre il settore attorno al deposito.', data.error || 'Dati non validi');
@@ -1946,7 +2040,6 @@ async function applyCarpSectorSize(val) {
       if (totalCapacity < totalDemand) {
         autoScaleCarpFleet();
       } else {
-        solveCarp();
         showToast(`Settore aggiornato: ${State.carpConfig.streets.length} tratte viarie.`);
       }
     } else {
@@ -1974,6 +2067,22 @@ async function solveCarp() {
   showToast('Risoluzione CARP (Single-Commodity Flow)...');
 
   try {
+    const totalDemand = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+    const totalCapacity = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
+
+    if (totalCapacity < totalDemand) {
+      showFleetShortageModal('carp', {
+        modelName: 'CARP (Servizi Stradali & Rifiuti)',
+        totalDemand: totalDemand,
+        totalCapacity: totalCapacity,
+        numVehicles: (State.carpConfig.vehicles || []).length,
+        avgVehCap: 4500,
+        onAutoScale: autoScaleCarpFleet,
+        onCrop: cropCarpSectorByCurrentCapacity
+      });
+      return;
+    }
+
     const res = await fetch('/api/solve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1984,6 +2093,23 @@ async function solveCarp() {
       throw new Error(data.error || `Errore HTTP ${res.status}: Impossibile risolvere CARP o generare mappa`);
     }
     State.carpResult = data;
+
+    if (!data.is_optimal || data.status === 'Infeasible') {
+      if (document.getElementById('carpStatus')) {
+        document.getElementById('carpStatus').innerText = data.status || 'Infeasible';
+        document.getElementById('carpStatus').className = 'kpi-val red';
+      }
+      showFleetShortageModal('carp', {
+        modelName: 'CARP (Servizi Stradali & Rifiuti)',
+        totalDemand: totalDemand,
+        totalCapacity: totalCapacity,
+        numVehicles: (State.carpConfig.vehicles || []).length,
+        avgVehCap: 4500,
+        onAutoScale: autoScaleCarpFleet,
+        onCrop: cropCarpSectorByCurrentCapacity
+      });
+      return;
+    }
 
     document.getElementById('carpStatus').innerText = data.status;
     document.getElementById('carpCost').innerText = data.objective_value ? `${data.objective_value.toFixed(2)} €` : 'N/D';
@@ -2460,7 +2586,7 @@ function removeEvVehicle(idx) {
   }
 }
 
-function autoScaleEvFleet() {
+function autoScaleEvFleet(andSolve = false) {
   if (!State.evConfig) return;
   const totalDemand = (State.evConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
   const totalCapacity = (State.evConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
@@ -2478,11 +2604,13 @@ function autoScaleEvFleet() {
     });
   }
   renderEvTables();
-  solveEvVrp();
   showToast(`Aggiunti ${numToAdd} veicoli alla flotta elettrica!`);
+  if (andSolve) {
+    solveEvVrp();
+  }
 }
 
-function filterEvCustomersByCapacity() {
+function filterEvCustomersByCapacity(andSolve = false) {
   if (!State.evConfig) return;
   const totalCapacity = (State.evConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
   const dep = State.evConfig.depot;
@@ -2505,8 +2633,11 @@ function filterEvCustomersByCapacity() {
 
   State.evConfig.customers = kept;
   renderEvTables();
-  solveEvVrp();
+  drawEvCanvas('evCanvas', State.evConfig, null);
   showToast(`Clienti ridotti a ${kept.length} per la capacità della flotta elettrica.`);
+  if (andSolve) {
+    solveEvVrp();
+  }
 }
 
 async function solveEvVrp() {
@@ -2525,6 +2656,27 @@ async function solveEvVrp() {
     });
     const data = await res.json();
     State.evResult = data;
+
+    const totalDemand = (State.evConfig.customers || []).reduce((acc, c) => acc + (parseFloat(c.demand) || 0), 0);
+    const totalCapacity = (State.evConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
+
+    // Se non ottimale o flotta insufficiente, segnala e proponi alternative
+    if (!data.is_optimal || data.status === 'Infeasible' || totalCapacity < totalDemand) {
+      if (document.getElementById('evStatus')) {
+        document.getElementById('evStatus').innerText = data.status || 'Infeasible';
+        document.getElementById('evStatus').className = 'kpi-val red';
+      }
+      showFleetShortageModal('ev', {
+        modelName: 'EV-VRP & WCVRPTW-IF (Flotta Elettrica)',
+        totalDemand: totalDemand,
+        totalCapacity: totalCapacity,
+        numVehicles: (State.evConfig.vehicles || []).length,
+        avgVehCap: 1200,
+        onAutoScale: autoScaleEvFleet,
+        onCrop: filterEvCustomersByCapacity
+      });
+      return;
+    }
 
     // Aggiornamento KPI
     document.getElementById('evStatus').innerText = data.status;
@@ -2847,11 +2999,98 @@ function renderVrppdTables() {
   }
 
   // Bilancio capacità vs domanda
+  updateVrppdFleetCapacitySummary();
+}
+
+function updateVrppdFleetCapacitySummary() {
+  const sumEl = document.getElementById('vrppdFleetCapacitySummary');
+  if (!sumEl || !State.vrppdConfig) return;
+
   const totCap = (State.vrppdConfig.vehicles || []).reduce((a, b) => a + (Number(b.capacity) || 0), 0);
   const totDemand = (State.vrppdConfig.requests || []).reduce((a, b) => a + (Number(b.demand_kg) || 0), 0);
-  const sumEl = document.getElementById('vrppdFleetCapacitySummary');
-  if (sumEl) {
-    sumEl.innerHTML = `Capacità Flotta: <b>${totCap.toLocaleString()} kg</b> | Somma Richieste: <b>${totDemand.toLocaleString()} kg</b>`;
+
+  if (totCap < totDemand) {
+    const missing = totDemand - totCap;
+    sumEl.style.background = 'rgba(239, 68, 68, 0.15)';
+    sumEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    sumEl.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <span style="color: #f87171; font-weight: 700;">⚠️ Portata Flotta Insufficiente per le richieste di trasporto!</span> 
+          Portata: <b>${totCap.toLocaleString()} kg</b> &lt; Somma Richieste: <b>${totDemand.toLocaleString()} kg</b> (Mancano ${missing.toLocaleString()} kg).
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" onclick="autoScaleVrppdFleet(false)" style="font-size: 11.5px; padding: 4px 10px;">
+            ⚡ Adatta Flotta Automaticamente
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="filterVrppdRequestsByCapacity(false)" style="font-size: 11.5px; padding: 4px 10px;">
+            ✂️ Riduci Richieste per Flotta Attuale
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    const marginPct = totDemand > 0 ? (((totCap / totDemand) - 1) * 100).toFixed(0) : 0;
+    sumEl.style.background = 'rgba(16, 185, 129, 0.1)';
+    sumEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    sumEl.innerHTML = `
+      <span style="color: #34d399; font-weight: 700;">✅ Flotta Idonea:</span> 
+      Portata Flotta <b>${totCap.toLocaleString()} kg</b> per <b>${totDemand.toLocaleString()} kg</b> di richieste (Margine: +${marginPct}%).
+    `;
+  }
+}
+
+function autoScaleVrppdFleet(andSolve = false) {
+  if (!State.vrppdConfig) return;
+  const totCap = (State.vrppdConfig.vehicles || []).reduce((a, b) => a + (Number(b.capacity) || 0), 0);
+  const totDemand = (State.vrppdConfig.requests || []).reduce((a, b) => a + (Number(b.demand_kg) || 0), 0);
+  const missing = Math.max(0, (totDemand * 1.15) - totCap);
+  const stdCap = 900;
+  const numToAdd = Math.max(1, Math.ceil(missing / stdCap));
+
+  for (let i = 0; i < numToAdd; i++) {
+    const nextNum = (State.vrppdConfig.vehicles || []).length + 1;
+    State.vrppdConfig.vehicles.push({
+      name: `Furgone_Express_${nextNum}`,
+      capacity: stdCap,
+      fixed_cost: 85.0,
+      description: 'Furgone VRPPD (Auto-scale)'
+    });
+  }
+  renderVrppdTables();
+  showToast(`Aggiunti ${numToAdd} furgoni per coprire tutte le spedizioni!`);
+  if (andSolve) {
+    solveVrppd();
+  }
+}
+
+function filterVrppdRequestsByCapacity(andSolve = false) {
+  if (!State.vrppdConfig) return;
+  const totalCapacity = (State.vrppdConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
+  const dep = State.vrppdConfig.depot;
+
+  const sorted = [...(State.vrppdConfig.requests || [])].sort((a, b) => {
+    const da = Math.hypot((a.pickup?.lat || 0) - dep.lat, (a.pickup?.lon || 0) - dep.lon);
+    const db = Math.hypot((b.pickup?.lat || 0) - dep.lat, (b.pickup?.lon || 0) - dep.lon);
+    return da - db;
+  });
+
+  let accumulated = 0;
+  const kept = [];
+  for (const r of sorted) {
+    if (accumulated + (r.demand_kg || 0) <= totalCapacity) {
+      kept.push(r);
+      accumulated += (r.demand_kg || 0);
+    }
+  }
+  if (kept.length === 0 && sorted.length > 0) kept.push(sorted[0]);
+
+  State.vrppdConfig.requests = kept;
+  renderVrppdTables();
+  drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, null);
+  showToast(`Richieste ridotte a ${kept.length} per la capacità attuale dei mezzi.`);
+  if (andSolve) {
+    solveVrppd();
   }
 }
 
@@ -2982,6 +3221,9 @@ async function solveVrppd() {
   }
 
   try {
+    const totCap = (State.vrppdConfig.vehicles || []).reduce((a, b) => a + (Number(b.capacity) || 0), 0);
+    const totDemand = (State.vrppdConfig.requests || []).reduce((a, b) => a + (Number(b.demand_kg) || 0), 0);
+
     const res = await fetch('/api/vrppd/solve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2989,6 +3231,24 @@ async function solveVrppd() {
     });
     const data = await res.json();
     State.vrppdResult = data;
+
+    // Se non ottimale o flotta insufficiente, segnala e proponi alternative
+    if (!data.is_optimal || data.status === 'Infeasible' || totCap < totDemand) {
+      if (statEl) {
+        statEl.innerText = data.status || 'Infeasible';
+        statEl.className = 'kpi-val red';
+      }
+      showFleetShortageModal('vrppd', {
+        modelName: 'VRPPD (Ritiri & Consegne Accoppiati)',
+        totalDemand: totDemand,
+        totalCapacity: totCap,
+        numVehicles: (State.vrppdConfig.vehicles || []).length,
+        avgVehCap: 900,
+        onAutoScale: autoScaleVrppdFleet,
+        onCrop: filterVrppdRequestsByCapacity
+      });
+      return;
+    }
 
     if (statEl) {
       statEl.innerText = data.status || 'Ottimale';
@@ -3389,11 +3649,100 @@ function renderMdvrpTables() {
   }
 
   // Bilancio capacità vs domanda
+  updateMdvrpFleetCapacitySummary();
+}
+
+function updateMdvrpFleetCapacitySummary() {
+  const sumEl = document.getElementById('mdvrpFleetCapacitySummary');
+  if (!sumEl || !State.mdvrpConfig) return;
+
   const totCap = (State.mdvrpConfig.vehicles || []).reduce((a, b) => a + (Number(b.capacity) || 0), 0);
   const totDemand = (State.mdvrpConfig.customers || []).reduce((a, b) => a + (Number(b.demand) || 0), 0);
-  const sumEl = document.getElementById('mdvrpFleetCapacitySummary');
-  if (sumEl) {
-    sumEl.innerHTML = `Capacità Flotta Totale: <b>${totCap.toLocaleString()} kg</b> | Domanda Totale: <b>${totDemand.toLocaleString()} kg</b>`;
+
+  if (totCap < totDemand) {
+    const missing = totDemand - totCap;
+    sumEl.style.background = 'rgba(239, 68, 68, 0.15)';
+    sumEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    sumEl.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <span style="color: #f87171; font-weight: 700;">⚠️ Portata Flotta Multi-Sito Insufficiente!</span> 
+          Portata: <b>${totCap.toLocaleString()} kg</b> &lt; Domanda: <b>${totDemand.toLocaleString()} kg</b> (Mancano ${missing.toLocaleString()} kg).
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" onclick="autoScaleMdvrpFleet(false)" style="font-size: 11.5px; padding: 4px 10px;">
+            ⚡ Adatta Flotta Automaticamente
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="filterMdvrpCustomersByCapacity(false)" style="font-size: 11.5px; padding: 4px 10px;">
+            ✂️ Riduci Clienti per Flotta Attuale
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    const marginPct = totDemand > 0 ? (((totCap / totDemand) - 1) * 100).toFixed(0) : 0;
+    sumEl.style.background = 'rgba(16, 185, 129, 0.1)';
+    sumEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    sumEl.innerHTML = `
+      <span style="color: #34d399; font-weight: 700;">✅ Flotta Idonea:</span> 
+      Portata Flotta <b>${totCap.toLocaleString()} kg</b> per <b>${totDemand.toLocaleString()} kg</b> di domanda (Margine: +${marginPct}%).
+    `;
+  }
+}
+
+function autoScaleMdvrpFleet(andSolve = false) {
+  if (!State.mdvrpConfig) return;
+  const totCap = (State.mdvrpConfig.vehicles || []).reduce((a, b) => a + (Number(b.capacity) || 0), 0);
+  const totDemand = (State.mdvrpConfig.customers || []).reduce((a, b) => a + (Number(b.demand) || 0), 0);
+  const missing = Math.max(0, (totDemand * 1.15) - totCap);
+  const stdCap = 2500;
+  const numToAdd = Math.max(1, Math.ceil(missing / stdCap));
+  const deps = State.mdvrpConfig.depots || [];
+
+  for (let i = 0; i < numToAdd; i++) {
+    const nextNum = (State.mdvrpConfig.vehicles || []).length + 1;
+    const assignedDep = deps.length > 0 ? deps[i % deps.length].id : 'DEP_1';
+    State.mdvrpConfig.vehicles.push({
+      name: `Camion_MD_${nextNum}`,
+      home_depot: assignedDep,
+      capacity: stdCap,
+      fixed_cost: 80.0
+    });
+  }
+  renderMdvrpTables();
+  showToast(`Aggiunti ${numToAdd} camion alla flotta multi-deposito!`);
+  if (andSolve) {
+    solveMdvrp();
+  }
+}
+
+function filterMdvrpCustomersByCapacity(andSolve = false) {
+  if (!State.mdvrpConfig) return;
+  const totalCapacity = (State.mdvrpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity) || 0), 0);
+  const deps = State.mdvrpConfig.depots || [];
+
+  const sorted = [...(State.mdvrpConfig.customers || [])].sort((a, b) => {
+    const minDa = deps.length > 0 ? Math.min(...deps.map(d => Math.hypot(a.lat - d.lat, a.lon - d.lon))) : 0;
+    const minDb = deps.length > 0 ? Math.min(...deps.map(d => Math.hypot(b.lat - d.lat, b.lon - d.lon))) : 0;
+    return minDa - minDb;
+  });
+
+  let accumulated = 0;
+  const kept = [];
+  for (const c of sorted) {
+    if (accumulated + (c.demand || 0) <= totalCapacity) {
+      kept.push(c);
+      accumulated += (c.demand || 0);
+    }
+  }
+  if (kept.length === 0 && sorted.length > 0) kept.push(sorted[0]);
+
+  State.mdvrpConfig.customers = kept;
+  renderMdvrpTables();
+  drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, null);
+  showToast(`Clienti ridotti a ${kept.length} per la capacità attuale dei mezzi.`);
+  if (andSolve) {
+    solveMdvrp();
   }
 }
 
@@ -3559,6 +3908,9 @@ async function solveMdvrp() {
   }
 
   try {
+    const totCap = (State.mdvrpConfig.vehicles || []).reduce((a, b) => a + (Number(b.capacity) || 0), 0);
+    const totDemand = (State.mdvrpConfig.customers || []).reduce((a, b) => a + (Number(b.demand) || 0), 0);
+
     const res = await fetch('/api/mdvrp/solve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3566,6 +3918,24 @@ async function solveMdvrp() {
     });
     const data = await res.json();
     State.mdvrpResult = data;
+
+    // Se non ottimale o flotta insufficiente, segnala e proponi alternative
+    if (!data.is_optimal || data.status === 'Infeasible' || totCap < totDemand) {
+      if (statEl) {
+        statEl.innerText = data.status || 'Infeasible';
+        statEl.className = 'kpi-val red';
+      }
+      showFleetShortageModal('mdvrp', {
+        modelName: 'MDVRP (Multi-Deposito)',
+        totalDemand: totDemand,
+        totalCapacity: totCap,
+        numVehicles: (State.mdvrpConfig.vehicles || []).length,
+        avgVehCap: 2500,
+        onAutoScale: autoScaleMdvrpFleet,
+        onCrop: filterMdvrpCustomersByCapacity
+      });
+      return;
+    }
 
     if (statEl) {
       statEl.innerText = data.status || 'Ottimale';
@@ -3876,6 +4246,72 @@ function updateFaqArrows() {
       arrow.innerText = it.hasAttribute('open') ? '▲' : '▼';
     }
   });
+}
+
+// ==========================================
+// MODAL SEGNALAZIONE SUPERAMENTO FLOTTA & ALTERNATIVE
+// ==========================================
+function showFleetShortageModal(modelKey, opts) {
+  const modal = document.getElementById('fleetCapacityModal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('fleetCapacityModalTitle');
+  const msgEl = document.getElementById('fleetCapacityModalMessage');
+  const statsEl = document.getElementById('fleetCapacityModalStats');
+  const btnScale = document.getElementById('btnModalAutoScale');
+  const btnCrop = document.getElementById('btnModalCropFleet');
+
+  const modelName = opts.modelName || 'Modello di Calcolo';
+  const totalDemand = Math.round(opts.totalDemand || 0);
+  const totalCapacity = Math.round(opts.totalCapacity || 0);
+  const numVehicles = opts.numVehicles || 0;
+  const missing = Math.max(0, totalDemand - totalCapacity);
+  const avgVehCap = opts.avgVehCap || 1000;
+  const estMissingVeh = Math.max(1, Math.ceil(missing / avgVehCap));
+
+  if (titleEl) {
+    titleEl.innerHTML = `<span>⚠️</span> Flotta Insufficiente &mdash; ${modelName}`;
+  }
+
+  if (msgEl) {
+    msgEl.innerHTML = `Il solutore matematico non è riuscito a generare una soluzione ottima perché il numero di mezzi inseriti (<b>${numVehicles} veicoli</b>) o la portata complessiva della flotta (<b>${totalCapacity.toLocaleString()} kg</b>) non è sufficiente per coprire l'intera domanda di carico richiesta dalla mappa (<b>${totalDemand.toLocaleString()} kg</b>).`;
+  }
+
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+        <div><span style="color: var(--text-muted); font-size: 11px;">Mezzi Attuali:</span><br><b style="color: #f87171;">${numVehicles} veicoli</b></div>
+        <div><span style="color: var(--text-muted); font-size: 11px;">Portata Attuale:</span><br><b>${totalCapacity.toLocaleString()} kg</b></div>
+        <div><span style="color: var(--text-muted); font-size: 11px;">Carico da Servire:</span><br><b>${totalDemand.toLocaleString()} kg</b></div>
+        <div><span style="color: var(--text-muted); font-size: 11px;">Deficit / Mancanti:</span><br><b style="color: #f87171;">-${missing.toLocaleString()} kg (~+${estMissingVeh} mezzi)</b></div>
+      </div>
+    `;
+  }
+
+  if (btnScale) {
+    btnScale.onclick = () => {
+      closeFleetCapacityModal();
+      if (typeof opts.onAutoScale === 'function') {
+        opts.onAutoScale(true); // true = rilancia calcolo dopo aver scalato la flotta
+      }
+    };
+  }
+
+  if (btnCrop) {
+    btnCrop.onclick = () => {
+      closeFleetCapacityModal();
+      if (typeof opts.onCrop === 'function') {
+        opts.onCrop(true); // true = rilancia calcolo dopo aver ridotto i punti
+      }
+    };
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeFleetCapacityModal() {
+  const modal = document.getElementById('fleetCapacityModal');
+  if (modal) modal.style.display = 'none';
 }
 
 // ==========================================
