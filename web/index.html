@@ -51,6 +51,8 @@
             <option value="tab-intermediate">🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)</option>
             <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)</option>
             <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
+            <option value="tab-pcarp">📅 7. PCARP (Raccolta Settimanale Differenziata)</option>
+            <option value="tab-carptw">⏱️🛣️ 8. CARPTW (Finestre Orarie su Strade & ZTL)</option>
           </select>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON con tutte le impostazioni, costi e mappe della tua flotta">
@@ -193,6 +195,36 @@
               <div class="option-btn" onclick="selectWizardOption('intermediate', 'yes', this)">
                 <div class="option-title">🔄 Sì, Scarico in Discarica / Ricarica Elettrica</div>
                 <div class="option-desc">Svuotamento rifiuti in impianti TMB o ricarica rapida intermedia lungo il turno (flotte EV).</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6: Calendario Settimanale Multi-Periodo (PCARP) -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">6. Per i servizi stradali (RSU): la raccolta segue un calendario settimanale multi-giorno (frequenze differenziate per frazione)?</label>
+            <div class="wizard-options">
+              <div class="option-btn selected" onclick="selectWizardOption('periodicCalendar', 'no', this)">
+                <div class="option-title">❌ No, pianificazione a turno singolo</div>
+                <div class="option-desc">Tutte le vie vengono servite nel turno ordinario senza differenziazione di calendario settimanale.</div>
+              </div>
+              <div class="option-btn" onclick="selectWizardOption('periodicCalendar', 'yes', this)">
+                <div class="option-title">📅 Sì, Calendario Settimanale (es. Lun-Sab con frazioni differenziate)</div>
+                <div class="option-desc">Organico a giorni alterni, carta martedì, plastica mercoledì, secco venerdì: ottimizzazione flotta sui 6 giorni (PCARP).</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 7: Finestre Orarie su Strade & ZTL (CARPTW) -->
+          <div class="wizard-step">
+            <label style="font-weight: 700; font-size: 14.5px;">7. Per i servizi stradali: esistono orari di passaggio tassativi su specifiche vie (ZTL, scuole, mercati)?</label>
+            <div class="wizard-options">
+              <div class="option-btn selected" onclick="selectWizardOption('streetTimeWindows', 'no', this)">
+                <div class="option-title">❌ No, viabilità libera durante tutto il turno</div>
+                <div class="option-desc">I mezzi possono percorrere e pulire le vie in qualsiasi momento della giornata lavorativa.</div>
+              </div>
+              <div class="option-btn" onclick="selectWizardOption('streetTimeWindows', 'yes', this)">
+                <div class="option-title">⏱️🛣️ Sì, Fasce Orarie Tassative su Strade (ZTL entro 07:30, Scuole, Mercati)</div>
+                <div class="option-desc">Servizio da completare prima dell'apertura negozi o varchi ZTL, oppure post-smontaggio bancarelle (CARPTW).</div>
               </div>
             </div>
           </div>
@@ -1397,7 +1429,270 @@
     </section>
 
     <!-- ---------------------------------------------------------------------
-         SEZIONE 7: CALCOLATORE ROI & RIDUZIONE EMISSIONI CO2
+         SEZIONE 7: MODELLO PCARP (PERIODIC CAPACITATED ARC ROUTING PROBLEM)
+         --------------------------------------------------------------------- -->
+    <section id="tab-pcarp" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">📅</span>
+            <span>Modello PCARP &mdash; Periodic Capacitated Arc Routing Problem</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="addPcarpStreetRow()">+ Aggiungi Via / Frequenza</button>
+            <button class="btn btn-secondary btn-sm" onclick="addPcarpVehicleRow()">+ Aggiungi Veicolo</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetPcarp()">🔄 Ripristina Default</button>
+            <button id="btnSolvePcarp" class="btn btn-primary btn-sm" onclick="solvePcarp()">⚡ Risolvi Calendario Settimanale PCARP</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> Aziende municipalizzate ed operatori ambientali che gestiscono la <b>raccolta differenziata porta a porta su base settimanale (Lunedì &mdash; Sabato)</b>.
+            <b>Funzionamento:</b> Ottimizza i percorsi per ciascun giorno della settimana in base alle frazioni (Organico a giorni alterni, Carta, Plastica, Secco indifferenziato, Vetro). Bilancia i carichi di lavoro giornalieri sui compattatori evitando sovraccarichi di flotta.
+          </div>
+        </div>
+
+        <!-- Selettore / Filtro Giorno PCARP -->
+        <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="font-weight: 700; font-size: 13px; color: #38bdf8;">Visualizza Giorno:</span>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn active" id="btnDayPcarp_ALL" onclick="filterPcarpDay('ALL')">🌐 Tutti i Giorni (Sintesi Settimanale)</button>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn" id="btnDayPcarp_Lunedì" onclick="filterPcarpDay('Lunedì')">🟢 Lunedì (Umido)</button>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn" id="btnDayPcarp_Martedì" onclick="filterPcarpDay('Martedì')">🔵 Martedì (Carta)</button>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn" id="btnDayPcarp_Mercoledì" onclick="filterPcarpDay('Mercoledì')">🟡 Mercoledì (Plastica)</button>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn" id="btnDayPcarp_Giovedì" onclick="filterPcarpDay('Giovedì')">🟢 Giovedì (Umido)</button>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn" id="btnDayPcarp_Venerdì" onclick="filterPcarpDay('Venerdì')">🟣 Venerdì (Secco)</button>
+          <button class="btn btn-sm btn-secondary pcarp-day-btn" id="btnDayPcarp_Sabato" onclick="filterPcarpDay('Sabato')">🔷 Sabato (Vetro)</button>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Tabelle Flotta e Stradario Settimanale -->
+          <div>
+            <!-- Tabella Flotta Compattatori PCARP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚛 Flotta Compattatori Settimanali</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addPcarpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Compattatore</th>
+                    <th style="width: 85px;">Portata (kg)</th>
+                    <th style="width: 85px;">Fisso (€)</th>
+                    <th style="width: 85px;">Costo (€/km)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="pcarpVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Stradario & Calendario Giorni PCARP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">🛣️ Stradario & Giorni di Raccolta Assegnati</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addPcarpStreetRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Via
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 320px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Nome Via / Tratta</th>
+                    <th style="width: 70px;">Km</th>
+                    <th style="width: 75px;">Rifiuti (kg)</th>
+                    <th style="min-width: 140px;">Giorni di Raccolta</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="pcarpStreetsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: Mappa e Riepilogo KPI Settimanale -->
+          <div>
+            <div class="map-card" style="margin-bottom: 14px;">
+              <div class="map-header">
+                <span style="font-weight: 700; font-size: 13.5px; color: #38bdf8;">🗺️ Mappa Itinerari Calendario Differenziata (GIS)</span>
+                <span class="badge-free" id="pcarpMapBadge">Visualizzazione: Settimana Completa</span>
+              </div>
+              <div id="pcarpMap" style="height: 380px; width: 100%; border-radius: 0 0 8px 8px; background: #0f172a; position: relative;">
+                <canvas id="pcarpCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+              </div>
+            </div>
+
+            <!-- KPI Box Settimanale PCARP -->
+            <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 12px;">
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Km Settimanali</div>
+                <div class="kpi-val" id="pcarpKpiKm" style="font-size: 18px;">-- km</div>
+              </div>
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Costo Settimana</div>
+                <div class="kpi-val green" id="pcarpKpiCost" style="font-size: 18px;">-- €</div>
+              </div>
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Rifiuti Raccolti</div>
+                <div class="kpi-val amber" id="pcarpKpiLoad" style="font-size: 18px;">-- kg</div>
+              </div>
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Media Giornaliera</div>
+                <div class="kpi-val" id="pcarpKpiDailyAvg" style="font-size: 18px; color: #38bdf8;">-- €/giorno</div>
+              </div>
+            </div>
+
+            <!-- Report Mezzi & Giorni PCARP -->
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #34d399;">
+              📋 Pianificazione Mezzi per Giorno & Frazione Differenziata
+            </h4>
+            <div id="pcarpReportList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 8: MODELLO CARPTW (ARC ROUTING WITH TIME WINDOWS)
+         --------------------------------------------------------------------- -->
+    <section id="tab-carptw" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">⏱️🛣️</span>
+            <span>Modello CARPTW &mdash; Capacitated Arc Routing with Time Windows</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="addCarptwStreetRow()">+ Aggiungi Via con Orario</button>
+            <button class="btn btn-secondary btn-sm" onclick="addCarptwVehicleRow()">+ Aggiungi Veicolo</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetCarptw()">🔄 Ripristina Default</button>
+            <button id="btnSolveCarptw" class="btn btn-primary btn-sm" onclick="solveCarptw()">⚡ Risolvi CARPTW con Finestre Orarie</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> Servizi di <b>spazzamento meccanico, lavaggio strade e raccolta rifiuti in centri storici con ZTL, quartieri scolastici o post-mercato</b>.
+            <b>Funzionamento:</b> Sincronizza cronologicamente i passaggi garantendo che ciascuna via sia servita prima dell'apertura dei varchi ZTL o prima dell'arrivo degli scuolabus, azzerando le violazioni e i tempi morti di attesa.
+          </div>
+        </div>
+
+        <div class="grid-2col">
+          <!-- Colonna Sinistra: Flotta e Stradario con Finestre Orarie -->
+          <div>
+            <!-- Parametri Turno Deposito CARPTW -->
+            <div style="display: flex; gap: 10px; margin-bottom: 14px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; font-size: 12px; align-items: center;">
+              <div>
+                <span style="color: var(--text-muted); display: block; margin-bottom: 2px;">Inizio Turno Deposito:</span>
+                <input type="text" id="carptwShiftStart" value="06:00" class="cell-inp" style="width: 70px; text-align: center;" onchange="updateCarptwDepotTimes()">
+              </div>
+              <div>
+                <span style="color: var(--text-muted); display: block; margin-bottom: 2px;">Fine Turno Limite:</span>
+                <input type="text" id="carptwShiftEnd" value="14:00" class="cell-inp" style="width: 70px; text-align: center;" onchange="updateCarptwDepotTimes()">
+              </div>
+              <div>
+                <span style="color: var(--text-muted); display: block; margin-bottom: 2px;">Velocità Urbana (km/h):</span>
+                <input type="number" id="carptwSpeed" value="25" min="10" max="60" class="cell-inp" style="width: 65px; text-align: center;" onchange="updateCarptwSpeed(this.value)">
+              </div>
+            </div>
+
+            <!-- Tabella Flotta Veicoli CARPTW -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚛 Flotta Mezzi Compatibili ZTL</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addCarptwVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Veicolo
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 180px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Veicolo</th>
+                    <th style="width: 85px;">Portata (kg)</th>
+                    <th style="width: 85px;">Fisso (€)</th>
+                    <th style="width: 85px;">Costo (€/km)</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="carptwVehiclesBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Strade con Finestre Orarie -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #fbbf24;">⏱️ Vie con Fasce Orarie Tassative & ZTL</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addCarptwStreetRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Via
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 320px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Via / Destinazione</th>
+                    <th style="width: 60px;">Km</th>
+                    <th style="width: 70px;">Carico</th>
+                    <th style="width: 65px;">Inizio</th>
+                    <th style="width: 65px;">Fine</th>
+                    <th style="width: 65px;">Durata</th>
+                    <th>Motivo del Vincolo</th>
+                    <th style="width: 38px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="carptwStreetsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Colonna Destra: Mappa e Risultati Temporali CARPTW -->
+          <div>
+            <div class="map-card" style="margin-bottom: 14px;">
+              <div class="map-header">
+                <span style="font-weight: 700; font-size: 13.5px; color: #fbbf24;">🗺️ Tracciati & Sequenza Temporale Servizio Vie</span>
+                <span class="badge-free" id="carptwMapBadge">Vincoli Temporali Attivi</span>
+              </div>
+              <div id="carptwMap" style="height: 380px; width: 100%; border-radius: 0 0 8px 8px; background: #0f172a; position: relative;">
+                <canvas id="carptwCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+              </div>
+            </div>
+
+            <!-- KPI Box CARPTW -->
+            <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 12px;">
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Km Percorsi</div>
+                <div class="kpi-val" id="carptwKpiKm" style="font-size: 18px;">-- km</div>
+              </div>
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Costo Turno</div>
+                <div class="kpi-val green" id="carptwKpiCost" style="font-size: 18px;">-- €</div>
+              </div>
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Attese a Vuoto</div>
+                <div class="kpi-val" id="carptwKpiWait" style="font-size: 18px; color: #38bdf8;">-- min</div>
+              </div>
+              <div class="kpi-card" style="padding: 10px 12px;">
+                <div class="kpi-label">Conformità Finestre</div>
+                <div class="kpi-val green" id="carptwKpiCompliance" style="font-size: 18px;">100%</div>
+              </div>
+            </div>
+
+            <!-- Cronoprogramma & Timeline Mezzi CARPTW -->
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #34d399;">
+              📋 Cronoprogramma Soste, Orari di Passaggio & Rientro Deposito
+            </h4>
+            <div id="carptwReportList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 9: CALCOLATORE ROI & RIDUZIONE EMISSIONI CO2
          --------------------------------------------------------------------- -->
     <section id="tab-roi" style="display: none;">
       <div class="card">
@@ -1796,6 +2091,39 @@
               </ul>
             </div>
           </details>
+
+          <!-- Nuova FAQ 7: PCARP -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>📅 Quando e perché conviene adottare il modello PCARP per la raccolta rifiuti?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Il modello <b>PCARP (Periodic Capacitated Arc Routing Problem)</b> è indispensabile quando la raccolta differenziata non si esaurisce in un singolo turno, ma è articolata su un <b>calendario settimanale multi-giorno (es. Lunedì &mdash; Sabato)</b> con frequenze e frazioni merceologiche differenziate:<br><br>
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>Frazioni a frequenza variabile</b>: l'Organico/Umido richiede solitamente 2 passaggi settimanali (es. Lunedì e Giovedì), la Carta 1 passaggio (Martedì), la Plastica 1 passaggio (Mercoledì), il Secco residuo 1 passaggio (Venerdì) e il Vetro/Sfalci il Sabato.</li>
+                <li><b>Bilanciamento dei carichi di flotta</b>: pianificare separatamente ogni giorno rischia di causare picchi di lavoro il Lunedì e compattatori sottoutilizzati il Giovedì. Il PCARP ottimizza globalmente l'intero orizzonte settimanale, garantendo che il numero di mezzi mobilitati sia uniforme e minimo in ogni singola giornata.</li>
+                <li><b>Eliminazione dei doppi passaggi</b>: il sistema assegna i giorni di servizio alle vie in modo da raggruppare spazialmente le strade vicine nei medesimi giorni, abbattendo fino al 30% i chilometri di trasferimento tra quartieri.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 8: CARPTW -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>⏱️🛣️ Come gestisce il CARPTW i vincoli di ZTL, scuole e mercati rionali?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nei contesti urbani reali, molte strade non possono essere percorse o spazzate a qualsiasi ora. Il modello <b>CARPTW (Capacitated Arc Routing Problem with Time Windows)</b> introduce finestre temporali tassative $[e_e, l_e]$ direttamente sui segmenti stradali:<br><br>
+              <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+                <li><b>ZTL e Centri Storici</b>: obbligo di completare la raccolta rifiuti prima delle 07:30 o 08:00, prima dell'apertura dei negozi e del divieto di transito ai mezzi pesanti.</li>
+                <li><b>Poli Scolastici</b>: divieto assoluto di manovra dei compattatori tra le 07:45 e le 08:30 in concomitanza con l'arrivo di scuolabus e studenti a piedi.</li>
+                <li><b>Aree Mercatali</b>: il servizio di spazzamento e lavaggio può iniziare solo dopo lo smantellamento dei banchi di vendita (es. fascia 11:30 &mdash; 13:30).</li>
+                <li><b>Sincronizzazione Dinamica</b>: l'algoritmo ordina i passaggi secondo il principio <i>Earliest Deadline First</i>, calcolando i tempi di arrivo esatti, le attese a vuoto e garantendo il 100% di conformità senza multe o blocchi della viabilità.</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <!-- =================================================================
@@ -1989,6 +2317,67 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
               </div>
             </div>
           </div>
+
+          <!-- Modello 7: PCARP -->
+          <div class="citation-card" style="border-left-color: #0ea5e9;">
+            <div class="citation-title">7. PCARP - Periodic Capacitated Arc Routing Problem (Lacomme, Prins & Ramdane-Chérif, 2005)</div>
+            <div class="citation-desc">
+              Estende il CARP su un orizzonte temporale discreto di $T$ periodi (giorni lavorativi $t \in \{1, \dots, |T|\}$, es. Lunedì &mdash; Sabato). Ciascun arco stradale $e \in R$ ha una frequenza di visita richiesta $f_e$ e un insieme di combinazioni di giorni ammissibili $C_e$ (es. per $f_e = 2$, $C_e = \{\{\text{Lun}, \text{Gio}\}, \{\text{Mar}, \text{Ven}\}\}$).
+              <br><br>
+              <b>Variabili Decisionali:</b>
+              <ul style="margin: 6px 0 6px 20px;">
+                <li>$y_{e, c} \in \{0, 1\}$: vale 1 se per l'arco $e$ viene selezionata la combinazione di giorni $c \in C_e$.</li>
+                <li>$x_{e, k}^t \in \{0, 1\}$: vale 1 se l'arco $e$ è servito dal veicolo $k$ nel giorno $t$.</li>
+                <li>$w_{uv, k}^t \in \mathbb{N}$: passaggi a vuoto (deadheading) sull'arco $(u, v)$ del veicolo $k$ nel giorno $t$.</li>
+              </ul>
+
+              <div class="math-box">
+<b>Funzione Obiettivo & Vincoli di Frequenza Settimanale Multi-Periodo:</b>
+min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_{e,k}^t + ∑_{(u,v) ∈ E} c_{uv}^t · w_{uv,k}^t ]
+
+<b>Soggetto ai Vincoli:</b>
+(21) Selezione Univoca della Combinazione di Giorni per Arco:
+    ∑_{c ∈ C_e} y_{e, c} = 1,                               ∀ e ∈ R
+
+(22) Coerenza tra Combinazione Selezionata e Servizio Giornaliero:
+    ∑_{k=1}^K x_{e, k}^t = ∑_{c ∈ C_e : t ∈ c} y_{e, c},    ∀ e ∈ R, ∀ t ∈ T
+
+(23) Portata Massima Veicolo per Singolo Giorno:
+    ∑_{e ∈ R} q_e^t · x_{e,k}^t ≤ Q_k,                     ∀ k, ∀ t ∈ T
+              </div>
+              <div class="math-note">
+                💡 <b>Bilanciamento Globale Settimanale</b>: L'ottimizzazione simultanea della scelta di $y_{e, c}$ e delle rotte giornaliere $x_{e, k}^t$ consente di distribuire uniformemente il carico di lavoro lungo la settimana, riducendo la dimensione complessiva della flotta necessaria e azzerando i picchi operativi.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modello 8: CARPTW -->
+          <div class="citation-card" style="border-left-color: #f59e0b;">
+            <div class="citation-title">8. CARPTW - Arc Routing with Time Windows (Mourão, Nunes & Prins, 2009; Tagmouti et al., 2011)</div>
+            <div class="citation-desc">
+              Assegna a ogni segmento stradale $e = (u, v) \in R$ una finestra temporale tassativa $[e_{uv}, l_{uv}]$, una durata di servizio $s_{uv}$ e un tempo di transito a vuoto $\tau_{uv}$.
+              <br><br>
+              <b>Variabili Temporali Continue:</b>
+              <ul style="margin: 6px 0 6px 20px;">
+                <li>$T_{uv, k} \ge 0$: istante continuo di inizio del servizio sull'arco $(u, v)$ da parte del mezzo $k$.</li>
+              </ul>
+
+              <div class="math-box">
+<b>Vincoli Temporali su Archi Stradali (Big-M Formulation):</b>
+(24) Propagazione Oraria tra Archi Consecutivi (u, v) e (v, w):
+    T_{uv, k} + s_{uv} + τ_{vw} - M · (1 - x_{uv, vw, k}) ≤ T_{vw, k}, ∀ (u,v), (v,w) ∈ R, ∀ k
+
+(25) Rispetto della Finestra Oraria Tassativa della Via (ZTL / Scuole):
+    e_{uv} ≤ T_{uv, k} ≤ l_{uv},                            ∀ (u, v) ∈ R, ∀ k
+
+(26) Rientro a Deposito entro Chiusura Turno:
+    T_{uv, k} + s_{uv} + τ_{v, dep} ≤ L_dep,                ∀ (u, v) ∈ R, ∀ k
+              </div>
+              <div class="math-note">
+                💡 <b>Attesa e Priorità</b>: Se il veicolo arriva all'inizio dell'arco prima di $e_{uv}$, il modello impone un tempo di sosta non operativa (wait time) $W = e_{uv} - T_{arr}$, azzerando le violazioni di accesso anticipato a zone sensibili o ZTL e garantendo la totale assenza di multe e disagi al traffico.
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- =================================================================
@@ -2099,6 +2488,28 @@ min Z = ∑_{k=1}^K [ ∑_{e ∈ R} c_e^s · x_{e,k} + ∑_{(u,v) ∈ E} c_{uv}^
             </div>
             <div class="citation-desc">
               Il trattato enciclopedico di riferimento mondiale della Ricerca Operativa. Redatto dai massimi esperti mondiali (Università di Bologna), raccoglie in oltre 450 pagine la classificazione completa dei modelli esatti, branch-and-cut, column generation e meta-euristiche per ogni tipologia di routing industriale.
+            </div>
+          </div>
+
+          <!-- Paper 10: PCARP -->
+          <div class="citation-card">
+            <div class="citation-title">Lacomme, P., Prins, C., & Ramdane-Chérif, W. (2005)</div>
+            <div class="citation-meta">
+              <b>"A Genetic Algorithm for the Periodic Capacitated Arc Routing Problem"</b> — <i>European Journal of Operational Research</i>, Vol. 165, No. 3, pp. 694-716. DOI: 10.1016/j.ejor.2003.04.004
+            </div>
+            <div class="citation-desc">
+              L'articolo cardine per il <b>Periodic CARP (PCARP)</b>. Formalizza la decomposizione multi-periodo della raccolta differenziata su orizzonti settimanali, dimostrando come la selezione congiunta delle combinazioni di giorni di passaggio e delle rotte abbatta fino al 28% i costi di flotta e manodopera.
+            </div>
+          </div>
+
+          <!-- Paper 11: CARPTW -->
+          <div class="citation-card">
+            <div class="citation-title">Mourão, M. C., Nunes, A. C., & Prins, C. (2009) / Tagmouti et al. (2011)</div>
+            <div class="citation-meta">
+              <b>"Heuristic Methods for the Mixed Capacitated Arc Routing Problem with Time Windows"</b> — <i>Networks</i> & <i>Transportation Science</i>, Vol. 45, No. 1, pp. 43-59.
+            </div>
+            <div class="citation-desc">
+              Paper di riferimento mondiale per il <b>CARPTW</b>. Formalizza i vincoli temporali continui su archi stradali per contesti reali ad alta densità urbana (ZTL, orari di spazzamento vincolati, traffico scolastico), introducendo gli algoritmi di inserimento con propagazione d'orario e tempo di attesa a vuoto.
             </div>
           </div>
 

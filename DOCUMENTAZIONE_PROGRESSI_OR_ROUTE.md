@@ -78,7 +78,7 @@ L'architettura software è modulare, disaccoppiata e completamente containerizza
 
 ---
 
-## 3. I 6 MODELLI MATEMATICI DI RICERCA OPERATIVA IMPLEMENTATI
+## 3. GLI 8 MODELLI MATEMATICI DI RICERCA OPERATIVA IMPLEMENTATI
 
 ### 3.1 CARP (Capacitated Arc Routing Problem - Servizi Stradali e RSU)
 * **File sorgente:** [`carp_waste_collection.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carp_waste_collection.py)
@@ -108,19 +108,31 @@ L'architettura software è modulare, disaccoppiata e completamente containerizza
 * **File sorgente:** [`mdvrp_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/mdvrp_model.py)
 * **Problema:** Aziende con più poli logistici o rimesse territoriali. Il modello assegna in maniera ottima i clienti al deposito più conveniente, garantendo che ogni mezzo parta e rientri alla propria rimessa di appartenenza.
 
+### 3.7 PCARP (Periodic Capacitated Arc Routing Problem - Raccolta Differenziata Settimanale)
+* **File sorgente:** [`pcarp_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/pcarp_model.py)
+* **Problema:** Raccolta differenziata porta a porta organizzata su orizzonte temporale multi-periodale (Lunedì-Sabato). Ciascuna via richiede una combinazione di frequenze e giorni specifici per le diverse frazioni (es. Umido Lunedì/Giovedì, Carta Martedì, Plastica Mercoledì, Secco Venerdì, Vetro Sabato).
+* **Formulazione:** Modello MILP multi-periodo con bilanciamento dei carichi giornalieri e minimizzazione dei costi chilometrici settimanali aggregati (Lacomme, Prins, Ramdane-Chérif, 2005).
+
+### 3.8 CARPTW (Capacitated Arc Routing Problem with Time Windows - Fasce Orarie su Strade & ZTL)
+* **File sorgente:** [`carptw_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carptw_model.py)
+* **Problema:** Spazzamento meccanizzato, lavaggio strade e raccolta rifiuti lungo vie soggette a finestre orarie tassative (es. varchi ZTL prima delle 07:30, strade scolastiche prima delle 08:00, pulizia post-mercato rionale).
+* **Formulazione:** Sincronizzazione cronologica dei passaggi lungo gli archi con calcolo esatto dei tempi di viaggio a velocità urbana, tempi di servizio, minimizzazione delle attese al cancello ed eliminazione al 100% delle violazioni temporali (Mourão, Tagmouti et al., 2011).
+
 ---
 
 ## 4. FUNZIONALITÀ OPERATIVE & STRUMENTI SVILUPPATI
 
-### 4.1 Selettore Guidato Aziendale a 5 Domande
+### 4.1 Selettore Guidato Aziendale a 7 Domande (Wizard Interattivo)
 Un questionario interattivo diagnostico che analizza:
-1. *Natura del servizio* (Archi stradali vs Consegne puntiformi).
-2. *Vincoli temporali* (Orari liberi vs Fasce orarie tassative).
-3. *Operatività del carico* (Solo scarico dal deposito vs Ritiri e consegne incrociati).
-4. *Poli di partenza* (Deposito unico vs Più rimesse sul territorio).
-5. *Tipologia flotta e turni* (Termica standard vs Tappe di svuotamento/Ricariche elettriche).
+1. *Natura del servizio* (Archi stradali vs Consegne puntiformi a clienti).
+2. *Pianificazione differenziata settimanale* (Calendario multi-giorno Lun-Sab con frazioni alternate &rarr; **PCARP**).
+3. *Finestre temporali su strade* (Fasce orarie tassative per ZTL, scuole, mercati rionali &rarr; **CARPTW**).
+4. *Soste intermedie per svuotamento/ricarica* (Impianti TMB / colonnine DC per flotta elettrica &rarr; **EV-VRP**).
+5. *Ritiri e consegne incrociati* (Accoppiamento pick-up & delivery &rarr; **VRPPD**).
+6. *Poli logistici multipli* (Più magazzini o rimesse territoriali &rarr; **MDVRP**).
+7. *Finestre orarie su clienti puntiformi* (Fasce orarie di consegna banchina &rarr; **VRPTW** vs standard **CVRP**).
 
-Il sistema assegna un punteggio di affinità percentuale a ciascuno dei 6 modelli e applica automaticamente la configurazione corretta.
+Il sistema assegna un punteggio di affinità raccomandando il modello più idoneo e permettendo l'iniezione automatica con un clic della flotta eterogenea configurata dall'utente.
 
 ### 4.2 Configuratore Flotta Eterogenea & Calcolo Costo Reale
 Consente di definire liberamente il parco mezzi con:
@@ -172,6 +184,7 @@ Una ricca sezione divulgativa e operativa integrata nella piattaforma:
 | **19/10/2026** | GitHub & Branding | Sovrapposizione del marchio commerciale "Optifleet" con Renault Trucks (Volvo Group) | Eseguita ridenominazione completa della piattaforma in **OR-Route**, aggiornato il repository GitHub a [`trevinic/or-route`](https://github.com/trevinic/or-route), aggiornati tutti i log, le intestazioni e la documentazione. |
 | **19/10/2026** | `import_map.py` & `web/index.html` | Errore `502 Bad Gateway` / `ConnectTimeout` durante il download OSM per raggio 5000m dovuto a sovraccarico dei mirror Overpass | 1) Implementato motore di failover prioritario su **OpenStreetMap Core API** (`api.openstreetmap.org/api/0.6/map`) con parsing nativo `ox.graph_from_xml` immune dai disservizi di Overpass; 2) Calibrazione e auto-clamping del raggio di raccolta a 750m (~25-50 vie per turno) per rispettare le quote di nodi e garantire soluzioni esatte in pochi secondi. |
 | **19/10/2026** | `web/index.html`, `web/app.js`, `gis_pipeline.py` | Apertura predefinita mappe su Stradario (OpenStreetMap) ed eliminazione collegamenti a FAQ e questionario | 1) Integrato Leaflet GIS su tutti i 5 modelli (CVRP, VRPTW, EV-VRP, VRPPD, MDVRP) e aggiornato Folium in CARP impostando l'apertura predefinita su **Stradario (OpenStreetMap)** con switcher base layer; 2) Eliminati tutti i pulsanti e link a FAQ e Questionario dall'intestazione, dal logo e dalle schede dei modelli. |
+| **20/10/2026** | `server.py`, `pcarp_model.py`, `carptw_model.py`, `web/` | Estensione della suite con Modello 7 (PCARP) e Modello 8 (CARPTW) | 1) Sviluppati e integrati due nuovi modelli operativi di Arc Routing: PCARP per la raccolta differenziata settimanale (Lun-Sab a frazioni alterne) e CARPTW per servizi con finestre orarie tassative su vie e ZTL; 2) Aggiornato il Wizard interattivo con nuove domande dedicate e raccomandazione automatica; 3) Aggiunte le sezioni UI complete di mappe Leaflet GIS, tabelle veicoli/stradario e reportistica temporale; 4) Aggiornata la Dispensa MILP e le FAQ con le formulazioni matematiche e la bibliografia scientifica. |
 
 ---
 

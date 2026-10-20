@@ -23,6 +23,8 @@ import vrptw_model
 import ev_vrp_model
 import vrppd_model
 import mdvrp_model
+import pcarp_model
+import carptw_model
 
 PORT = int(os.environ.get("PORT", 8085))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +34,8 @@ VRPTW_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_vrptw.json")
 EV_VRP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_ev_vrp.json")
 VRPPD_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_vrppd.json")
 MDVRP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_mdvrp.json")
+PCARP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_pcarp.json")
+CARPTW_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_carptw.json")
 OUTPUT_MAP_PATH = os.path.join(BASE_DIR, "output", "percorso_raccolta.html")
 WEB_DIR = os.path.join(BASE_DIR, "web")
 
@@ -172,6 +176,38 @@ def save_mdvrp_config(cfg: Dict[str, Any]):
         json.dump(cfg, f, indent=2, ensure_ascii=False)
 
 
+def load_pcarp_config() -> Dict[str, Any]:
+    if os.path.exists(PCARP_CONFIG_PATH):
+        try:
+            with open(PCARP_CONFIG_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return pcarp_model.get_default_pcarp_scenario()
+
+
+def save_pcarp_config(cfg: Dict[str, Any]):
+    os.makedirs(os.path.dirname(PCARP_CONFIG_PATH), exist_ok=True)
+    with open(PCARP_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+
+def load_carptw_config() -> Dict[str, Any]:
+    if os.path.exists(CARPTW_CONFIG_PATH):
+        try:
+            with open(CARPTW_CONFIG_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return carptw_model.get_default_carptw_scenario()
+
+
+def save_carptw_config(cfg: Dict[str, Any]):
+    os.makedirs(os.path.dirname(CARPTW_CONFIG_PATH), exist_ok=True)
+    with open(CARPTW_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+
 class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -245,6 +281,22 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(cfg).encode("utf-8"))
             return
 
+        elif path == "/api/pcarp/config":
+            cfg = load_pcarp_config()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(cfg).encode("utf-8"))
+            return
+
+        elif path == "/api/carptw/config":
+            cfg = load_carptw_config()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(cfg).encode("utf-8"))
+            return
+
         elif path == "/api/models-info":
             info = {
                 "models": [
@@ -295,6 +347,22 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "description": "Ottimizza l'assegnazione di ciascun cliente al deposito più conveniente e pianifica i viaggi di ciascuna flotta periferica.",
                         "typical_savings": "18% - 28% km complessivi per aziende multi-sito",
                         "constraints": ["Home depot di partenza e rientro", "Assegnazione congiunta deposito-cliente", "Portata per mezzo"]
+                    },
+                    {
+                        "id": "pcarp",
+                        "title": "PCARP - Periodic Capacitated Arc Routing Problem",
+                        "target": "Raccolta Rifiuti Differenziata su Calendario Settimanale Multi-Giorno",
+                        "description": "Pianifica i percorsi settimanali bilanciando la flotta tra giorni alterni e frazioni differenziate (Umido, Carta, Plastica, Secco, Vetro).",
+                        "typical_savings": "20% - 35% saturazione uniforme flotta su 6 giorni",
+                        "constraints": ["Calendario multi-periodo Lun-Sab", "Frequenze per via e frazione", "Bilanciamento carichi giornalieri"]
+                    },
+                    {
+                        "id": "carptw",
+                        "title": "CARPTW - Arc Routing con Finestre Orarie Tassative su Vie",
+                        "target": "Servizi Stradali in ZTL, Centri Storici, Aree Mercatali e Zone Scolastiche",
+                        "description": "Garantisce il servizio su archi stradali rispettando fasce orarie stringenti (es. prima dell'orario scolastico o varchi ZTL).",
+                        "typical_savings": "100% conformità oraria, 0 sanzioni ZTL",
+                        "constraints": ["Finestre orarie [ready, due] su archi", "Tempi di attesa", "Sequenziamento cronologico"]
                     }
                 ]
             }
@@ -808,6 +876,106 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/mdvrp/reset":
             def_cfg = mdvrp_model.get_default_mdvrp_scenario()
             save_mdvrp_config(def_cfg)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "config": def_cfg}).encode("utf-8"))
+            return
+
+        # --------------------- PCARP ENDPOINTS ---------------------
+        elif path == "/api/pcarp/solve":
+            try:
+                req_data = json.loads(body) if body.strip() and body != "{}" else {}
+                data = load_pcarp_config()
+                if "streets" in req_data:
+                    data = req_data
+                    save_pcarp_config(data)
+                selected_day = req_data.get("selected_day", "ALL")
+                res = pcarp_model.solve_pcarp(
+                    depot=data["depot"],
+                    streets=data["streets"],
+                    vehicles=data["vehicles"],
+                    selected_day=selected_day
+                )
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/pcarp/config":
+            try:
+                data = json.loads(body)
+                save_pcarp_config(data)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/pcarp/reset":
+            def_cfg = pcarp_model.get_default_pcarp_scenario()
+            save_pcarp_config(def_cfg)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "config": def_cfg}).encode("utf-8"))
+            return
+
+        # --------------------- CARPTW ENDPOINTS ---------------------
+        elif path == "/api/carptw/solve":
+            try:
+                req_data = json.loads(body) if body.strip() and body != "{}" else {}
+                data = load_carptw_config()
+                if "streets" in req_data:
+                    data = req_data
+                    save_carptw_config(data)
+                speed = float(req_data.get("speed_kmh", data.get("urban_speed_kmh", 25.0)))
+                res = carptw_model.solve_carptw(
+                    depot=data["depot"],
+                    streets=data["streets"],
+                    vehicles=data["vehicles"],
+                    speed_kmh=speed
+                )
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/carptw/config":
+            try:
+                data = json.loads(body)
+                save_carptw_config(data)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/carptw/reset":
+            def_cfg = carptw_model.get_default_carptw_scenario()
+            save_carptw_config(def_cfg)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()

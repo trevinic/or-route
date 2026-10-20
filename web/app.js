@@ -20,6 +20,11 @@ const State = {
   vrppdResult: null,
   mdvrpConfig: null,
   mdvrpResult: null,
+  pcarpConfig: null,
+  pcarpResult: null,
+  pcarpSelectedDay: 'ALL',
+  carptwConfig: null,
+  carptwResult: null,
   vehicleColors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6', '#f97316'],
   leafletMaps: {}
 };
@@ -78,7 +83,7 @@ function switchMainTab(tabId, btnElement) {
   }
 
   // Mostra/nascondi sezioni
-  const sections = ['tab-selector', 'tab-cvrp', 'tab-vrptw', 'tab-carp', 'tab-intermediate', 'tab-vrppd', 'tab-mdvrp', 'tab-roi', 'tab-faq'];
+  const sections = ['tab-selector', 'tab-cvrp', 'tab-vrptw', 'tab-carp', 'tab-intermediate', 'tab-vrppd', 'tab-mdvrp', 'tab-pcarp', 'tab-carptw', 'tab-roi', 'tab-faq'];
   sections.forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = (s === tabId) ? 'block' : 'none';
@@ -116,6 +121,12 @@ function switchMainTab(tabId, btnElement) {
   } else if (tabId === 'tab-mdvrp') {
     if (!State.mdvrpConfig) loadMdvrpConfig();
     else drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, State.mdvrpResult || null);
+  } else if (tabId === 'tab-pcarp') {
+    if (!State.pcarpConfig) loadPcarpConfig();
+    else drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, State.pcarpResult || null);
+  } else if (tabId === 'tab-carptw') {
+    if (!State.carptwConfig) loadCarptwConfig();
+    else drawCarptwCanvas('carptwCanvas', State.carptwConfig, State.carptwResult || null);
   }
 
   // Invalida dimensione mappa Leaflet dopo la visualizzazione per garantire il rendering fluido delle mattonelle Stradario
@@ -125,7 +136,9 @@ function switchMainTab(tabId, btnElement) {
       'tab-vrptw': 'vrptwMap',
       'tab-intermediate': 'evMap',
       'tab-vrppd': 'vrppdMap',
-      'tab-mdvrp': 'mdvrpMap'
+      'tab-mdvrp': 'mdvrpMap',
+      'tab-pcarp': 'pcarpMap',
+      'tab-carptw': 'carptwMap'
     };
     const targetMapId = mapIdMap[tabId];
     if (targetMapId && State.leafletMaps && State.leafletMaps[targetMapId]) {
@@ -143,6 +156,8 @@ const wizardAnswers = {
   multiDepot: 'no',
   timeWindows: 'no',
   intermediate: 'no',
+  periodicCalendar: 'no',
+  streetTimeWindows: 'no',
   stopMinutes: 6.0,
   recommendedModel: 'carp',
   fleetCategories: [
@@ -523,6 +538,30 @@ function syncWizardFleetToModels() {
     }));
     if (State.activeTab === 'tab-mdvrp') renderMdvrpTables();
   }
+
+  // PCARP
+  if (State.pcarpConfig) {
+    State.pcarpConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      capacity_kg: v.capacity_kg || v.capacity,
+      fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km,
+      description: v.category
+    }));
+    if (State.activeTab === 'tab-pcarp') renderPcarpTables();
+  }
+
+  // CARPTW
+  if (State.carptwConfig) {
+    State.carptwConfig.vehicles = concreteVehicles.map(v => ({
+      name: v.name,
+      capacity_kg: v.capacity_kg || v.capacity,
+      fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km,
+      description: v.category
+    }));
+    if (State.activeTab === 'tab-carptw') renderCarptwTables();
+  }
 }
 
 function evaluateWizard() {
@@ -540,41 +579,64 @@ function evaluateWizard() {
   resCard.style.display = 'block';
 
   // Logica di raccomandazione modello
-  if (wizardAnswers.pickupDelivery === 'yes') {
-    wizardAnswers.recommendedModel = 'vrppd';
-    if (title) title.innerText = '🎯 Modello Consigliato: VRPPD (Pickup and Delivery Problem)';
-    if (desc) desc.innerText = 'La tua attività prevede ordini in cui ciascun cliente richiede un ritiro e una successiva consegna effettuati dallo stesso mezzo nel corso del medesimo giro (corrieri espressi, navette merci, ritiri ingombranti e recapito a impianto). Il modello VRPPD sincronizza i percorsi rispettando la precedenza Ritiro ➔ Consegna e il carico dinamico a bordo.';
-    if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello VRPPD Accoppiato ➔';
+  if (wizardAnswers.type === 'streets') {
+    if (wizardAnswers.periodicCalendar === 'yes') {
+      wizardAnswers.recommendedModel = 'pcarp';
+      if (title) title.innerText = '🎯 Modello Consigliato: PCARP (Periodic Capacitated Arc Routing Problem)';
+      if (desc) desc.innerText = 'La tua flotta opera su rete stradale per la raccolta differenziata porta a porta organizzata su calendario settimanale multi-giorno (es. Lun-Sab) con frazioni alternate (Umido, Carta, Plastica, Secco, Vetro). Il modello PCARP bilancia uniformemente i carichi di lavoro sui 6 giorni, eliminando colli di bottiglia e abbattendo i km di trasferimento.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello PCARP Settimanale ➔';
 
-  } else if (wizardAnswers.multiDepot === 'yes') {
-    wizardAnswers.recommendedModel = 'mdvrp';
-    if (title) title.innerText = '🎯 Modello Consigliato: MDVRP (Multi-Depot Vehicle Routing Problem)';
-    if (desc) desc.innerText = 'L\'azienda dispone di più magazzini territoriali, cantieri operativi o centri di raccolta dislocati. I veicoli partono e tornano al rispettivo Home Depot. Il modello MDVRP clusterizza e assegna in modo matematicamente ottimale i clienti al deposito più conveniente, eliminando sovrapposizioni e abbattendo i km di trasferimento.';
-    if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello MDVRP Multi-Sito ➔';
+    } else if (wizardAnswers.streetTimeWindows === 'yes') {
+      wizardAnswers.recommendedModel = 'carptw';
+      if (title) title.innerText = '🎯 Modello Consigliato: CARPTW (Arc Routing con Finestre Orarie su Strade & ZTL)';
+      if (desc) desc.innerText = 'I servizi di spazzamento o raccolta lungo le vie richiedono il rispetto di orari tassativi (es. ZTL prima delle 07:30, strade scolastiche prima delle 08:00, pulizia post-mercato rionale). Il modello CARPTW pianifica i percorsi garantendo il 100% di rispetto delle finestre orarie ed eliminando i tempi morti di attesa.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello CARPTW con Orari ➔';
 
-  } else if (wizardAnswers.type === 'streets') {
-    wizardAnswers.recommendedModel = 'carp';
-    if (title) title.innerText = '🎯 Modello Consigliato: CARP (Capacitated Arc Routing Problem)';
-    if (desc) desc.innerText = 'La tua flotta opera lungo la rete viaria continua (igiene urbana, raccolta differenziata porta a porta, spazzatrici, sgombero neve, pulizia caditoie, ispezione condotte). Il modello CARP ottimizza i tracciati su archi stradali, abbatte fino al 35% di transiti a vuoto (deadheading) e garantisce il 100% di copertura delle vie con il minor numero di mezzi.';
-    if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello CARP & Apri Mappa GIS ➔';
+    } else if (wizardAnswers.intermediate === 'yes') {
+      wizardAnswers.recommendedModel = 'intermediate';
+      if (title) title.innerText = '🎯 Modello Consigliato: WCVRPTW-IF / EV-VRP (Scarichi Intermedi o Flotta Elettrica)';
+      if (desc) desc.innerText = 'I compattatori devono effettuare soste intermedie obbligatorie prima del rientro (svuotamento compattatori in impianti TMB/discariche o ricarica rapida alle colonnine DC per furgoni elettrici). Il modello gestisce cicli multipli con azzeramento di carico o ripristino della batteria a metà turno.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello con Impianti Intermedi ➔';
 
-  } else if (wizardAnswers.intermediate === 'yes') {
-    wizardAnswers.recommendedModel = 'intermediate';
-    if (title) title.innerText = '🎯 Modello Consigliato: WCVRPTW-IF / EV-VRP (Scarichi Intermedi o Flotta Elettrica)';
-    if (desc) desc.innerText = 'I veicoli devono effettuare soste intermedie obbligatorie prima del rientro (svuotamento compattatori in impianti TMB/discariche o ricarica rapida alle colonnine DC per furgoni elettrici). Il modello gestisce cicli multipli con azzeramento di carico o ripristino della batteria a metà turno.';
-    if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello con Impianti Intermedi ➔';
-
-  } else if (wizardAnswers.timeWindows === 'yes') {
-    wizardAnswers.recommendedModel = 'vrptw';
-    if (title) title.innerText = '🎯 Modello Consigliato: VRPTW (Vehicle Routing with Time Windows)';
-    if (desc) desc.innerText = 'I clienti richiedono consegne in orari tassativi (es. farmacie, supermercati con slot di scarico merci, alimentari deperibili, appuntamenti tecnici). Il modello VRPTW calcola gli itinerari garantendo il rispetto del 100% delle finestre temporali ed eliminando le attese a vuoto.';
-    if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello VRPTW (Finestre Orarie) ➔';
+    } else {
+      wizardAnswers.recommendedModel = 'carp';
+      if (title) title.innerText = '🎯 Modello Consigliato: CARP (Capacitated Arc Routing Problem)';
+      if (desc) desc.innerText = 'La tua flotta opera lungo la rete viaria continua (igiene urbana, raccolta differenziata porta a porta, spazzatrici, sgombero neve, pulizia caditoie, ispezione condotte). Il modello CARP ottimizza i tracciati su archi stradali, abbatte fino al 35% di transiti a vuoto (deadheading) e garantisce il 100% di copertura delle vie con il minor numero di mezzi.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello CARP & Apri Mappa GIS ➔';
+    }
 
   } else {
-    wizardAnswers.recommendedModel = 'cvrp';
-    if (title) title.innerText = '🎯 Modello Consigliato: CVRP (Capacitated Vehicle Routing Problem)';
-    if (desc) desc.innerText = 'Distribuisci merci o pacchi a singoli indirizzi da un magazzino centrale con vincoli di carico massimo dei furgoni. Il modello CVRP standard minimizza i km totali percorsi e massimizza la saturazione dei veicoli (risparmio medio del 18-24% su carburante e flotta).';
-    if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello CVRP Logistica ➔';
+    // Punti / Clienti
+    if (wizardAnswers.pickupDelivery === 'yes') {
+      wizardAnswers.recommendedModel = 'vrppd';
+      if (title) title.innerText = '🎯 Modello Consigliato: VRPPD (Pickup and Delivery Problem)';
+      if (desc) desc.innerText = 'La tua attività prevede ordini in cui ciascun cliente richiede un ritiro e una successiva consegna effettuati dallo stesso mezzo nel corso del medesimo giro (corrieri espressi, navette merci, ritiri ingombranti e recapito a impianto). Il modello VRPPD sincronizza i percorsi rispettando la precedenza Ritiro ➔ Consegna e il carico dinamico a bordo.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello VRPPD Accoppiato ➔';
+
+    } else if (wizardAnswers.multiDepot === 'yes') {
+      wizardAnswers.recommendedModel = 'mdvrp';
+      if (title) title.innerText = '🎯 Modello Consigliato: MDVRP (Multi-Depot Vehicle Routing Problem)';
+      if (desc) desc.innerText = 'L\'azienda dispone di più magazzini territoriali, cantieri operativi o centri di raccolta dislocati. I veicoli partono e tornano al rispettivo Home Depot. Il modello MDVRP clusterizza e assegna in modo matematicamente ottimale i clienti al deposito più conveniente, eliminando sovrapposizioni e abbattendo i km di trasferimento.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello MDVRP Multi-Sito ➔';
+
+    } else if (wizardAnswers.intermediate === 'yes') {
+      wizardAnswers.recommendedModel = 'intermediate';
+      if (title) title.innerText = '🎯 Modello Consigliato: WCVRPTW-IF / EV-VRP (Scarichi Intermedi o Flotta Elettrica)';
+      if (desc) desc.innerText = 'I veicoli devono effettuare soste intermedie obbligatorie prima del rientro (svuotamento in discariche o ricarica rapida alle colonnine DC per furgoni elettrici). Il modello gestisce cicli multipli con azzeramento di carico o ripristino della batteria a metà turno.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello con Impianti Intermedi ➔';
+
+    } else if (wizardAnswers.timeWindows === 'yes') {
+      wizardAnswers.recommendedModel = 'vrptw';
+      if (title) title.innerText = '🎯 Modello Consigliato: VRPTW (Vehicle Routing with Time Windows)';
+      if (desc) desc.innerText = 'I clienti richiedono consegne in orari tassativi (es. farmacie, supermercati con slot di scarico merci, alimentari deperibili, appuntamenti tecnici). Il modello VRPTW calcola gli itinerari garantendo il rispetto del 100% delle finestre temporali ed eliminando le attese a vuoto.';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello VRPTW (Finestre Orarie) ➔';
+
+    } else {
+      wizardAnswers.recommendedModel = 'cvrp';
+      if (title) title.innerText = '🎯 Modello Consigliato: CVRP (Capacitated Vehicle Routing Problem)';
+      if (desc) desc.innerText = 'Distribuisci merci o pacchi a singoli indirizzi da un magazzino centrale con vincoli di carico massimo dei furgoni. Il modello CVRP standard minimizza i km totali percorsi e massimizza la saturazione dei veicoli (risparmio medio del 18-24% su carburante e flotta).';
+      if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello CVRP Logistica ➔';
+    }
   }
 }
 
@@ -605,6 +667,50 @@ async function applyWizardParametersToModel() {
     renderCarpTables();
     switchMainTab('tab-carp', null);
     showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CARP! Verifica le tratte, poi premi 'Risolvi'.`);
+
+  } else if (model === 'pcarp') {
+    if (!State.pcarpConfig) await loadPcarpConfig();
+    if (State.pcarpConfig) {
+      State.pcarpConfig.vehicles = concreteVehicles.map(v => ({
+        name: v.name,
+        capacity_kg: v.capacity_kg || v.capacity,
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km,
+        description: v.category
+      }));
+      try {
+        await fetch('/api/pcarp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(State.pcarpConfig)
+        });
+      } catch (e) { console.warn('Errore salvataggio PCARP:', e); }
+    }
+    renderPcarpTables();
+    switchMainTab('tab-pcarp', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al PCARP! Verifica il calendario e premi 'Risolvi'.`);
+
+  } else if (model === 'carptw') {
+    if (!State.carptwConfig) await loadCarptwConfig();
+    if (State.carptwConfig) {
+      State.carptwConfig.vehicles = concreteVehicles.map(v => ({
+        name: v.name,
+        capacity_kg: v.capacity_kg || v.capacity,
+        fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km,
+        description: v.category
+      }));
+      try {
+        await fetch('/api/carptw/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(State.carptwConfig)
+        });
+      } catch (e) { console.warn('Errore salvataggio CARPTW:', e); }
+    }
+    renderCarptwTables();
+    switchMainTab('tab-carptw', null);
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CARPTW! Verifica le finestre orarie e premi 'Risolvi'.`);
 
   } else if (model === 'vrppd') {
     if (!State.vrppdConfig) await loadVrppdConfig();
@@ -740,7 +846,9 @@ function exportPlatformSettings() {
     vrptw_config: State.vrptwConfig,
     ev_vrp_config: State.evConfig,
     vrppd_config: State.vrppdConfig,
-    mdvrp_config: State.mdvrpConfig
+    mdvrp_config: State.mdvrpConfig,
+    pcarp_config: State.pcarpConfig,
+    carptw_config: State.carptwConfig
   };
 
   const jsonStr = JSON.stringify(exportData, null, 2);
@@ -850,6 +958,28 @@ function handleImportConfigFile(event) {
         renderMdvrpTables();
       }
 
+      // Ripristino PCARP
+      if (data.pcarp_config) {
+        State.pcarpConfig = data.pcarp_config;
+        await fetch('/api/pcarp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(State.pcarpConfig)
+        });
+        renderPcarpTables();
+      }
+
+      // Ripristino CARPTW
+      if (data.carptw_config) {
+        State.carptwConfig = data.carptw_config;
+        await fetch('/api/carptw/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(State.carptwConfig)
+        });
+        renderCarptwTables();
+      }
+
       saveToLocalStorage();
       showToast('📤 Backup importato e tutte le impostazioni ripristinate con successo!');
       evaluateWizard();
@@ -871,7 +1001,9 @@ function saveToLocalStorage() {
       vrptw_config: State.vrptwConfig,
       ev_vrp_config: State.evConfig,
       vrppd_config: State.vrppdConfig,
-      mdvrp_config: State.mdvrpConfig
+      mdvrp_config: State.mdvrpConfig,
+      pcarp_config: State.pcarpConfig,
+      carptw_config: State.carptwConfig
     };
     localStorage.setItem('or_route_local_backup', JSON.stringify(cache));
   } catch (e) {
@@ -2034,7 +2166,7 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
   }
 
   // 4. GESTIONE CLIENTI NORMALI (CVRP, VRPTW, EV, MDVRP)
-  if (config.customers && type !== 'vrppd') {
+  if (config.customers && type !== 'vrppd' && type !== 'pcarp' && type !== 'carptw') {
     config.customers.forEach(c => {
       if (typeof c.lat !== 'number' || typeof c.lon !== 'number' || isNaN(c.lat) || isNaN(c.lon) || c.lat === null || c.lon === null) return;
       addPoint(c.lat, c.lon);
@@ -2049,9 +2181,88 @@ function renderLeafletRouteMap(mapId, type, config, solution) {
     });
   }
 
+  // 4.5 GESTIONE STRADE E ARCHI (PCARP & CARPTW)
+  if ((type === 'pcarp' || type === 'carptw') && config.streets) {
+    config.streets.forEach(s => {
+      if (typeof s.lat1 === 'number' && typeof s.lon1 === 'number' && typeof s.lat2 === 'number' && typeof s.lon2 === 'number') {
+        addPoint(s.lat1, s.lon1);
+        addPoint(s.lat2, s.lon2);
+        const arcColor = (type === 'carptw') ? '#fbbf24' : '#38bdf8';
+        const poly = L.polyline([[s.lat1, s.lon1], [s.lat2, s.lon2]], {
+          color: arcColor,
+          weight: 4,
+          opacity: 0.65
+        }).addTo(map._routeLayerGroup);
+
+        let tooltipHtml = `<b>🛣️ ${s.name}</b><br>Lunghezza: ${s.length_km} km | Carico: ${s.demand_kg} kg`;
+        if (type === 'pcarp') {
+          tooltipHtml += `<br>Giorni: <b>${(s.days || []).join(', ') || 'Tutti'}</b>`;
+        } else if (type === 'carptw') {
+          tooltipHtml += `<br>Finestra Oraria: <b>${s.ready_time || '06:00'} - ${s.due_time || '14:00'}</b> (Durata: ${s.serv_min || 15} min)`;
+          if (s.reason) tooltipHtml += `<br><i>${s.reason}</i>`;
+        }
+        poly.bindTooltip(tooltipHtml, { sticky: true });
+      }
+    });
+  }
+
   // 5. TRACCIAMENTO DEI PERCORSI VEICOLI RISOLTI
   if (solution) {
-    if (type === 'vrppd' || type === 'mdvrp') {
+    if (type === 'pcarp') {
+      const depLat = (config.depot && typeof config.depot.lat === 'number') ? config.depot.lat : 45.667;
+      const depLon = (config.depot && typeof config.depot.lon === 'number') ? config.depot.lon : 12.245;
+      
+      const daysToRender = (State.pcarpSelectedDay && State.pcarpSelectedDay !== 'ALL')
+        ? [State.pcarpSelectedDay]
+        : Object.keys(solution.daily_solutions || {});
+
+      let globalVehCount = 0;
+      daysToRender.forEach(dName => {
+        const daySol = (solution.daily_solutions && solution.daily_solutions[dName]) || null;
+        if (!daySol || !daySol.vehicles) return;
+        Object.entries(daySol.vehicles).forEach(([vName, vInfo]) => {
+          if (!vInfo.used || !vInfo.streets_served || vInfo.streets_served.length === 0) return;
+          const color = State.vehicleColors[globalVehCount % State.vehicleColors.length];
+          globalVehCount++;
+          const latLngs = [[depLat, depLon]];
+          vInfo.streets_served.forEach(st => {
+            if (typeof st.lat1 === 'number' && typeof st.lon1 === 'number') latLngs.push([st.lat1, st.lon1]);
+            if (typeof st.lat2 === 'number' && typeof st.lon2 === 'number') latLngs.push([st.lat2, st.lon2]);
+          });
+          latLngs.push([depLat, depLon]);
+          const polyline = L.polyline(latLngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.9,
+            lineJoin: 'round'
+          }).addTo(map._routeLayerGroup);
+          polyline.bindTooltip(`<b>${vName} (${dName})</b><br>Carico: ${vInfo.total_load} kg | Km: ${vInfo.total_km} km | Costo: ${vInfo.cost} €`, { sticky: true });
+        });
+      });
+    } else if (type === 'carptw' && solution.vehicles) {
+      Object.entries(solution.vehicles).forEach(([vName, vInfo], vIdx) => {
+        if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
+        const color = State.vehicleColors[vIdx % State.vehicleColors.length];
+        const latLngs = [];
+        vInfo.stops.forEach(st => {
+          if (st.type === 'depot' && typeof st.lat === 'number' && typeof st.lon === 'number') {
+            latLngs.push([st.lat, st.lon]);
+          } else if (st.type === 'street') {
+            if (typeof st.entry_lat === 'number' && typeof st.entry_lon === 'number') latLngs.push([st.entry_lat, st.entry_lon]);
+            if (typeof st.exit_lat === 'number' && typeof st.exit_lon === 'number') latLngs.push([st.exit_lat, st.exit_lon]);
+          }
+        });
+        if (latLngs.length >= 2) {
+          const polyline = L.polyline(latLngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.9,
+            lineJoin: 'round'
+          }).addTo(map._routeLayerGroup);
+          polyline.bindTooltip(`<b>${vName}</b> &mdash; Carico: ${vInfo.total_load} kg (${vInfo.total_km} km, ${vInfo.total_wait_min} min attesa)`, { sticky: true });
+        }
+      });
+    } else if (type === 'vrppd' || type === 'mdvrp') {
       const nodesMap = {};
       if (type === 'vrppd') {
         if (config.depot) nodesMap[config.depot.id] = config.depot;
@@ -4980,6 +5191,700 @@ function drawMdvrpCanvas(canvasId, config, result) {
     ctx.font = 'bold 11px Outfit, sans-serif';
     ctx.fillText('🏢 ' + d.name, x + 14, y + 4);
   });
+}
+
+// ==========================================
+// 8. MODELLO PCARP: RACCOLTA SETTIMANALE DIFFERENZIATA
+// ==========================================
+async function loadPcarpConfig() {
+  try {
+    const res = await fetch('/api/pcarp/config');
+    if (!res.ok) throw new Error('Errore caricamento config PCARP: ' + res.statusText);
+    const data = await res.json();
+    State.pcarpConfig = data;
+
+    // Sincronizza flotta dal wizard se configurata
+    if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+      syncWizardFleetToModels();
+    }
+
+    renderPcarpTables();
+    drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, State.pcarpResult || null);
+  } catch (err) {
+    console.error('Errore loadPcarpConfig:', err);
+  }
+}
+
+function renderPcarpTables() {
+  if (!State.pcarpConfig) return;
+
+  // 1. Tabella Veicoli PCARP
+  const vehTbody = document.getElementById('pcarpVehiclesBody');
+  if (vehTbody) {
+    vehTbody.innerHTML = '';
+    (State.pcarpConfig.vehicles || []).forEach((v, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${v.name || 'Compattatore ' + (idx+1)}" onchange="updatePcarpVehicle(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="100" max="50000" step="100" value="${v.capacity_kg || v.capacity || 4000}" onchange="updatePcarpVehicle(${idx}, 'capacity_kg', parseFloat(this.value)||4000)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0" max="1000" step="5" value="${v.fixed_cost || 180}" onchange="updatePcarpVehicle(${idx}, 'fixed_cost', parseFloat(this.value)||0)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0.1" max="10" step="0.05" value="${v.cost_per_km || 1.25}" onchange="updatePcarpVehicle(${idx}, 'cost_per_km', parseFloat(this.value)||1.25)">
+        </td>
+        <td style="text-align: center;">
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 7px; color: #ef4444;" onclick="removePcarpVehicle(${idx})">✕</button>
+        </td>
+      `;
+      vehTbody.appendChild(tr);
+    });
+  }
+
+  // 2. Tabella Stradario Settimanale PCARP
+  const strTbody = document.getElementById('pcarpStreetsBody');
+  if (strTbody) {
+    strTbody.innerHTML = '';
+    const daysList = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const dayShort = { 'Lunedì': 'Lun', 'Martedì': 'Mar', 'Mercoledì': 'Mer', 'Giovedì': 'Gio', 'Venerdì': 'Ven', 'Sabato': 'Sab' };
+    
+    (State.pcarpConfig.streets || []).forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      const curDays = s.days || [];
+
+      let pillsHtml = `<div style="display: flex; gap: 4px; flex-wrap: wrap;">`;
+      daysList.forEach(d => {
+        const isSelected = curDays.includes(d);
+        pillsHtml += `
+          <button type="button" class="btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}" 
+            style="padding: 2px 6px; font-size: 11px; border-radius: 4px;"
+            onclick="togglePcarpStreetDay(${idx}, '${d}')">${dayShort[d]}</button>
+        `;
+      });
+      pillsHtml += `</div>`;
+
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 500;" value="${s.name || 'Via ' + s.id}" onchange="updatePcarpStreet(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0.1" max="50" step="0.1" value="${s.length_km || 1.0}" onchange="updatePcarpStreet(${idx}, 'length_km', parseFloat(this.value)||1.0)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="10" max="20000" step="50" value="${s.demand_kg || 500}" onchange="updatePcarpStreet(${idx}, 'demand_kg', parseFloat(this.value)||500)">
+        </td>
+        <td>
+          ${pillsHtml}
+        </td>
+        <td style="text-align: center;">
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 7px; color: #ef4444;" onclick="removePcarpStreet(${idx})">✕</button>
+        </td>
+      `;
+      strTbody.appendChild(tr);
+    });
+  }
+}
+
+function updatePcarpVehicle(idx, field, val) {
+  if (!State.pcarpConfig || !State.pcarpConfig.vehicles[idx]) return;
+  State.pcarpConfig.vehicles[idx][field] = val;
+  savePcarpConfigToServer();
+}
+
+function addPcarpVehicleRow() {
+  if (!State.pcarpConfig) return;
+  const count = (State.pcarpConfig.vehicles || []).length + 1;
+  State.pcarpConfig.vehicles.push({
+    name: `Compattatore_${count}`,
+    capacity_kg: 4500,
+    fixed_cost: 189.0,
+    cost_per_km: 1.25,
+    description: 'Compattatore 2 Assi'
+  });
+  renderPcarpTables();
+  savePcarpConfigToServer();
+}
+
+function removePcarpVehicle(idx) {
+  if (!State.pcarpConfig || !State.pcarpConfig.vehicles) return;
+  if (State.pcarpConfig.vehicles.length <= 1) {
+    alert('Devi mantenere almeno un compattatore nella flotta!');
+    return;
+  }
+  State.pcarpConfig.vehicles.splice(idx, 1);
+  renderPcarpTables();
+  savePcarpConfigToServer();
+}
+
+function updatePcarpStreet(idx, field, val) {
+  if (!State.pcarpConfig || !State.pcarpConfig.streets[idx]) return;
+  State.pcarpConfig.streets[idx][field] = val;
+  savePcarpConfigToServer();
+  drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, State.pcarpResult || null);
+}
+
+function togglePcarpStreetDay(idx, dayName) {
+  if (!State.pcarpConfig || !State.pcarpConfig.streets[idx]) return;
+  const s = State.pcarpConfig.streets[idx];
+  if (!s.days) s.days = [];
+  const pos = s.days.indexOf(dayName);
+  if (pos >= 0) {
+    s.days.splice(pos, 1);
+  } else {
+    s.days.push(dayName);
+  }
+  renderPcarpTables();
+  savePcarpConfigToServer();
+}
+
+function addPcarpStreetRow() {
+  if (!State.pcarpConfig) return;
+  const count = (State.pcarpConfig.streets || []).length + 1;
+  const depLat = (State.pcarpConfig.depot && State.pcarpConfig.depot.lat) || 45.667;
+  const depLon = (State.pcarpConfig.depot && State.pcarpConfig.depot.lon) || 12.245;
+  const offset = 0.005 * count;
+
+  State.pcarpConfig.streets.push({
+    id: count,
+    name: `Nuova Via Settimanale ${count}`,
+    lat1: depLat + offset,
+    lon1: depLon + offset,
+    lat2: depLat + offset + 0.003,
+    lon2: depLon + offset + 0.003,
+    length_km: 2.0,
+    demand_kg: 1500,
+    days: ['Lunedì', 'Giovedì']
+  });
+  renderPcarpTables();
+  savePcarpConfigToServer();
+  drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, State.pcarpResult || null);
+}
+
+function removePcarpStreet(idx) {
+  if (!State.pcarpConfig || !State.pcarpConfig.streets) return;
+  State.pcarpConfig.streets.splice(idx, 1);
+  renderPcarpTables();
+  savePcarpConfigToServer();
+  drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, State.pcarpResult || null);
+}
+
+async function savePcarpConfigToServer() {
+  if (!State.pcarpConfig) return;
+  try {
+    await fetch('/api/pcarp/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(State.pcarpConfig)
+    });
+  } catch (e) {
+    console.warn('Errore salvataggio PCARP config:', e);
+  }
+}
+
+function filterPcarpDay(day) {
+  State.pcarpSelectedDay = day;
+
+  // Aggiorna classi bottoni giorno
+  document.querySelectorAll('.pcarp-day-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById(`btnDayPcarp_${day}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  // Aggiorna badge mappa
+  const badge = document.getElementById('pcarpMapBadge');
+  if (badge) {
+    badge.innerText = (day === 'ALL') ? 'Visualizzazione: Settimana Completa' : `Visualizzazione: ${day}`;
+  }
+
+  // Ridisegna mappa e report
+  if (State.pcarpResult) {
+    renderPcarpReport(State.pcarpResult);
+  }
+  drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, State.pcarpResult || null);
+}
+
+async function solvePcarp() {
+  const btn = document.getElementById('btnSolvePcarp');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Calcolo Calendario Ottimo...';
+  }
+
+  try {
+    const payload = {
+      selected_day: State.pcarpSelectedDay || 'ALL'
+    };
+    const res = await fetch('/api/pcarp/solve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Errore durante il calcolo PCARP: ' + res.statusText);
+    const data = await res.json();
+    State.pcarpResult = data;
+
+    // Aggiornamento KPI Card
+    const kmEl = document.getElementById('pcarpKpiKm');
+    const costEl = document.getElementById('pcarpKpiCost');
+    const loadEl = document.getElementById('pcarpKpiLoad');
+    const avgEl = document.getElementById('pcarpKpiDailyAvg');
+
+    if (kmEl) kmEl.innerText = `${(data.weekly_total_km || 0).toFixed(1)} km`;
+    if (costEl) costEl.innerText = `${(data.weekly_total_cost || 0).toFixed(2)} €`;
+    if (loadEl) loadEl.innerText = `${((data.weekly_total_demand || 0)).toLocaleString('it-IT')} kg`;
+    if (avgEl) avgEl.innerText = `${((data.weekly_total_cost || 0) / 6).toFixed(2)} €/giorno`;
+
+    renderPcarpReport(data);
+    drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, data);
+    showToast(`✅ Calendario PCARP calcolato con successo! Costo settimanale: ${(data.weekly_total_cost || 0).toFixed(2)} €`);
+  } catch (err) {
+    alert('Errore risoluzione PCARP: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '⚡ Risolvi Calendario Settimanale PCARP';
+    }
+  }
+}
+
+async function resetPcarp() {
+  if (!confirm('Ripristinare lo scenario predefinito per la raccolta settimanale PCARP?')) return;
+  try {
+    const res = await fetch('/api/pcarp/reset', { method: 'POST' });
+    const data = await res.json();
+    State.pcarpConfig = data;
+    State.pcarpResult = null;
+    State.pcarpSelectedDay = 'ALL';
+    filterPcarpDay('ALL');
+    renderPcarpTables();
+    drawPcarpCanvas('pcarpCanvas', State.pcarpConfig, null);
+    showToast('Scenario PCARP ripristinato ai valori di fabbrica!');
+  } catch (e) {
+    alert('Errore reset PCARP: ' + e.message);
+  }
+}
+
+function renderPcarpReport(data) {
+  const container = document.getElementById('pcarpReportList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const dailySolutions = data.daily_solutions || {};
+  const daysToShow = (State.pcarpSelectedDay && State.pcarpSelectedDay !== 'ALL')
+    ? [State.pcarpSelectedDay]
+    : Object.keys(dailySolutions);
+
+  if (daysToShow.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:12.5px;">Nessuna soluzione disponibile. Premi "⚡ Risolvi".</div>';
+    return;
+  }
+
+  daysToShow.forEach(dayName => {
+    const daySol = dailySolutions[dayName];
+    if (!daySol) return;
+
+    const dayCard = document.createElement('div');
+    dayCard.style.cssText = 'background: #090f1d; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;';
+
+    let dayVehiclesHtml = '';
+    const vehiclesObj = daySol.vehicles || {};
+    const vehEntries = Object.entries(vehiclesObj);
+
+    if (vehEntries.length === 0) {
+      dayVehiclesHtml = '<div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Nessun servizio programmato per questo giorno (riposo).</div>';
+    } else {
+      vehEntries.forEach(([vName, vInfo]) => {
+        if (!vInfo.used || !vInfo.streets_served || vInfo.streets_served.length === 0) return;
+
+        let streetsHtml = '';
+        vInfo.streets_served.forEach((st, sIdx) => {
+          streetsHtml += `
+            <div style="font-size: 11.5px; padding: 3px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between;">
+              <span><b style="color: #38bdf8;">${sIdx + 1}.</b> ${st.name}</span>
+              <span style="color: var(--text-secondary);">${st.demand_kg} kg | ${st.length_km} km</span>
+            </div>
+          `;
+        });
+
+        dayVehiclesHtml += `
+          <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 10px; margin-top: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 700; color: #34d399; font-size: 13px;">🚛 ${vName}</span>
+              <span style="font-size: 12px; color: #f59e0b; font-weight: 600;">Carico: ${vInfo.total_load} / ${vInfo.capacity} kg (${vInfo.saturation_pct}%)</span>
+            </div>
+            <div style="display: flex; gap: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">
+              <span>Tratte servite: <b>${vInfo.streets_served.length}</b></span>
+              <span>Km percorsi: <b>${vInfo.total_km} km</b></span>
+              <span>Costo turno: <b style="color: #34d399;">${vInfo.cost} €</b></span>
+            </div>
+            <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 4px 6px;">
+              ${streetsHtml}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    dayCard.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
+        <span style="font-weight: 800; font-size: 14px; color: #38bdf8;">📅 ${dayName}</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">
+          ${daySol.streets_count} vie | <b>${daySol.total_demand_kg} kg</b> | <b>${daySol.total_km} km</b> | <b style="color: #34d399;">${daySol.cost} €</b>
+        </span>
+      </div>
+      ${dayVehiclesHtml}
+    `;
+
+    container.appendChild(dayCard);
+  });
+}
+
+function drawPcarpCanvas(canvasId, config, solution) {
+  if (window.L && document.getElementById('pcarpMap')) {
+    renderLeafletRouteMap('pcarpMap', 'pcarp', config, solution);
+    return;
+  }
+}
+
+// ==========================================
+// 9. MODELLO CARPTW: ARC ROUTING CON FINESTRE ORARIE E ZTL
+// ==========================================
+async function loadCarptwConfig() {
+  try {
+    const res = await fetch('/api/carptw/config');
+    if (!res.ok) throw new Error('Errore caricamento config CARPTW: ' + res.statusText);
+    const data = await res.json();
+    State.carptwConfig = data;
+
+    // Sincronizza flotta dal wizard se configurata
+    if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+      syncWizardFleetToModels();
+    }
+
+    if (data.depot) {
+      const startEl = document.getElementById('carptwShiftStart');
+      const endEl = document.getElementById('carptwShiftEnd');
+      if (startEl && data.depot.open_time) startEl.value = data.depot.open_time;
+      if (endEl && data.depot.close_time) endEl.value = data.depot.close_time;
+    }
+    const speedEl = document.getElementById('carptwSpeed');
+    if (speedEl && data.urban_speed_kmh) speedEl.value = data.urban_speed_kmh;
+
+    renderCarptwTables();
+    drawCarptwCanvas('carptwCanvas', State.carptwConfig, State.carptwResult || null);
+  } catch (err) {
+    console.error('Errore loadCarptwConfig:', err);
+  }
+}
+
+function renderCarptwTables() {
+  if (!State.carptwConfig) return;
+
+  // 1. Tabella Veicoli CARPTW
+  const vehTbody = document.getElementById('carptwVehiclesBody');
+  if (vehTbody) {
+    vehTbody.innerHTML = '';
+    (State.carptwConfig.vehicles || []).forEach((v, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 600;" value="${v.name || 'Spazzatrice ' + (idx+1)}" onchange="updateCarptwVehicle(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="100" max="50000" step="100" value="${v.capacity_kg || v.capacity || 2500}" onchange="updateCarptwVehicle(${idx}, 'capacity_kg', parseFloat(this.value)||2500)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0" max="1000" step="5" value="${v.fixed_cost || 160}" onchange="updateCarptwVehicle(${idx}, 'fixed_cost', parseFloat(this.value)||0)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0.1" max="10" step="0.05" value="${v.cost_per_km || 1.15}" onchange="updateCarptwVehicle(${idx}, 'cost_per_km', parseFloat(this.value)||1.15)">
+        </td>
+        <td style="text-align: center;">
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 7px; color: #ef4444;" onclick="removeCarptwVehicle(${idx})">✕</button>
+        </td>
+      `;
+      vehTbody.appendChild(tr);
+    });
+  }
+
+  // 2. Tabella Strade con Finestre Orarie
+  const strTbody = document.getElementById('carptwStreetsBody');
+  if (strTbody) {
+    strTbody.innerHTML = '';
+    (State.carptwConfig.streets || []).forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; font-weight: 500;" value="${s.name || 'Via ' + s.id}" onchange="updateCarptwStreet(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="0.1" max="50" step="0.1" value="${s.length_km || 1.0}" onchange="updateCarptwStreet(${idx}, 'length_km', parseFloat(this.value)||1.0)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: right;" min="10" max="20000" step="50" value="${s.demand_kg || 400}" onchange="updateCarptwStreet(${idx}, 'demand_kg', parseFloat(this.value)||400)">
+        </td>
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; text-align: center; color: #34d399;" value="${s.ready_time || '06:00'}" onchange="updateCarptwStreet(${idx}, 'ready_time', this.value)">
+        </td>
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; text-align: center; color: #f59e0b;" value="${s.due_time || '12:00'}" onchange="updateCarptwStreet(${idx}, 'due_time', this.value)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" style="width: 100%; text-align: center;" min="1" max="180" step="1" value="${s.serv_min || 15}" onchange="updateCarptwStreet(${idx}, 'serv_min', parseFloat(this.value)||15)">
+        </td>
+        <td>
+          <input type="text" class="cell-inp" style="width: 100%; font-size: 11px; color: var(--text-muted);" value="${s.reason || ''}" placeholder="es. ZTL / Mercato" onchange="updateCarptwStreet(${idx}, 'reason', this.value)">
+        </td>
+        <td style="text-align: center;">
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 7px; color: #ef4444;" onclick="removeCarptwStreet(${idx})">✕</button>
+        </td>
+      `;
+      strTbody.appendChild(tr);
+    });
+  }
+}
+
+function updateCarptwDepotTimes() {
+  if (!State.carptwConfig || !State.carptwConfig.depot) return;
+  const startEl = document.getElementById('carptwShiftStart');
+  const endEl = document.getElementById('carptwShiftEnd');
+  if (startEl) State.carptwConfig.depot.open_time = startEl.value;
+  if (endEl) State.carptwConfig.depot.close_time = endEl.value;
+  saveCarptwConfigToServer();
+}
+
+function updateCarptwSpeed(val) {
+  if (!State.carptwConfig) return;
+  State.carptwConfig.urban_speed_kmh = parseFloat(val) || 25;
+  saveCarptwConfigToServer();
+}
+
+function updateCarptwVehicle(idx, field, val) {
+  if (!State.carptwConfig || !State.carptwConfig.vehicles[idx]) return;
+  State.carptwConfig.vehicles[idx][field] = val;
+  saveCarptwConfigToServer();
+}
+
+function addCarptwVehicleRow() {
+  if (!State.carptwConfig) return;
+  const count = (State.carptwConfig.vehicles || []).length + 1;
+  State.carptwConfig.vehicles.push({
+    name: `Mezzo_Compatibile_${count}`,
+    capacity_kg: 3000,
+    fixed_cost: 175.0,
+    cost_per_km: 1.15,
+    description: 'Veicolo compatibile ZTL'
+  });
+  renderCarptwTables();
+  saveCarptwConfigToServer();
+}
+
+function removeCarptwVehicle(idx) {
+  if (!State.carptwConfig || !State.carptwConfig.vehicles) return;
+  if (State.carptwConfig.vehicles.length <= 1) {
+    alert('Devi mantenere almeno un veicolo nella flotta!');
+    return;
+  }
+  State.carptwConfig.vehicles.splice(idx, 1);
+  renderCarptwTables();
+  saveCarptwConfigToServer();
+}
+
+function updateCarptwStreet(idx, field, val) {
+  if (!State.carptwConfig || !State.carptwConfig.streets[idx]) return;
+  State.carptwConfig.streets[idx][field] = val;
+  saveCarptwConfigToServer();
+  drawCarptwCanvas('carptwCanvas', State.carptwConfig, State.carptwResult || null);
+}
+
+function addCarptwStreetRow() {
+  if (!State.carptwConfig) return;
+  const count = (State.carptwConfig.streets || []).length + 1;
+  const depLat = (State.carptwConfig.depot && State.carptwConfig.depot.lat) || 45.464;
+  const depLon = (State.carptwConfig.depot && State.carptwConfig.depot.lon) || 9.190;
+  const offset = 0.005 * count;
+
+  State.carptwConfig.streets.push({
+    id: count,
+    name: `Nuova Via Vincolo Orario ${count}`,
+    lat1: depLat + offset,
+    lon1: depLon + offset,
+    lat2: depLat + offset + 0.003,
+    lon2: depLon + offset + 0.003,
+    length_km: 1.8,
+    demand_kg: 700,
+    ready_time: "07:30",
+    due_time: "09:30",
+    serv_min: 15,
+    reason: "Fascia oraria ZTL / Consegne"
+  });
+  renderCarptwTables();
+  saveCarptwConfigToServer();
+  drawCarptwCanvas('carptwCanvas', State.carptwConfig, State.carptwResult || null);
+}
+
+function removeCarptwStreet(idx) {
+  if (!State.carptwConfig || !State.carptwConfig.streets) return;
+  State.carptwConfig.streets.splice(idx, 1);
+  renderCarptwTables();
+  saveCarptwConfigToServer();
+  drawCarptwCanvas('carptwCanvas', State.carptwConfig, State.carptwResult || null);
+}
+
+async function saveCarptwConfigToServer() {
+  if (!State.carptwConfig) return;
+  try {
+    await fetch('/api/carptw/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(State.carptwConfig)
+    });
+  } catch (e) {
+    console.warn('Errore salvataggio CARPTW config:', e);
+  }
+}
+
+async function solveCarptw() {
+  const btn = document.getElementById('btnSolveCarptw');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Calcolo Itinerari con Finestre Orarie...';
+  }
+
+  try {
+    const res = await fetch('/api/carptw/solve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!res.ok) throw new Error('Errore durante il calcolo CARPTW: ' + res.statusText);
+    const data = await res.json();
+    State.carptwResult = data;
+
+    // Aggiornamento KPI Card
+    const kmEl = document.getElementById('carptwKpiKm');
+    const costEl = document.getElementById('carptwKpiCost');
+    const waitEl = document.getElementById('carptwKpiWait');
+    const compEl = document.getElementById('carptwKpiCompliance');
+
+    if (kmEl) kmEl.innerText = `${(data.total_km || 0).toFixed(1)} km`;
+    if (costEl) costEl.innerText = `${(data.total_cost || 0).toFixed(2)} €`;
+    if (waitEl) waitEl.innerText = `${(data.total_wait_min || 0).toFixed(0)} min`;
+    if (compEl) {
+      const rate = data.compliance_rate !== undefined ? data.compliance_rate : 100;
+      compEl.innerText = `${rate}%`;
+      compEl.className = rate === 100 ? 'kpi-val green' : (rate >= 80 ? 'kpi-val amber' : 'kpi-val red');
+    }
+
+    renderCarptwReport(data);
+    drawCarptwCanvas('carptwCanvas', State.carptwConfig, data);
+    showToast(`✅ CARPTW ottimizzato! Rispetto finestre: ${data.compliance_rate || 100}%, Costo: ${(data.total_cost || 0).toFixed(2)} €`);
+  } catch (err) {
+    alert('Errore risoluzione CARPTW: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '⚡ Risolvi CARPTW con Finestre Orarie';
+    }
+  }
+}
+
+async function resetCarptw() {
+  if (!confirm('Ripristinare lo scenario predefinito CARPTW con vincoli ZTL?')) return;
+  try {
+    const res = await fetch('/api/carptw/reset', { method: 'POST' });
+    const data = await res.json();
+    State.carptwConfig = data;
+    State.carptwResult = null;
+    renderCarptwTables();
+    drawCarptwCanvas('carptwCanvas', State.carptwConfig, null);
+    showToast('Scenario CARPTW ripristinato ai valori di fabbrica!');
+  } catch (e) {
+    alert('Errore reset CARPTW: ' + e.message);
+  }
+}
+
+function renderCarptwReport(data) {
+  const container = document.getElementById('carptwReportList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const vehiclesObj = data.vehicles || {};
+  const entries = Object.entries(vehiclesObj);
+
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:12.5px;">Nessuna pianificazione disponibile. Premi "⚡ Risolvi".</div>';
+    return;
+  }
+
+  entries.forEach(([vName, vInfo]) => {
+    if (!vInfo.used || !vInfo.stops || vInfo.stops.length < 2) return;
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background: #090f1d; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;';
+
+    let timelineHtml = '';
+    vInfo.stops.forEach(st => {
+      if (st.type === 'depot') {
+        timelineHtml += `
+          <div style="font-size: 11.5px; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; background: rgba(59,130,246,0.1); border-radius: 4px; margin-bottom: 2px;">
+            <span>🏢 <b>${st.name}</b></span>
+            <span style="color: #60a5fa; font-weight: 700;">Ore ${st.time}</span>
+          </div>
+        `;
+      } else if (st.type === 'street') {
+        const violBadge = st.violation
+          ? `<span style="background: #ef4444; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 6px;">RITARDO</span>`
+          : `<span style="background: #10b981; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 6px;">PUNTUALE</span>`;
+        
+        timelineHtml += `
+          <div style="font-size: 11.5px; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <b style="color: #fbbf24;">🛣️ ${st.name}</b> ${violBadge}
+              <div style="color: var(--text-muted); font-size: 11px;">
+                Finestra richiesta: ${st.window} | Durata servizio: ${st.service_min} min
+                ${st.wait_min > 0 ? ` | <span style="color: #38bdf8;">Attesa: ${st.wait_min.toFixed(0)} min</span>` : ''}
+              </div>
+            </div>
+            <div style="text-align: right; color: var(--text-secondary);">
+              <div>Arr: <b>${st.arrival_time}</b> &rarr; Inizio: <b>${st.start_service}</b></div>
+              <div style="font-size: 10.5px; color: #34d399;">Fine: <b>${st.end_service}</b></div>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; margin-bottom: 8px;">
+        <span style="font-weight: 700; font-size: 13.5px; color: #34d399;">🚛 ${vName}</span>
+        <span style="font-size: 12px; color: #f59e0b; font-weight: 600;">
+          Carico: ${vInfo.total_load} / ${vInfo.capacity} kg (${vInfo.saturation_pct}%)
+        </span>
+      </div>
+      <div style="display: flex; gap: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; flex-wrap: wrap;">
+        <span>Km percorsi: <b>${vInfo.total_km} km</b></span>
+        <span>Attese al cancello: <b>${vInfo.total_wait_min} min</b></span>
+        <span>Violazioni orarie: <b style="color: ${vInfo.violations > 0 ? '#ef4444' : '#34d399'};">${vInfo.violations}</b></span>
+        <span>Costo totale: <b style="color: #34d399;">${vInfo.cost} €</b></span>
+      </div>
+      <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 4px 6px;">
+        ${timelineHtml}
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+function drawCarptwCanvas(canvasId, config, solution) {
+  if (window.L && document.getElementById('carptwMap')) {
+    renderLeafletRouteMap('carptwMap', 'carptw', config, solution);
+    return;
+  }
 }
 
 // ==========================================

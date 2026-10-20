@@ -1,0 +1,174 @@
+{
+  "name": "Calendario Settimanale Raccolta Differenziata Multi-Periodo",
+  "depot": {
+    "id": 0,
+    "name": "Cantiere Operativo & Autorimessa Centrale",
+    "lat": 45.667,
+    "lon": 12.245
+  },
+  "days": [
+    "Lunedì",
+    "Martedì",
+    "Mercoledì",
+    "Giovedì",
+    "Venerdì",
+    "Sabato"
+  ],
+  "fractions_schedule": {
+    "Lunedì": {
+      "fraction": "Organico / Umido",
+      "color": "#10b981"
+    },
+    "Martedì": {
+      "fraction": "Carta & Cartone",
+      "color": "#38bdf8"
+    },
+    "Mercoledì": {
+      "fraction": "Plastica & Metalli",
+      "color": "#fbbf24"
+    },
+    "Giovedì": {
+      "fraction": "Organico / Umido",
+      "color": "#10b981"
+    },
+    "Venerdì": {
+      "fraction": "Secco Indifferenziato",
+      "color": "#a855f7"
+    },
+    "Sabato": {
+      "fraction": "Vetro & Sfalci",
+      "color": "#06b6d4"
+    }
+  },
+  "vehicles": [
+    {
+      "name": "Compattatore_Settimanale_1",
+      "capacity_kg": 4000,
+      "fixed_cost": 120.0,
+      "cost_per_km": 1.4,
+      "description": "Compattatore 2 assi posteriore 4.0t"
+    },
+    {
+      "name": "Compattatore_Settimanale_2",
+      "capacity_kg": 4000,
+      "fixed_cost": 120.0,
+      "cost_per_km": 1.4,
+      "description": "Compattatore 2 assi posteriore 4.0t"
+    }
+  ],
+  "streets": [
+    {
+      "id": 1,
+      "name": "Via Roma (Tratto Nord)",
+      "lat1": 45.6695,
+      "lon1": 12.248,
+      "lat2": 45.672,
+      "lon2": 12.253,
+      "length_km": 2.2,
+      "demand_kg": 1800,
+      "days": [
+        "Lunedì",
+        "Giovedì"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Corso Garibaldi (Zona Negozi)",
+      "lat1": 45.672,
+      "lon1": 12.253,
+      "lat2": 45.668,
+      "lon2": 12.256,
+      "length_km": 2.8,
+      "demand_kg": 2100,
+      "days": [
+        "Lunedì",
+        "Martedì",
+        "Giovedì"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Via Dante (Quartiere Residenziale)",
+      "lat1": 45.668,
+      "lon1": 12.256,
+      "lat2": 45.6645,
+      "lon2": 12.249,
+      "length_km": 1.9,
+      "demand_kg": 1400,
+      "days": [
+        "Martedì",
+        "Venerdì"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Viale Europa (Viale Principale)",
+      "lat1": 45.6695,
+      "lon1": 12.248,
+      "lat2": 45.6645,
+      "lon2": 12.249,
+      "length_km": 3.1,
+      "demand_kg": 2400,
+      "days": [
+        "Mercoledì",
+        "Sabato"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Via Verdi (Quartiere Est)",
+      "lat1": 45.672,
+      "lon1": 12.253,
+      "lat2": 45.674,
+      "lon2": 12.26,
+      "length_km": 2.4,
+      "demand_kg": 1600,
+      "days": [
+        "Mercoledì",
+        "Venerdì"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Via Cavour (Tratto Residenziale)",
+      "lat1": 45.668,
+      "lon1": 12.256,
+      "lat2": 45.663,
+      "lon2": 12.258,
+      "length_km": 2.0,
+      "demand_kg": 1300,
+      "days": [
+        "Martedì",
+        "Giovedì"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Strada Statale Pontebbana (Raccordo)",
+      "lat1": 45.6645,
+      "lon1": 12.249,
+      "lat2": 45.661,
+      "lon2": 12.243,
+      "length_km": 2.6,
+      "demand_kg": 1900,
+      "days": [
+        "Lunedì",
+        "Venerdì"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Borgo Mazzini (Centro Storico)",
+      "lat1": 45.674,
+      "lon1": 12.26,
+      "lat2": 45.671,
+      "lon2": 12.265,
+      "length_km": 1.8,
+      "demand_kg": 1500,
+      "days": [
+        "Mercoledì",
+        "Sabato"
+      ]
+    }
+  ]
+}

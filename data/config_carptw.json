@@ -1,0 +1,115 @@
+{
+  "name": "Igiene Urbana con Finestre Orarie su Strade & ZTL",
+  "base_hour": 6,
+  "depot": {
+    "id": 0,
+    "name": "Hub Centrale Autoparco RSU",
+    "lat": 45.667,
+    "lon": 12.245,
+    "shift_start": "06:00",
+    "shift_end": "14:00"
+  },
+  "speed_kmh": 25.0,
+  "vehicles": [
+    {
+      "name": "Compattatore_ZTL_1",
+      "capacity_kg": 3500,
+      "fixed_cost": 110.0,
+      "cost_per_km": 1.35,
+      "description": "Compattatore compatto per ZTL e centri storici"
+    },
+    {
+      "name": "Compattatore_ZTL_2",
+      "capacity_kg": 3500,
+      "fixed_cost": 110.0,
+      "cost_per_km": 1.35,
+      "description": "Compattatore compatto per ZTL e centri storici"
+    }
+  ],
+  "streets": [
+    {
+      "id": 1,
+      "name": "Via Roma (ZTL Centro Storico)",
+      "lat1": 45.6695,
+      "lon1": 12.248,
+      "lat2": 45.672,
+      "lon2": 12.253,
+      "length_km": 2.2,
+      "demand_kg": 1600,
+      "time_window_start": "06:00",
+      "time_window_end": "07:30",
+      "service_time_min": 25,
+      "reason": "Chiusura varchi ZTL e apertura negozi"
+    },
+    {
+      "id": 2,
+      "name": "Viale Europa (Polo Scolastico / Scuolabus)",
+      "lat1": 45.6695,
+      "lon1": 12.248,
+      "lat2": 45.6645,
+      "lon2": 12.249,
+      "length_km": 2.8,
+      "demand_kg": 2000,
+      "time_window_start": "06:15",
+      "time_window_end": "07:45",
+      "service_time_min": 30,
+      "reason": "Ingresso studenti e traffico scuolabus"
+    },
+    {
+      "id": 3,
+      "name": "Corso Garibaldi (Isola Pedonale)",
+      "lat1": 45.672,
+      "lon1": 12.253,
+      "lat2": 45.668,
+      "lon2": 12.256,
+      "length_km": 2.0,
+      "demand_kg": 1400,
+      "time_window_start": "07:00",
+      "time_window_end": "09:00",
+      "service_time_min": 20,
+      "reason": "Apertura bar e dehors all'aperto"
+    },
+    {
+      "id": 4,
+      "name": "Piazza del Mercato (Area Bancarelle)",
+      "lat1": 45.674,
+      "lon1": 12.26,
+      "lat2": 45.671,
+      "lon2": 12.265,
+      "length_km": 1.6,
+      "demand_kg": 1800,
+      "time_window_start": "11:30",
+      "time_window_end": "13:30",
+      "service_time_min": 35,
+      "reason": "Pulizia post smontaggio banchi mercato"
+    },
+    {
+      "id": 5,
+      "name": "Via Dante (Quartiere Residenziale)",
+      "lat1": 45.668,
+      "lon1": 12.256,
+      "lat2": 45.6645,
+      "lon2": 12.249,
+      "length_km": 2.5,
+      "demand_kg": 1500,
+      "time_window_start": "08:00",
+      "time_window_end": "12:00",
+      "service_time_min": 25,
+      "reason": "Fascia oraria libera residenziale"
+    },
+    {
+      "id": 6,
+      "name": "Via Verdi (Quartiere Ospedaliero)",
+      "lat1": 45.672,
+      "lon1": 12.253,
+      "lat2": 45.674,
+      "lon2": 12.26,
+      "length_km": 2.1,
+      "demand_kg": 1300,
+      "time_window_start": "06:30",
+      "time_window_end": "08:30",
+      "service_time_min": 25,
+      "reason": "Evitare orario cambio turno infermieri"
+    }
+  ]
+}
