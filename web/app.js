@@ -649,12 +649,15 @@ async function applyWizardParametersToModel() {
   const avgKmCost = concreteVehicles.reduce((acc, v) => acc + v.cost_per_km, 0) / (totVehicles || 1);
 
   if (model === 'carp') {
-    if (!State.carpConfig) await loadCarpConfig();
+    if (!State.carpConfig || !State.carpConfig.streets || State.carpConfig.streets.length === 0) {
+      await loadCarpConfig();
+    }
     if (State.carpConfig) {
       State.carpConfig.vehicles = concreteVehicles.map(v => ({
         name: v.name,
         capacity_kg: v.capacity_kg,
-        fixed_cost: v.fixed_cost
+        fixed_cost: v.fixed_cost,
+        description: v.category
       }));
       try {
         await fetch('/api/config', {
@@ -666,7 +669,17 @@ async function applyWizardParametersToModel() {
     }
     renderCarpTables();
     switchMainTab('tab-carp', null);
-    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CARP! Verifica le tratte, poi premi 'Risolvi'.`);
+
+    // Inietta flotta & Apri Mappa GIS Folium
+    const iframe = document.getElementById('carpMapIframe');
+    if (iframe) {
+      iframe.removeAttribute('srcdoc');
+      iframe.src = '/output/percorso_raccolta.html?t=' + Date.now();
+      setTimeout(() => {
+        iframe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
+    }
+    showToast(`Flotta eterogenea (${totVehicles} mezzi) applicata al CARP e Mappa GIS aperta!`);
 
   } else if (model === 'pcarp') {
     if (!State.pcarpConfig) await loadPcarpConfig();
@@ -1015,32 +1028,25 @@ function saveToLocalStorage() {
 // 2. MODELLO CVRP: LOGISTICA & CONSEGNE MERCI
 // ==========================================
 async function loadCvrpConfig() {
-  if (!State.hasImportedConfigFile && !State.cvrpConfig) {
-    State.cvrpConfig = {
-      name: 'CVRP Flotta Personalizzata',
-      cost_per_km: 1.20,
-      depot: { name: '', lat: null, lon: null },
-      customers: [],
-      vehicles: getWizardConcreteVehicles().map(v => ({
-        name: v.name,
-        capacity: v.capacity,
-        fixed_cost: v.fixed_cost,
-        cost_per_km: v.cost_per_km
-      }))
-    };
-    State.cvrpResult = null;
-    renderCvrpTables();
-    renderLeafletRouteMap('cvrpMap', 'cvrp', State.cvrpConfig, null);
-    drawRouteCanvas('cvrpCanvas', State.cvrpConfig, null);
-    return;
-  }
   if (!State.cvrpConfig) {
     try {
       const res = await fetch('/api/cvrp/config');
-      State.cvrpConfig = await res.json();
+      if (res.ok) State.cvrpConfig = await res.json();
     } catch (e) {
       console.error('Errore caricamento CVRP:', e);
     }
+  }
+  if (!State.cvrpConfig) {
+    State.cvrpConfig = {
+      name: 'CVRP Flotta Personalizzata',
+      cost_per_km: 1.20,
+      depot: { name: 'Hub Logistico', lat: 45.385, lon: 10.95 },
+      customers: [],
+      vehicles: []
+    };
+  }
+  if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+    syncWizardFleetToModels();
   }
   renderCvrpTables();
   renderLeafletRouteMap('cvrpMap', 'cvrp', State.cvrpConfig, State.cvrpResult || null);
@@ -1465,33 +1471,26 @@ function renderCvrpVehicleReport(data) {
 // 3. MODELLO VRPTW: FINESTRE TEMPORALI VINCOLANTI
 // ==========================================
 async function loadVrptwConfig() {
-  if (!State.hasImportedConfigFile && !State.vrptwConfig) {
+  if (!State.vrptwConfig) {
+    try {
+      const res = await fetch('/api/vrptw/config');
+      if (res.ok) State.vrptwConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento VRPTW:', e);
+    }
+  }
+  if (!State.vrptwConfig) {
     State.vrptwConfig = {
       name: 'VRPTW Flotta Personalizzata',
       cost_per_km: 1.20,
       avg_speed_kmh: 40,
-      depot: { name: '', lat: null, lon: null, ready_time: 0, due_time: 480 },
+      depot: { name: 'Piattaforma Distribuzione', lat: 44.512, lon: 11.398, ready_time: 0, due_time: 480 },
       customers: [],
-      vehicles: getWizardConcreteVehicles().map(v => ({
-        name: v.name,
-        capacity: v.capacity,
-        fixed_cost: v.fixed_cost,
-        cost_per_km: v.cost_per_km
-      }))
+      vehicles: []
     };
-    State.vrptwResult = null;
-    renderVrptwTables();
-    renderLeafletRouteMap('vrptwMap', 'vrptw', State.vrptwConfig, null);
-    drawRouteCanvas('vrptwCanvas', State.vrptwConfig, null);
-    return;
   }
-  if (!State.vrptwConfig) {
-    try {
-      const res = await fetch('/api/vrptw/config');
-      State.vrptwConfig = await res.json();
-    } catch (e) {
-      console.error('Errore caricamento VRPTW:', e);
-    }
+  if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+    syncWizardFleetToModels();
   }
   renderVrptwTables();
   renderLeafletRouteMap('vrptwMap', 'vrptw', State.vrptwConfig, State.vrptwResult || null);
@@ -2485,29 +2484,26 @@ function drawArrow(ctx, x, y, angle, color) {
 // 5. MODELLO CARP: RACCOLTA PORTA A PORTA & RETE STRADALE
 // ==========================================
 async function loadCarpConfig() {
-  if (!State.hasImportedConfigFile && !State.carpConfig) {
-    State.carpConfig = {
-      name: 'CARP Servizio Stradale',
-      depot: { name: '', lat: null, lon: null, node_id: 1 },
-      streets: [],
-      vehicles: getWizardConcreteVehicles().map(v => ({
-        name: v.name,
-        capacity_kg: v.capacity_kg,
-        fixed_cost: v.fixed_cost,
-        description: v.category
-      }))
-    };
-    State.carpResult = null;
-    renderCarpTables();
-    return;
-  }
   if (!State.carpConfig) {
     try {
       const res = await fetch('/api/config');
-      State.carpConfig = await res.json();
+      if (res.ok) {
+        State.carpConfig = await res.json();
+      }
     } catch (e) {
       console.error('Errore caricamento CARP:', e);
     }
+  }
+  if (!State.carpConfig) {
+    State.carpConfig = {
+      name: 'CARP Servizio Stradale',
+      depot: { name: 'Cantiere Deposito Conegliano', lat: 45.89, lon: 12.30, node_id: 0 },
+      streets: [],
+      vehicles: []
+    };
+  }
+  if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+    syncWizardFleetToModels();
   }
   renderCarpTables();
 }
@@ -2559,10 +2555,15 @@ function renderCarpTables() {
     }
   }
 
-  // Mappa Iframe Folium: se vuota o non ancora calcolata, mostra stato vuoto
+  // Mappa Iframe Folium: se vuota, mostra messaggio, altrimenti carica la mappa esistente
   const iframe = document.getElementById('carpMapIframe');
-  if (iframe && !State.carpResult && streets.length === 0) {
-    iframe.srcdoc = `<!DOCTYPE html><html><body style="background:#080d18;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;"><div><span style="font-size:36px;">🗺️</span><br><br><b style="color:#e2e8f0;font-size:14px;">Mappa GIS CARP Vuota</b><br><span style="color:#64748b;font-size:12px;">Nessuna tratta stradale presente.<br>Clicca su '🌍 Importa da OpenStreetMap' per scaricare la rete viaria della tua zona.</span></div></body></html>`;
+  if (iframe) {
+    if (streets.length === 0) {
+      iframe.srcdoc = `<!DOCTYPE html><html><body style="background:#080d18;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;"><div><span style="font-size:36px;">🗺️</span><br><br><b style="color:#e2e8f0;font-size:14px;">Mappa GIS CARP Vuota</b><br><span style="color:#64748b;font-size:12px;">Nessuna tratta stradale presente.<br>Clicca su '🌍 Importa da OpenStreetMap' per scaricare la rete viaria della tua zona.</span></div></body></html>`;
+    } else if (iframe.src === 'about:blank' || !iframe.src || iframe.src.endsWith('about:blank')) {
+      iframe.removeAttribute('srcdoc');
+      iframe.src = '/output/percorso_raccolta.html?t=' + Date.now();
+    }
   }
 
   // 2. Tabella Veicoli / Compattatori
@@ -3015,42 +3016,35 @@ function renderCarpVehicleReport(data) {
 // 6. MODELLO EV-VRP & WCVRPTW-IF (SCARICHI INTERMEDI & FLOTTE ELETTRICHE)
 // ==========================================
 async function loadEvConfig() {
-  if (!State.hasImportedConfigFile && !State.evConfig) {
-    State.evConfig = {
-      name: 'EV-VRP Flotta',
-      depot: { name: '', lat: null, lon: null },
-      kwh_cost: 0.28,
-      kwh_per_km: 0.35,
-      customers: [],
-      intermediate_facilities: [],
-      vehicles: getWizardConcreteVehicles().map((v, idx) => ({
-        name: v.name,
-        capacity: v.capacity,
-        battery_kwh: 60 + (idx * 10),
-        fixed_cost: v.fixed_cost,
-        kwh_cost: 0.38,
-        kwh_per_km: 0.45
-      }))
-    };
-    State.evResult = null;
-    renderEvTables();
-    renderLeafletRouteMap('evMap', 'ev', State.evConfig, null);
-    drawEvCanvas('evCanvas', State.evConfig, null);
-    return;
-  }
   if (!State.evConfig) {
     try {
       const res = await fetch('/api/ev_vrp/config');
-      State.evConfig = await res.json();
-      if (State.evConfig && State.evConfig.vehicles) {
-        State.evConfig.vehicles.forEach(v => {
-          if (v.kwh_cost === undefined || v.kwh_cost === null) v.kwh_cost = State.evConfig.kwh_cost || 0.38;
-          if (v.kwh_per_km === undefined || v.kwh_per_km === null) v.kwh_per_km = State.evConfig.kwh_per_km || 0.45;
-        });
+      if (res.ok) {
+        State.evConfig = await res.json();
+        if (State.evConfig && State.evConfig.vehicles) {
+          State.evConfig.vehicles.forEach(v => {
+            if (v.kwh_cost === undefined || v.kwh_cost === null) v.kwh_cost = State.evConfig.kwh_cost || 0.38;
+            if (v.kwh_per_km === undefined || v.kwh_per_km === null) v.kwh_per_km = State.evConfig.kwh_per_km || 0.45;
+          });
+        }
       }
     } catch (e) {
       console.error('Errore caricamento EV-VRP:', e);
     }
+  }
+  if (!State.evConfig) {
+    State.evConfig = {
+      name: 'EV-VRP Flotta',
+      depot: { name: 'Hub Flotta EV', lat: 45.4642, lon: 9.1900 },
+      kwh_cost: 0.28,
+      kwh_per_km: 0.35,
+      customers: [],
+      intermediate_facilities: [],
+      vehicles: []
+    };
+  }
+  if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+    syncWizardFleetToModels();
   }
   renderEvTables();
   renderLeafletRouteMap('evMap', 'ev', State.evConfig, State.evResult || null);
@@ -3746,37 +3740,25 @@ function drawEvCanvas(canvasId, config, solution) {
 // 5. MODELLO VRPPD (PICKUP AND DELIVERY PROBLEM)
 // ==========================================
 async function loadVrppdConfig() {
-  if (!State.hasImportedConfigFile && !State.vrppdConfig) {
-    const wizardVehs = getWizardConcreteVehicles();
-    State.vrppdConfig = {
-      depot: { id: 'DEPOT', name: '', lat: null, lon: null },
-      cost_per_km: 1.25,
-      requests: [],
-      vehicles: wizardVehs.length > 0 ? wizardVehs.map(v => ({
-        name: v.name,
-        capacity: v.capacity,
-        fixed_cost: v.fixed_cost,
-        cost_per_km: v.cost_per_km || 1.25,
-        description: v.category || 'Furgone'
-      })) : [
-        { name: 'Furgone_Express_1', capacity: 900.0, fixed_cost: 85.0, cost_per_km: 1.25, description: 'Furgone per ritiri e consegne' }
-      ]
-    };
-    State.vrppdResult = null;
-    renderVrppdTables();
-    renderLeafletRouteMap('vrppdMap', 'vrppd', State.vrppdConfig, null);
-    drawVrppdCanvas('vrppdCanvas', State.vrppdConfig, null);
-    return;
-  }
-
   if (!State.vrppdConfig) {
     try {
       const res = await fetch('/api/vrppd/config');
-      State.vrppdConfig = await res.json();
+      if (res.ok) State.vrppdConfig = await res.json();
     } catch (e) {
       console.error('Errore caricamento VRPPD:', e);
       showToast('Errore nel caricamento della configurazione VRPPD');
     }
+  }
+  if (!State.vrppdConfig) {
+    State.vrppdConfig = {
+      depot: { id: 'DEPOT', name: 'Hub Smistamento (Treviso Nord)', lat: 45.68, lon: 12.24 },
+      cost_per_km: 1.25,
+      requests: [],
+      vehicles: []
+    };
+  }
+  if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+    syncWizardFleetToModels();
   }
   renderVrppdTables();
   renderLeafletRouteMap('vrppdMap', 'vrppd', State.vrppdConfig, State.vrppdResult || null);
@@ -4454,38 +4436,26 @@ function drawVrppdCanvas(canvasId, config, result) {
 // 6. MODELLO MDVRP (MULTI-DEPOT VRP)
 // ==========================================
 async function loadMdvrpConfig() {
-  if (!State.hasImportedConfigFile && !State.mdvrpConfig) {
-    const wizardVehs = getWizardConcreteVehicles();
+  if (!State.mdvrpConfig) {
+    try {
+      const res = await fetch('/api/mdvrp/config');
+      if (res.ok) State.mdvrpConfig = await res.json();
+    } catch (e) {
+      console.error('Errore caricamento MDVRP:', e);
+      showToast('Errore nel caricamento della configurazione MDVRP');
+    }
+  }
+  if (!State.mdvrpConfig) {
     State.mdvrpConfig = {
       name: 'MDVRP Flotta Personalizzata',
       cost_per_km: 1.20,
       depots: [],
       customers: [],
-      vehicles: wizardVehs.length > 0 ? wizardVehs.map(v => ({
-        name: v.name,
-        home_depot: '',
-        capacity: v.capacity,
-        fixed_cost: v.fixed_cost,
-        cost_per_km: v.cost_per_km || 1.20
-      })) : [
-        { name: 'Camion_MD_1', home_depot: '', capacity: 2500.0, fixed_cost: 80.0, cost_per_km: 1.20 }
-      ]
+      vehicles: []
     };
-    State.mdvrpResult = null;
-    renderMdvrpTables();
-    renderLeafletRouteMap('mdvrpMap', 'mdvrp', State.mdvrpConfig, null);
-    drawMdvrpCanvas('mdvrpCanvas', State.mdvrpConfig, null);
-    return;
   }
-
-  if (!State.mdvrpConfig) {
-    try {
-      const res = await fetch('/api/mdvrp/config');
-      State.mdvrpConfig = await res.json();
-    } catch (e) {
-      console.error('Errore caricamento MDVRP:', e);
-      showToast('Errore nel caricamento della configurazione MDVRP');
-    }
+  if (!State.hasImportedConfigFile && typeof syncWizardFleetToModels === 'function') {
+    syncWizardFleetToModels();
   }
   renderMdvrpTables();
   renderLeafletRouteMap('mdvrpMap', 'mdvrp', State.mdvrpConfig, State.mdvrpResult || null);
