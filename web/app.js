@@ -96,10 +96,15 @@ function switchMainTab(tabId, btnElement) {
     targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Aggiorna l'hash URL per consentire ricaricamento o link diretto
+  // Aggiorna l'hash URL per consentire ricaricamento o link diretto (mantiene l'URL pulito sulla Home)
   try {
     if (window.history && window.history.replaceState) {
-      window.history.replaceState(null, null, '#' + tabId);
+      if (tabId === 'tab-selector') {
+        const cleanUrl = window.location.pathname + window.location.search;
+        window.history.replaceState(null, null, cleanUrl);
+      } else {
+        window.history.replaceState(null, null, '#' + tabId);
+      }
     }
   } catch (_) {}
 
