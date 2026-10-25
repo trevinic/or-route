@@ -209,10 +209,36 @@ def save_carptw_config(cfg: Dict[str, Any]):
 
 
 class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def check_auth(self) -> bool:
+        auth_user = os.environ.get("OR_ROUTE_AUTH_USER")
+        auth_pass = os.environ.get("OR_ROUTE_AUTH_PASS")
+        if not auth_user or not auth_pass:
+            return True
+
+        auth_header = self.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Basic "):
+            return False
+
+        import base64
+        try:
+            encoded_cred = auth_header.split(" ", 1)[1]
+            decoded_cred = base64.b64decode(encoded_cred).decode("utf-8")
+            username, password = decoded_cred.split(":", 1)
+            return (username == auth_user and password == auth_pass)
+        except Exception:
+            return False
+
+    def require_auth(self):
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="OR-Route Optimization Platform"')
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"<h1>401 Accesso Riservato</h1><p>Inserire credenziali valide per accedere alla piattaforma OR-Route.</p>")
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -220,6 +246,10 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if not self.check_auth():
+            self.require_auth()
+            return
+
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
@@ -408,6 +438,10 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
+        if not self.check_auth():
+            self.require_auth()
+            return
+
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         length = int(self.headers.get("Content-Length", 0))
