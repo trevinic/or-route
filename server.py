@@ -13,6 +13,8 @@ import json
 import http.server
 import socketserver
 import urllib.parse
+import urllib.request
+import urllib.error
 import time
 from typing import Dict, Any
 
@@ -28,6 +30,13 @@ import carptw_model
 
 PORT = int(os.environ.get("PORT", 8085))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Configurazione Architettura Ibrida: Render (Frontend) + Oracle Cloud (Backend Computazionale)
+IS_RENDER = os.environ.get("RENDER") is not None
+ORACLE_BACKEND_URL = os.environ.get("ORACLE_BACKEND_URL")
+if not ORACLE_BACKEND_URL and IS_RENDER:
+    # URL di default del backend computazionale Oracle VPS (attivo 24/7)
+    ORACLE_BACKEND_URL = "https://beautifully-priority-alloy-core.trycloudflare.com"
 CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_aree_raccolta.json")
 CVRP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_cvrp.json")
 VRPTW_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_vrptw.json")
@@ -235,6 +244,40 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"<h1>401 Accesso Riservato</h1><p>Inserire credenziali valide per accedere alla piattaforma OR-Route.</p>")
 
+    def proxy_to_oracle(self, target_backend: str, body_bytes: bytes = None) -> bool:
+        """Inoltra la richiesta di calcolo alla VPS Oracle Cloud e restituisce il risultato al client."""
+        try:
+            target_url = f"{target_backend.rstrip('/')}{self.path}"
+            headers = {
+                "User-Agent": "OR-Route-Hybrid-Gateway/1.0"
+            }
+            if "Content-Type" in self.headers:
+                headers["Content-Type"] = self.headers["Content-Type"]
+            if body_bytes is not None:
+                headers["Content-Length"] = str(len(body_bytes))
+
+            req = urllib.request.Request(target_url, data=body_bytes, headers=headers, method=self.command)
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                self.send_response(resp.status)
+                for k, v in resp.getheaders():
+                    if k.lower() not in ("transfer-encoding", "content-encoding", "access-control-allow-origin"):
+                        self.send_header(k, v)
+                self.send_header("X-Engine", "Oracle-Cloud-Ampere-ARM")
+                self.end_headers()
+                self.wfile.write(resp.read())
+                return True
+        except urllib.error.HTTPError as e:
+            self.send_response(e.code)
+            for k, v in e.headers.items():
+                if k.lower() not in ("transfer-encoding", "content-encoding", "access-control-allow-origin"):
+                    self.send_header(k, v)
+            self.end_headers()
+            self.wfile.write(e.read())
+            return True
+        except Exception as e:
+            print(f"[HYBRID GATEWAY] Avviso: VPS Oracle non raggiungibile ({e}), fallback al calcolo locale...", flush=True)
+            return False
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -252,6 +295,11 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+
+        # Inoltro Ibrido: Se su Render, inoltra le richieste API e le mappe alla potente VPS Oracle
+        if ORACLE_BACKEND_URL and (path.startswith("/api/") or path.startswith("/output/")):
+            if self.proxy_to_oracle(ORACLE_BACKEND_URL):
+                return
 
         if path in ("/", "/index.html"):
             index_path = os.path.join(WEB_DIR, "index.html")
@@ -445,7 +493,13 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
+        raw_body = self.rfile.read(length) if length > 0 else b""
+        body = raw_body.decode("utf-8") if raw_body else "{}"
+
+        # Inoltro Ibrido: Se su Render, inoltra le richieste di calcolo pesante alla VPS Oracle
+        if ORACLE_BACKEND_URL and path.startswith("/api/"):
+            if self.proxy_to_oracle(ORACLE_BACKEND_URL, raw_body):
+                return
 
         # --------------------- CARP ENDPOINTS ---------------------
         if path == "/api/config":
