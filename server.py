@@ -35,8 +35,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IS_RENDER = os.environ.get("RENDER") is not None
 ORACLE_BACKEND_URL = os.environ.get("ORACLE_BACKEND_URL")
 if not ORACLE_BACKEND_URL and IS_RENDER:
-    # URL di default del backend computazionale Oracle VPS (attivo 24/7)
-    ORACLE_BACKEND_URL = "https://beautifully-priority-alloy-core.trycloudflare.com"
+    # URL IP statico permanente del backend computazionale Oracle VPS (attivo 24/7)
+    ORACLE_BACKEND_URL = "http://79.76.126.238:8085"
 CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_aree_raccolta.json")
 CVRP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_cvrp.json")
 VRPTW_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_vrptw.json")
