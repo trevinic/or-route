@@ -222,6 +222,7 @@ def solve_carp(
         }
 
         if is_used:
+            raw_movements = []
             for (u, v) in req_arcs:
                 val = pulp.value(x[u, v, k])
                 if val and val > 0.5:
@@ -229,12 +230,14 @@ def solve_carp(
                     v_info["total_collected"] += q_val
                     cost_val = service_cost[(u, v)]
                     v_info["service_arcs"].append((u, v))
-                    v_info["movements"].append({
+                    f_val = pulp.value(f[u, v, k]) or 0.0
+                    raw_movements.append({
                         "type": "SERVIZIO",
                         "u": u,
                         "v": v,
                         "demand_kg": q_val,
-                        "cost": cost_val
+                        "cost": cost_val,
+                        "_flow": float(f_val)
                     })
 
             for (u, v) in arcs:
@@ -243,17 +246,53 @@ def solve_carp(
                     times = int(round(val))
                     cost_val = transit_cost[(u, v)] * times
                     v_info["deadhead_arcs"].append((u, v, times))
-                    v_info["movements"].append({
-                        "type": "TRANSITO",
-                        "u": u,
-                        "v": v,
-                        "times": times,
-                        "cost": cost_val
-                    })
+                    f_val = pulp.value(f[u, v, k]) or 0.0
+                    for _ in range(times):
+                        raw_movements.append({
+                            "type": "TRANSITO",
+                            "u": u,
+                            "v": v,
+                            "times": 1,
+                            "cost": transit_cost[(u, v)],
+                            "_flow": float(f_val) / max(1, times)
+                        })
 
                 f_val = pulp.value(f[u, v, k])
                 if f_val and f_val > 1e-3:
                     v_info["flow_values"][(u, v)] = f_val
+
+            # Ricostruzione sequenza cronologica Euleriana dal deposito (Hierholzer pesato per flusso di carico)
+            from collections import defaultdict
+            adj_moves = defaultdict(list)
+            for m in raw_movements:
+                adj_moves[m["u"]].append(m)
+            for u_node in adj_moves:
+                # Ordina per flusso decrescente in modo che .pop() estragga prima i movimenti a inizio turno (carico minore)
+                adj_moves[u_node].sort(key=lambda item: (item["_flow"], 0 if item["type"] == "TRANSITO" else 1), reverse=True)
+
+            tour_moves = []
+            stack = [depot]
+            edge_stack = []
+            while stack:
+                curr_v = stack[-1]
+                if adj_moves[curr_v]:
+                    nxt_m = adj_moves[curr_v].pop()
+                    stack.append(nxt_m["v"])
+                    edge_stack.append(nxt_m)
+                else:
+                    stack.pop()
+                    if edge_stack:
+                        tour_moves.append(edge_stack.pop())
+            tour_moves.reverse()
+
+            if len(tour_moves) == len(raw_movements):
+                ordered_movements = tour_moves
+            else:
+                ordered_movements = sorted(raw_movements, key=lambda item: item["_flow"])
+
+            for m in ordered_movements:
+                clean_m = {k_m: v_m for k_m, v_m in m.items() if k_m != "_flow"}
+                v_info["movements"].append(clean_m)
 
         result["vehicles"][k] = v_info
 
@@ -354,22 +393,37 @@ def solve_carp_heuristic(
     solved_vehicles: Dict[str, Any] = {}
     total_obj_cost = 0.0
 
-    current_vehicles = list(vehicles)
-    v_idx = 0
-    fallback_cap = vehicle_capacity[current_vehicles[0]] if current_vehicles else 4500.0
-    fallback_fixed = fixed_vehicle_cost[current_vehicles[0]] if current_vehicles else 100.0
+    available_vehicles = list(vehicles)
+    used_vehicle_names = set()
+    extra_idx = len(available_vehicles) + 1
+    fallback_cap = max((float(vehicle_capacity[v]) for v in available_vehicles), default=4500.0)
+    fallback_fixed = max((float(fixed_vehicle_cost[v]) for v in available_vehicles), default=100.0)
 
     while unserved:
-        # Se i veicoli configurati sono esauriti, aggiunge veicoli addizionali automaticamente
-        if v_idx < len(current_vehicles):
-            v_name = current_vehicles[v_idx]
+        rem_demand = sum(req_edges[i]["demand_kg"] for i in unserved)
+        unused_candidates = [v for v in available_vehicles if v not in used_vehicle_names]
+
+        if unused_candidates:
+            # Se un singolo veicolo disponibile può coprire tutto il carico residuo, scegli quello col minor costo fisso;
+            # altrimenti scegli il veicolo più efficiente per costo/kg (e maggiore capacità).
+            sufficient = [v for v in unused_candidates if float(vehicle_capacity[v]) >= rem_demand]
+            if sufficient:
+                v_name = min(sufficient, key=lambda v: (float(fixed_vehicle_cost[v]), float(vehicle_capacity[v])))
+            else:
+                v_name = min(
+                    unused_candidates,
+                    key=lambda v: (float(fixed_vehicle_cost[v]) / max(1.0, float(vehicle_capacity[v])), -float(vehicle_capacity[v]))
+                )
+            used_vehicle_names.add(v_name)
             cap = float(vehicle_capacity[v_name])
             fixed = float(fixed_vehicle_cost[v_name])
         else:
-            v_name = f"Compattatore_{v_idx + 1}"
+            v_name = f"Compattatore_{extra_idx}"
+            extra_idx += 1
             cap = fallback_cap
             fixed = fallback_fixed
-            current_vehicles.append(v_name)
+            available_vehicles.append(v_name)
+            used_vehicle_names.add(v_name)
             vehicle_capacity[v_name] = cap
             fixed_vehicle_cost[v_name] = fixed
 
@@ -387,7 +441,8 @@ def solve_carp_heuristic(
             for idx in unserved:
                 e = req_edges[idx]
                 q = e["demand_kg"]
-                if curr_load + q <= cap:
+                # Consenti sempre ad un veicolo vuoto appena partito di servire almeno una via anche se q > cap
+                if curr_load + q <= cap or (not serviced_in_tour and curr_load == 0.0):
                     u, v_end = e["u"], e["v"]
                     # Orientazione u -> v_end
                     d_to_u = dist_matrix.get(curr_node, {}).get(u, float("inf"))
@@ -405,7 +460,7 @@ def solve_carp_heuristic(
                         best_cand = idx
                         best_orient = (v_end, u)
 
-            if best_cand is None:
+            if best_cand is None or best_score == float("inf"):
                 break
 
             e = req_edges[best_cand]
@@ -458,7 +513,7 @@ def solve_carp_heuristic(
         if serviced_in_tour:
             solved_vehicles[v_name] = {
                 "used": True,
-                "capacity": cap,
+                "capacity": max(cap, curr_load),
                 "fixed_cost": fixed,
                 "total_collected": curr_load,
                 "movements": movements,
@@ -474,27 +529,29 @@ def solve_carp_heuristic(
                 "movements": [],
                 "cost": 0.0
             }
+            # Se un veicolo vuoto non trova alcuna strada raggiungibile, interrompi per evitare loop infiniti
+            break
 
-        v_idx += 1
-
-    # Registra eventuali veicoli inutilizzati rimasti nella lista originale
-    while v_idx < len(current_vehicles):
-        v_name = current_vehicles[v_idx]
-        solved_vehicles[v_name] = {
-            "used": False,
-            "capacity": float(vehicle_capacity.get(v_name, fallback_cap)),
-            "fixed_cost": float(fixed_vehicle_cost.get(v_name, fallback_fixed)),
-            "total_collected": 0.0,
-            "movements": [],
-            "cost": 0.0
-        }
-        v_idx += 1
+    # Registra i veicoli inutilizzati rimasti nella lista originale mantenendo l'ordine di configurazione
+    ordered_vehicles: Dict[str, Any] = {}
+    for v_name in available_vehicles:
+        if v_name in solved_vehicles:
+            ordered_vehicles[v_name] = solved_vehicles[v_name]
+        else:
+            ordered_vehicles[v_name] = {
+                "used": False,
+                "capacity": float(vehicle_capacity.get(v_name, fallback_cap)),
+                "fixed_cost": float(fixed_vehicle_cost.get(v_name, fallback_fixed)),
+                "total_collected": 0.0,
+                "movements": [],
+                "cost": 0.0
+            }
 
     return {
         "status": "Optimal",
         "is_optimal": True,
         "objective_value": round(total_obj_cost, 2),
-        "vehicles": solved_vehicles,
+        "vehicles": ordered_vehicles,
         "transit_cost": transit_cost,
         "service_cost": service_cost,
         "demand": demand,
@@ -505,7 +562,7 @@ def solve_carp_from_config(config: Dict[str, Any], solver_msg: bool = False) -> 
     """
     Risolve il modello CARP leggendo direttamente una configurazione dizionario/JSON.
     Utilizza un'architettura dual-engine:
-    - MILP esatto con CBC per piccole istanze (<= 45 vie e <= 4 veicoli)
+    - MILP esatto con CBC per piccole istanze (<= 45 vie e <= 8 veicoli)
     - Euristica Augmented Path-Scanning ad alte prestazioni per istanze reali/comunali.
     """
     nodes = [int(n["id"]) for n in config.get("nodes", [])]
@@ -527,7 +584,7 @@ def solve_carp_from_config(config: Dict[str, Any], solver_msg: bool = False) -> 
     deadhead_bound = int(config.get("settings", {}).get("deadhead_upper_bound", 5))
 
     # Dual-Engine: se l'istanza è grande, usa l'euristica ad alte prestazioni
-    if len(edges_data) > 45 or len(vehicles) > 4:
+    if len(edges_data) > 45 or len(vehicles) > 8:
         return solve_carp_heuristic(
             nodes=nodes,
             edges_data=edges_data,

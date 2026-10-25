@@ -2517,13 +2517,18 @@ function renderCarpTables() {
   if (!State.carpConfig) return;
 
   // 0. Deposito CARP
-  const dep = State.carpConfig.depot;
+  const dep = State.carpConfig.depot || {};
+  const depInfo = State.carpConfig.depot_info || {};
+  const node0 = (State.carpConfig.nodes || []).find(n => n.id === 0) || {};
+  const depName = dep.name || depInfo.address || node0.name || '';
+  const depLat = dep.lat ?? depInfo.exact_lat ?? node0.lat;
+  const depLon = dep.lon ?? depInfo.exact_lon ?? node0.lon;
   const nameInp = document.getElementById('carpDepotName');
   const latInp = document.getElementById('carpDepotLat');
   const lonInp = document.getElementById('carpDepotLon');
-  if (nameInp) nameInp.value = (dep && dep.name) ? dep.name : '';
-  if (latInp) latInp.value = (dep && dep.lat !== null && dep.lat !== undefined && !isNaN(dep.lat) && dep.lat !== '') ? dep.lat : '';
-  if (lonInp) lonInp.value = (dep && dep.lon !== null && dep.lon !== undefined && !isNaN(dep.lon) && dep.lon !== '') ? dep.lon : '';
+  if (nameInp) nameInp.value = depName;
+  if (latInp) latInp.value = (depLat !== null && depLat !== undefined && !isNaN(depLat) && depLat !== '') ? depLat : '';
+  if (lonInp) lonInp.value = (depLon !== null && depLon !== undefined && !isNaN(depLon) && depLon !== '') ? depLon : '';
 
   // 1. Tabella Strade
   const tbody = document.getElementById('carpStreetsBody');
@@ -2643,11 +2648,25 @@ function updateCarpFleetCapacitySummary() {
 function updateCarpDepot(field, val) {
   if (!State.carpConfig) return;
   if (!State.carpConfig.depot) State.carpConfig.depot = {};
+  if (!State.carpConfig.depot_info) State.carpConfig.depot_info = {};
+  const node0 = (State.carpConfig.nodes || []).find(n => n.id === 0);
   if (field === 'lat' || field === 'lon') {
     const num = parseFloat(val);
-    State.carpConfig.depot[field] = isNaN(num) ? null : num;
+    const cleanNum = isNaN(num) ? null : num;
+    State.carpConfig.depot[field] = cleanNum;
+    if (field === 'lat') {
+      State.carpConfig.depot_info.exact_lat = cleanNum;
+      if (node0 && cleanNum !== null) node0.lat = cleanNum;
+    } else {
+      State.carpConfig.depot_info.exact_lon = cleanNum;
+      if (node0 && cleanNum !== null) node0.lon = cleanNum;
+    }
   } else {
     State.carpConfig.depot[field] = val;
+    if (field === 'name') {
+      State.carpConfig.depot_info.address = val;
+      if (node0 && val) node0.name = val;
+    }
   }
 }
 
@@ -2710,7 +2729,11 @@ function updateCarpStreetDemand(idx, val) {
 }
 
 function updateCarpStreetTransit(idx, val) {
-  State.carpConfig.streets[idx].transit_cost = parseFloat(val) || 1.0;
+  const t = parseFloat(val) || 1.0;
+  State.carpConfig.streets[idx].transit_cost = t;
+  const factor = (State.carpConfig.settings && State.carpConfig.settings.service_speed_factor) ? parseFloat(State.carpConfig.settings.service_speed_factor) : 1.8;
+  State.carpConfig.streets[idx].service_cost = (State.carpConfig.streets[idx].demand_kg > 0) ? Math.round(t * factor * 100) / 100 : t;
+  State.carpConfig.streets[idx].length_m = Math.round(t * 100);
 }
 
 function autoScaleCarpFleet(andSolve = false) {
@@ -5843,7 +5866,7 @@ function renderCarptwReport(data) {
       <div style="display: flex; gap: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; flex-wrap: wrap;">
         <span>Km percorsi: <b>${vInfo.total_km} km</b></span>
         <span>Attese al cancello: <b>${vInfo.total_wait_min} min</b></span>
-        <span>Violazioni orarie: <b style="color: ${vInfo.violations > 0 ? '#ef4444' : '#34d399'};">${vInfo.violations}</b></span>
+        <span>Violazioni orarie: <b style="color: ${(vInfo.violations_count ?? vInfo.violations ?? 0) > 0 ? '#ef4444' : '#34d399'};">${vInfo.violations_count ?? vInfo.violations ?? 0}</b></span>
         <span>Costo totale: <b style="color: #34d399;">${vInfo.cost} €</b></span>
       </div>
       <div style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 4px 6px;">

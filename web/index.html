@@ -1759,8 +1759,8 @@
               </div>
             </div>
 
-            <!-- Call to Action Affiliazione Carta Carburante -->
-            <div style="background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(16,185,129,0.15) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px; margin-top: 10px;">
+            <!-- Call to Action Affiliazione Carta Carburante (Nascosto Temporaneamente) -->
+            <div style="display: none; background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(16,185,129,0.15) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px; margin-top: 10px;">
               <h4 style="font-size: 14.5px; color: #38bdf8; margin-bottom: 6px;">💳 Massimizza il Risparmio con una Carta Carburante Flotta</h4>
               <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px;">
                 Abbina l'ottimizzazione dei percorsi con le convenzioni carburante dedicate alle aziende: sconti sul prezzo alla pompa e recupero dell'IVA con fatturazione elettronica automatica.
@@ -2121,6 +2121,98 @@
                 <li><b>Poli Scolastici</b>: divieto assoluto di manovra dei compattatori tra le 07:45 e le 08:30 in concomitanza con l'arrivo di scuolabus e studenti a piedi.</li>
                 <li><b>Aree Mercatali</b>: il servizio di spazzamento e lavaggio può iniziare solo dopo lo smantellamento dei banchi di vendita (es. fascia 11:30 &mdash; 13:30).</li>
                 <li><b>Sincronizzazione Dinamica</b>: l'algoritmo ordina i passaggi secondo il principio <i>Earliest Deadline First</i>, calcolando i tempi di arrivo esatti, le attese a vuoto e garantendo il 100% di conformità senza multe o blocchi della viabilità.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 9: Densità Lineare Media Rifiuti & Focus Conegliano/Italia -->
+          <details class="faq-item">
+            <summary class="faq-question">
+              <span>⚖️ Come viene calcolata la "Densità Lineare (kg/m)" nei modelli CARP e come varia in Italia e nel Comune di Conegliano per tipologia di rifiuto e zona?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nei problemi di instradamento su archi <b>CARP (Capacitated Arc Routing Problem)</b>, il servizio non è puntiforme ma continuo lungo la carreggiata. Poiché le mappe aperte di <b>OpenStreetMap</b> forniscono unicamente la geometria e la lunghezza metrica delle tratte ($m$), ma non dispongono del catasto utenze TARI comunale, la piattaforma <b>OR-Route</b> impiega un modello parametrico ingegneristico di conversione:
+              <div class="math-box" style="margin: 12px 0;">
+                Domanda Tratta (kg) = <b>Arrotonda [ Lunghezza (m) × Densità_Lineare (kg/m), 10 ]</b>
+              </div>
+              Il valore predefinito di sistema è impostato cautelativamente a <b>1.5 kg/m</b> (con azzeramento su tangenziali/autostrade). Tuttavia, la densità lineare effettiva sul territorio <b>non è costante</b>: varia profondamente in base al Paese, alla frazione merceologica e alla tipologia urbanistica della zona servita.<br><br>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🇮🇹 1. Quadro Nazionale Italiano (Dati Ufficiali ISPRA)</h4>
+              Secondo l'ultimo <i>Rapporto Rifiuti Urbani ISPRA</i>, la produzione media nazionale è di circa <b>500–510 kg per abitante all'anno</b>, con un tasso di raccolta differenziata medio del <b>67,7%</b> (oltre il 74% nel Nord Italia). La ripartizione merceologica media in peso è la seguente:
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Frazione Organica / Umido (FORSU + Verde)</b>: ~34,8% (circa 125–135 kg/ab/anno). Frazione più pesante a causa dell'alto tenore di umidità.</li>
+                <li><b>Carta e Cartone</b>: ~21,7% (circa 65–75 kg/ab/anno). Media densità in peso ma elevatissimo volume per imballaggi e scatole.</li>
+                <li><b>Plastica e Imballaggi Leggeri</b>: ~11,4% (circa 30–38 kg/ab/anno). Basso peso ma volume critico (densità apparente di soli 25–40 kg/m³).</li>
+                <li><b>Vetro</b>: ~8,5% (circa 35–45 kg/ab/anno). Materiale ad altissima densità specifica, non compattabile.</li>
+                <li><b>Secco Residuo / Indifferenziato</b>: ~25–32% a livello nazionale, soggetto a fortissima contrazione nei comuni a tariffa puntuale.</li>
+              </ul>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🍇 2. Il Caso Studio Reale: Comune di Conegliano (Bacino Sinistra Piave / Savno)</h4>
+              Il Comune di Conegliano e il bacino di igiene urbana della Sinistra Piave (gestione Savno) costituiscono un'eccellenza e un caso studio europeo di riferimento:
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Tariffa Puntuale (PAYT - Pay-As-You-Throw)</b>: l'impiego di mastelli domiciliari con trasponder RFID addebitati al singolo svuotamento incentiva la massima riduzione del secco indifferenziato.</li>
+                <li><b>Raccolta Differenziata al vertice (>86%)</b>: a Conegliano il secco residuo è crollato a meno di <b>35–45 kg/ab/anno</b>, ribaltando la logica classica di raccolta.</li>
+              </ul>
+
+              <div style="overflow-x: auto; margin: 12px 0 16px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 6px;">
+                  <thead>
+                    <tr style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; text-align: left; border-bottom: 1px solid var(--border-color);">
+                      <th style="padding: 8px 10px;">Frazione Merceologica</th>
+                      <th style="padding: 8px 10px;">Frequenza Turno (Conegliano)</th>
+                      <th style="padding: 8px 10px;">Densità Lineare Reale (kg/m)</th>
+                      <th style="padding: 8px 10px;">Caratteristica Operativa Mezzo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                      <td style="padding: 7px 10px; font-weight: 600;">🥑 Umido / Organico (FORSU)</td>
+                      <td style="padding: 7px 10px;">Bisettimanale (Lun / Gio)</td>
+                      <td style="padding: 7px 10px; color: #38bdf8; font-weight: 700;">0.80 &mdash; 1.10 kg/m</td>
+                      <td style="padding: 7px 10px;">Satura la <b>portata in peso (kg)</b> del compattatore.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                      <td style="padding: 7px 10px; font-weight: 600;">📦 Carta e Cartone</td>
+                      <td style="padding: 7px 10px;">Settimanale (o quindicinale)</td>
+                      <td style="padding: 7px 10px; color: #38bdf8; font-weight: 700;">0.70 &mdash; 1.40 kg/m</td>
+                      <td style="padding: 7px 10px;">Richiede rapporto di compattazione 1:3 o 1:4.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                      <td style="padding: 7px 10px; font-weight: 600;">🧴 Plastica e Lattine (Multimateriale)</td>
+                      <td style="padding: 7px 10px;">Settimanale</td>
+                      <td style="padding: 7px 10px; color: #38bdf8; font-weight: 700;">0.25 &mdash; 0.40 kg/m</td>
+                      <td style="padding: 7px 10px;">Satura la <b>cubatura volumetrica (m³)</b> molto prima del peso.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                      <td style="padding: 7px 10px; font-weight: 600;">🍾 Vetro</td>
+                      <td style="padding: 7px 10px;">Quindicinale / Campane</td>
+                      <td style="padding: 7px 10px; color: #38bdf8; font-weight: 700;">0.60 &mdash; 1.00 kg/m</td>
+                      <td style="padding: 7px 10px;">Incomprimibile, richiede vasca ribaltabile rinforzata.</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 7px 10px; font-weight: 600;">🗑️ Secco Residuo (Tariffa Puntuale)</td>
+                      <td style="padding: 7px 10px;">Ogni 2 &mdash; 3 settimane</td>
+                      <td style="padding: 7px 10px; color: #10b981; font-weight: 700;">0.20 &mdash; 0.35 kg/m</td>
+                      <td style="padding: 7px 10px;">Volumi minimi per effetto dell'addebito a svuotamento.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🏘️ 3. Differenziazione per Tipologia di Area Urbana a Conegliano</h4>
+              La densità abitativa per metro di strada varia significativamente tra i quartieri del territorio comunale:
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Centro Storico & Quartieri Condominiali</b> (es. <i>Corso Mazzini, Via Cavour, Viale Carducci, Stazione FS</i>): palazzine a 3–5 piani con densità di 0.8–1.5 residenti per metro di via. La densità lineare effettiva per l'umido sale a <b>1.2–2.0 kg/m</b>. È necessario impiegare mezzi compatti (furgoni patente B o compattatori agili a 2 assi) per via dei raggi di curvatura stretti.</li>
+                <li><b>Quartieri Residenziali & Villette con Giardino</b> (es. <i>Monticella, Parè, Campolongo, Collalbrigo, Ogliano</i>): densità abitativa medio-bassa (0.2–0.4 residenti per metro) ed elevata diffusione del compostaggio domestico per scarti verdi. La densità lineare scende a <b>0.3–0.6 kg/m</b>: i veicoli percorrono itinerari più lunghi prima di raggiungere il carico massimo.</li>
+                <li><b>Zona Industriale, Produttiva ed Ecocentro</b> (es. <i>San Giacomo di Veglia, Campidui, Via Cal Larga, raccordo Sangalli Vetro</i>): capannoni e raccordi logistici dove la quasi totalità degli scarti è gestita come rifiuto speciale B2B (non urbano). La produzione RSU fronte-strada è quasi nulla: la densità reale è di <b>0.0–0.15 kg/m</b> (mantenere il default di 1.5 kg/m in queste aree genera una domanda sovrastimata rispetto ai fabbisogni effettivi).</li>
+              </ul>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🛠️ 4. Come Personalizzare il Carico nel Software OR-Route</h4>
+              Per allineare la simulazione ai dati esatti della propria azienda o del proprio comune:
+              <ul style="margin: 6px 0 0 20px; line-height: 1.6;">
+                <li><b>Modifica Diretta da Interfaccia</b>: nella tabella <i>"Rete Stradale & Domanda Rifiuti"</i>, clicca direttamente sulla cella <b>Domanda (kg)</b> di ciascuna via per digitare i quantitativi effettivi desunti dai formulari FIR o dallo storico pesate.</li>
+                <li><b>Calibrazione per Frazione</b>: quando si imposta un turno specifico nel modello multi-giorno <b>PCARP</b>, è consigliabile calibrare la domanda con i coefficienti specifici (es. 0.9 kg/m per l'organico, 0.3 kg/m per la plastica).</li>
               </ul>
             </div>
           </details>
@@ -2562,9 +2654,9 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
     </section>
 
     <!-- =========================================================================
-         5. SEZIONE COMMERCIALI & PROMOZIONI DI AFFILIAZIONE (MONETIZZAZIONE)
+         5. SEZIONE COMMERCIALI & PROMOZIONI DI AFFILIAZIONE (NASCOSTA TEMPORANEAMENTE)
          ========================================================================= -->
-    <section id="partner-section" class="affiliate-section">
+    <section id="partner-section" class="affiliate-section" style="display: none;">
       <span class="affiliate-badge">🔥 Offerte & Promozioni Partner per la Tua Flotta</span>
       
       <div style="margin-bottom: 24px;">
@@ -2645,8 +2737,8 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
       </div>
     </section>
 
-    <!-- Banner Pubblicitario Footer -->
-    <div class="ad-container" style="margin-top: 30px;">
+    <!-- Banner Pubblicitario Footer (Nascosto Temporaneamente) -->
+    <div class="ad-container" style="display: none; margin-top: 30px;">
       <span class="ad-label">Pubblicità / Annuncio Google AdSense</span>
       <div class="ad-leaderboard">
         <ins class="adsbygoogle"
@@ -2867,13 +2959,13 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <li>PuLP & COIN-OR CBC Solver</li>
           <li>OpenStreetMap & OSMnx</li>
           <li>SIAM Vehicle Routing Literature</li>
-          <li><a href="#partner-section" style="color:#38bdf8; text-decoration:none;">Partner e Affiliazioni Flotta</a></li>
+          <li>COIN-OR Operations Research Initiative</li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <div>&copy; 2026 OR-Route &mdash; Modelli Gratuiti di Ricerca Operativa per Flotte Aziendali.</div>
-      <div>Monetizzazione etica: Google AdSense & Affiliazioni di settore.</div>
+      <div>&copy; 2026 OR-Route &mdash; Piattaforma Aperta di Ricerca Operativa per Flotte Aziendali e Servizi RSU.</div>
+      <div>Progetto Open-Source per la Logistica Sostenibile e Pubblica Amministrazione.</div>
     </div>
   </footer>
 

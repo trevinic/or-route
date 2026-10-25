@@ -52,6 +52,7 @@ def build_graph_from_config(config: Dict[str, Any]) -> nx.DiGraph:
     Costruisce un grafo NetworkX a partire dalla configurazione JSON esterna.
     """
     G = nx.DiGraph()
+    G.graph["from_carp_config"] = True
     for node in config.get("nodes", []):
         n_id = int(node["id"])
         G.add_node(
@@ -67,9 +68,12 @@ def build_graph_from_config(config: Dict[str, Any]) -> nx.DiGraph:
         c_trans = float(street.get("transit_cost", 1.0))
         c_serv = float(street.get("service_cost", c_trans * 1.8))
         q = float(street.get("demand_kg", 0.0))
+        length_m = float(street.get("length_m", round(c_trans * 100.0, 1)))
         name = street.get("name", f"Via {u}-{v}")
-        G.add_edge(u, v, length=c_trans, service_cost=c_serv, demand_kg=q, name=name)
-        G.add_edge(v, u, length=c_trans, service_cost=c_serv, demand_kg=q, name=name)
+        st_id = street.get("id", "")
+        desc = street.get("description", "")
+        G.add_edge(u, v, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc)
+        G.add_edge(v, u, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc)
 
     return G
 
@@ -232,7 +236,12 @@ def genera_mappa_percorso(
         p2 = (G.nodes[v]["y"], G.nodes[v]["x"])
         st_name = data.get("name", f"Tratta {u}-{v}")
         st_demand = float(data.get("demand_kg", 0.0))
-        st_len = float(data.get("length", 100.0))
+        if "length_m" in data:
+            st_len = float(data["length_m"])
+        elif G.graph.get("from_carp_config") or "transit_cost" in data:
+            st_len = float(data.get("transit_cost", data.get("length", 1.0))) * 100.0
+        else:
+            st_len = float(data.get("length", 100.0))
 
         tooltip_txt = f"{st_name} ({st_len:.0f}m) | Rifiuti: {st_demand:.0f} kg"
         folium.PolyLine(
@@ -345,13 +354,14 @@ def genera_mappa_percorso(
 
             p1 = (G.nodes[u]["y"], G.nodes[u]["x"])
             p2 = (G.nodes[v]["y"], G.nodes[v]["x"])
+            edge_name = G.edges[u, v].get("name", f"Via {u}-{v}") if G.has_edge(u, v) else f"Via {u}-{v}"
 
             if move["type"] == "SERVIZIO":
                 popup_txt = (
                     f"<b>🚛 {vehicle_name} &mdash; SERVIZIO RACCOLTA</b><br>"
-                    f"Tratta: {u} &rarr; {v}<br>"
+                    f"Via: <b>{edge_name}</b> ({u} &rarr; {v})<br>"
                     f"Rifiuto raccolto: <b>{move['demand_kg']:.0f} kg</b><br>"
-                    f"Costo operativo: {move['cost']:.1f}"
+                    f"Costo operativo: {move['cost']:.2f} &euro;"
                 )
                 folium.PolyLine(
                     locations=[p1, p2],
@@ -359,14 +369,14 @@ def genera_mappa_percorso(
                     weight=6,
                     opacity=0.92,
                     popup=popup_txt,
-                    tooltip=f"{vehicle_name}: Raccolta {u}&rarr;{v} ({move['demand_kg']:.0f} kg)"
+                    tooltip=f"{vehicle_name}: Raccolta {edge_name} ({u}&rarr;{v}) | {move['demand_kg']:.0f} kg"
                 ).add_to(feature_group)
             else:
                 popup_txt = (
                     f"<b>🚛 {vehicle_name} &mdash; TRANSITO A VUOTO</b><br>"
-                    f"Tratta: {u} &rarr; {v}<br>"
+                    f"Via: <b>{edge_name}</b> ({u} &rarr; {v})<br>"
                     f"Ripetizioni: {move.get('times', 1)}x<br>"
-                    f"Costo transito: {move['cost']:.1f}"
+                    f"Costo transito: {move['cost']:.2f} &euro;"
                 )
                 folium.PolyLine(
                     locations=[p1, p2],
@@ -375,7 +385,7 @@ def genera_mappa_percorso(
                     opacity=0.85,
                     dash_array="8, 6",
                     popup=popup_txt,
-                    tooltip=f"{vehicle_name}: Transito {u}&rarr;{v}"
+                    tooltip=f"{vehicle_name}: Transito {edge_name} ({u}&rarr;{v})"
                 ).add_to(feature_group)
 
         feature_group.add_to(m)
