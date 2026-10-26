@@ -777,8 +777,11 @@
           </div>
         </div>
 
-        <div class="grid-2col">
-          <!-- Colonna Sinistra: Tabella Strade & Tabella Flotta Compattatori -->
+        <!-- =================================================================
+             PARTE SUPERIORE: CONFIGURAZIONE A 2 COLONNE BILANCIATE
+             ================================================================= -->
+        <div class="grid-2col" style="margin-bottom: 20px;">
+          <!-- Colonna Sinistra Configurazione: Deposito, Frazioni del Giro, Settore & Bilancio -->
           <div>
             <!-- Deposito / Base Operativa Mezzi CARP -->
             <div class="depot-banner">
@@ -795,51 +798,65 @@
               </div>
             </div>
 
-            <!-- Intestazione Strade con Filtro di Ricerca -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #38bdf8;">🛣️ Rete Stradale & Domanda Rifiuti (kg)</h4>
-              <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
-            </div>
-            
-            <div style="margin-bottom: 10px;">
-              <input type="text" id="carpStreetSearch" class="cell-inp" style="width: 100%; max-width: 100%; font-size: 12px; padding: 6px 10px;" 
-                     placeholder="🔍 Cerca via per nome o nodo..." oninput="filterCarpStreets(this.value)">
-            </div>
+            <!-- PROPOSTA A: Selettore Frazioni Rifiuti del Giro (Stime Teoriche FAQ & Dati Storici Aziendali) -->
+            <div style="margin-bottom: 14px; background: rgba(14, 22, 38, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                <div style="font-size: 13px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>♻️</span> Frazioni del Giro (Stime FAQ & Dati Storici)
+                </div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px;" onclick="setCarpFractionPreset('min')" title="Imposta i valori minimi teorici delle FAQ">Min FAQ</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px; border-color: #38bdf8; color: #38bdf8;" onclick="setCarpFractionPreset('avg')" title="Imposta i valori medi teorici delle FAQ">Medio FAQ</button>
+                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px;" onclick="setCarpFractionPreset('max')" title="Imposta i valori massimi teorici delle FAQ">Max FAQ</button>
+                </div>
+              </div>
+              <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 8px; line-height: 1.4;">
+                Seleziona quali rifiuti raccogliere nel turno (singola frazione o giro combinato bivasca). Puoi modificare i coefficienti <b>kg/m</b> o inserire il totale storico da bolla di pesata aziendale:
+              </small>
 
-            <div class="table-responsive" style="max-height: 290px; overflow-y: auto; margin-bottom: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
-              <table class="opt-table" id="carpStreetsTable">
-                <thead>
-                  <tr>
-                    <th>Nome Strada</th>
-                    <th>Nodi</th>
-                    <th>Domanda (kg)</th>
-                    <th>Costo Transito</th>
-                  </tr>
-                </thead>
-                <tbody id="carpStreetsBody"></tbody>
-              </table>
-            </div>
+              <div class="table-responsive" style="margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                <table class="opt-table" style="font-size: 11.5px;">
+                  <thead>
+                    <tr style="background: rgba(56, 189, 248, 0.1);">
+                      <th style="width: 30px; text-align: center;">Giro</th>
+                      <th>Frazione Merceologica</th>
+                      <th style="width: 90px;">Stima FAQ</th>
+                      <th style="width: 95px;">Coeff. (kg/m)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="carpFractionsConfigBody"></tbody>
+                </table>
+              </div>
 
-            <!-- Tabella Flotta Compattatori RSU (Specifiche & Costi) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 14px;">
-              <h4 style="font-size: 14px; color: #34d399;">🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</h4>
-              <button class="btn btn-secondary btn-sm" onclick="addCarpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
-                + Aggiungi Compattatore
-              </button>
-            </div>
+              <!-- Intervento Manuale da Dati Storici Aziendali (Totale Pesata Giro) -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(2, 6, 23, 0.55); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
+                <div style="font-size: 11.5px; color: var(--text-secondary);">
+                  <b>⚖️ Calibrazione da Storico Pesate Aziendali:</b>
+                  <span style="color: var(--text-muted); display: block; font-size: 10.5px;">Riproporziona tutte le vie sul totale storico pesato a fine giro</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="number" id="carpHistoricalTotalKg" class="cell-inp" style="width: 95px; font-size: 11.5px;" min="100" step="100" placeholder="es. 36800">
+                  <span style="font-size: 11px; color: var(--text-muted);">kg</span>
+                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;" onclick="applyCarpHistoricalTotalKg()">
+                    Applica Storico
+                  </button>
+                </div>
+              </div>
 
-            <div class="table-responsive" style="max-height: 220px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
-              <table class="opt-table">
-                <thead>
-                  <tr>
-                    <th>Compattatore</th>
-                    <th>Portata Max (kg)</th>
-                    <th>Costo Fisso (€)</th>
-                    <th style="width: 40px;"></th>
-                  </tr>
-                </thead>
-                <tbody id="carpVehiclesBody"></tbody>
-              </table>
+              <!-- Riepilogo Densità Attiva & Pulsante Applica -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 11.5px;">
+                <div id="carpActiveFractionSummary" style="color: var(--text-secondary);">
+                  Coeff. Giro: <b style="color: #38bdf8;">0.95 kg/m</b> | Carico: <b style="color: #fbbf24;">-- kg</b>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="btnUnlockManualStreets" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 4px 8px; display: none;" onclick="unlockAllCarpManualStreets()">
+                    🔓 Sblocca Vie Manuali
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" style="font-size: 11px; padding: 4px 10px;" onclick="applyCarpFractionsToStreets(true)">
+                    🔄 Ricalcola Vie & Adatta Flotta
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Selettore Rapido & Controlli di Riduzione / Partizionamento Area -->
@@ -867,41 +884,157 @@
             </div>
           </div>
 
-          <!-- Colonna Destra: Mappa Folium GIS Embedded & Report Dettaglio Mezzi -->
+          <!-- Colonna Destra Configurazione: Tabella Strade & Tabella Flotta Compattatori -->
           <div>
-            <div class="kpi-row">
-              <div class="kpi-card">
-                <div class="kpi-label">Stato CARP</div>
-                <div class="kpi-val green" id="carpStatus">Pronto</div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Costo Totale Flotta</div>
-                <div class="kpi-val" id="carpCost">-- €</div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Rifiuti Raccolti</div>
-                <div class="kpi-val amber" id="carpDemand">-- kg</div>
-              </div>
+            <!-- Intestazione Strade con Filtro di Ricerca -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #38bdf8;">🛣️ Rete Stradale & Domanda Rifiuti (kg)</h4>
+              <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <input type="text" id="carpStreetSearch" class="cell-inp" style="width: 100%; max-width: 100%; font-size: 12px; padding: 6px 10px;" 
+                     placeholder="🔍 Cerca via per nome o nodo..." oninput="filterCarpStreets(this.value)">
             </div>
 
+            <div class="table-responsive" style="max-height: 290px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table" id="carpStreetsTable">
+                <thead>
+                  <tr>
+                    <th>Nome Strada</th>
+                    <th>Nodi</th>
+                    <th>Domanda (kg)</th>
+                    <th>Costo Transito</th>
+                  </tr>
+                </thead>
+                <tbody id="carpStreetsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Tabella Flotta Compattatori RSU (Specifiche & Costi) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; color: #34d399;">🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</h4>
+              <button class="btn btn-secondary btn-sm" onclick="addCarpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                + Aggiungi Compattatore
+              </button>
+            </div>
+
+            <div class="table-responsive" style="max-height: 230px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+              <table class="opt-table">
+                <thead>
+                  <tr>
+                    <th>Compattatore</th>
+                    <th>Portata Max (kg)</th>
+                    <th>Costo Fisso (€)</th>
+                    <th style="width: 40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="carpVehiclesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             PARTE INFERIORE: DASHBOARD ESECUTIVA RISULTATI A TUTTA LARGHEZZA
+             (Layout 1 Full-Width + Tabella Comparativa Flotta del Layout 2)
+             ================================================================= -->
+        <div style="border-top: 2px solid var(--border-color); padding-top: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+            <h3 style="font-size: 16px; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span>⚡</span> Dashboard Risultati Ottimizzazione CARP & Cartografia GIS
+            </h3>
+            <span class="code-tag" style="color: #34d399; font-size: 11px;">Formulazione Esatta MILP Single-Commodity Flow</span>
+          </div>
+
+          <!-- Riga 1: 6 KPI Esecutivi -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 10px; margin-bottom: 16px;">
+            <div class="kpi-card">
+              <div class="kpi-label">Stato Solutore</div>
+              <div class="kpi-val green" id="carpStatus">Pronto</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Costo Totale Giro</div>
+              <div class="kpi-val" id="carpCost">-- €</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Rifiuti Raccolti</div>
+              <div class="kpi-val amber" id="carpDemand">-- kg</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Compattatori Attivi</div>
+              <div class="kpi-val" style="color: #38bdf8;" id="carpActiveVehiclesKpi">-- / --</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Saturazione Media</div>
+              <div class="kpi-val green" id="carpAvgSaturationKpi">--%</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Rete & Efficienza</div>
+              <div class="kpi-val" style="font-size: 16px;" id="carpNetworkKpi">-- km</div>
+            </div>
+          </div>
+
+          <!-- Riga 2: Mappa GIS (60%) affiancata al Prospetto Merceologico del Comune (40%) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 16px; margin-bottom: 18px; align-items: stretch;">
             <!-- Iframe Mappa Folium GIS reale -->
-            <div class="card" style="padding: 12px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px;">
+            <div class="card" style="padding: 12px; margin-bottom: 0; display: flex; flex-direction: column;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px;">
                 <b>🗺️ Mappa GIS Interattiva (Folium &mdash; Apertura su Stradario)</b>
-                <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--primary); text-decoration: none;">Schermo Intero &nearr;</a>
+                <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 600;">Schermo Intero &nearr;</a>
               </div>
-              <iframe id="carpMapIframe" src="about:blank" style="width: 100%; height: 380px; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18;"></iframe>
+              <iframe id="carpMapIframe" src="about:blank" style="width: 100%; height: 420px; flex: 1; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18;"></iframe>
             </div>
 
-            <!-- Report Dettaglio Mezzi Utilizzati & Specifiche di Costo -->
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h4 style="font-size: 14px; color: #38bdf8;">
-                  📋 Elenco Mezzi Utilizzati & Dettaglio Costi
-                </h4>
-                <span style="font-size: 11.5px; color: var(--text-muted);">Formulazione Single-Commodity Flow</span>
+            <!-- Tabella Riassuntiva Frazioni & Stime di Carico per il Comune (Evidenziata dopo l'ottimizzazione per qualsiasi comune) -->
+            <div id="carpMunicipalitySummaryCard" class="card" style="padding: 14px; margin-bottom: 0; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(9, 15, 29, 0.9); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                  <h4 style="font-size: 13.5px; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 6px;">
+                    <span>📊</span> <span id="carpSummaryTitle">Prospetto Merceologico & Stime Rifiuti sul Comune</span>
+                  </h4>
+                  <span id="carpSummaryNetBadge" class="code-tag" style="color: #34d399; font-size: 11px;">-- km rete</span>
+                </div>
+                <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 10px; line-height: 1.4;">
+                  Ripartizione stimata del fabbisogno di raccolta sull'estensione viaria reale del territorio caricato, calcolata in base alle stime teoriche FAQ e ai coefficienti aziendali configurati:
+                </small>
+                <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px;">
+                  <table class="opt-table" style="font-size: 11.5px;">
+                    <thead>
+                      <tr style="background: rgba(56, 189, 248, 0.12);">
+                        <th>Frazione Merceologica (FAQ 9)</th>
+                        <th>Range FAQ</th>
+                        <th>Coeff. Attivo</th>
+                        <th>Carico Stimato Comune</th>
+                        <th>Flotta Stimata</th>
+                        <th style="width: 85px; text-align: center;">Simula</th>
+                      </tr>
+                    </thead>
+                    <tbody id="carpMunicipalitySummaryBody"></tbody>
+                  </table>
+                </div>
               </div>
-              <div id="carpVehiclesReport"></div>
+              <small style="color: var(--text-muted); font-size: 10.5px; display: block; margin-top: 8px; line-height: 1.4;">
+                <i>*Nota operativa sulla Plastica: il multimateriale leggero ha basso peso specifico (0,25–0,40 kg/m) ma satura il volume (m³) del cassone prima di raggiungere la portata massima in peso.</i>
+              </small>
+            </div>
+          </div>
+
+          <!-- Riga 3: Tabella Comparativa Compatta della Flotta (dal Layout 2) -->
+          <div class="card" style="padding: 14px; margin-bottom: 0; background: rgba(9, 15, 29, 0.9);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+              <h4 style="font-size: 14px; color: #34d399; margin: 0; display: flex; align-items: center; gap: 6px;">
+                <span>📋</span> Tabella Comparativa Flotta & Fogli di Marcia Compattatori
+              </h4>
+              <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="chkHideUnusedCarpVehicles" onchange="if (State.carpResult) renderCarpVehicleReport(State.carpResult);" style="accent-color: #38bdf8; cursor: pointer;">
+                Nascondi mezzi di riserva non utilizzati
+              </label>
+            </div>
+            <div id="carpVehiclesReport">
+              <div style="color: var(--text-muted); font-size: 12.5px; padding: 12px; text-align: center;">
+                Premi <b>"⚡ Risolvi & Aggiorna Mappa GIS"</b> (oppure clicca su <b>"⚡ Simula"</b> nel prospetto frazioni qui sopra) per visualizzare la Tabella Comparativa dei Compattatori e i Fogli di Marcia.
+              </div>
             </div>
           </div>
         </div>
@@ -2786,7 +2919,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
             1. Nome Comune o Quartiere:
           </label>
-          <input type="text" id="inpOsmPlace" value="Asolo, Italy" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. Asolo, Italy oppure Treviso, Centro Storico, Italy">
+          <input type="text" id="inpOsmPlace" value="Conegliano, Italy" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. Conegliano, Italy oppure Treviso, Centro Storico, Italy">
           <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
             Scarica l'effettiva rete stradale da OpenStreetMap.
           </small>
@@ -2796,7 +2929,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <label style="display: block; font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
             2. Punto di Partenza dei Mezzi / Cantiere Deposito (Nodo 0):
           </label>
-          <input type="text" id="inpOsmDepot" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.8030, 11.9120 oppure 'Via Cantiere 1, Asolo'">
+          <input type="text" id="inpOsmDepot" value="45.951391386254286, 12.312502178579223" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.951391386254286, 12.312502178579223 oppure indirizzo">
           <small style="color: var(--text-secondary); font-size: 11.5px; display: block; margin-top: 6px; line-height: 1.5;">
             📍 <b>Posizione Deposito:</b> inserisci le <b>coordinate GPS (lat, lon)</b> o un <b>indirizzo reale</b> del cantiere aziendale. L'incrocio stradale più vicino diventerà il <b>Nodo 0 (Deposito)</b> da cui tutti i mezzi partiranno e rientreranno. Se lasciato vuoto, verrà impostato automaticamente il baricentro dell'area.
           </small>
@@ -2807,12 +2940,12 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
             3. Dimensione Settore Operativo (Numero Vie):
           </label>
           <select id="inpOsmMaxStreets" style="background:#080d19; border:1px solid #283959; color:#38bdf8; padding:8px 10px; border-radius:6px; font-size:13px; width:100%;">
-            <option value="0">🌐 Tutto il comune (copertura totale di tutte le vie)</option>
+            <option value="0" selected>🌐 Tutto il comune (copertura totale di tutte le vie)</option>
             <option value="120">120 vie (~6-8 compattatori, intero centro urbano)</option>
             <option value="80">80 vie (~4-5 compattatori, settore esteso)</option>
             <option value="60">60 vie (~3-4 compattatori, settore grande)</option>
             <option value="45">45 vie (~2-3 compattatori, settore medio)</option>
-            <option value="30" selected>30 vie (~1-2 compattatori, rapido in ~1 sec) [Consigliato]</option>
+            <option value="30">30 vie (~1-2 compattatori, rapido in ~1 sec)</option>
           </select>
           <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
             I modelli esatti MILP ottimizzano i settori operativi giornalieri per turno.
@@ -2826,7 +2959,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
             Coordinate GPS Deposito di Partenza (Lat, Lon):
           </label>
-          <input type="text" id="inpOsmGpsCoords" value="45.6670, 12.2450" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.6670, 12.2450">
+          <input type="text" id="inpOsmGpsCoords" value="45.951391386254286, 12.312502178579223" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.951391386254286, 12.312502178579223">
           <small style="color: var(--text-muted); font-size: 11.5px; display: block; margin-top: 4px;">
             Il nodo stradale più vicino a queste coordinate sarà il Deposito (Nodo 0).
           </small>
@@ -3034,7 +3167,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
         payload = {
           place: place,
           depot_query: depot || null,
-          max_streets: isNaN(parsedMaxS) ? 30 : parsedMaxS
+          max_streets: isNaN(parsedMaxS) ? 0 : parsedMaxS
         };
 
         if (depot) {
@@ -3071,6 +3204,9 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           dist: rawDist
         };
       }
+
+      const activeRate = (typeof getActiveCarpFractionRate === 'function') ? getActiveCarpFractionRate() : 1.5;
+      payload.demand_per_meter = activeRate;
 
       btn.innerText = '⏳ Download Rete & Calcolo...';
       btn.disabled = true;

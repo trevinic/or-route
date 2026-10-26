@@ -497,12 +497,17 @@ function syncWizardFleetToModels() {
 
   // CARP
   if (State.carpConfig) {
-    State.carpConfig.vehicles = concreteVehicles.map(v => ({
-      name: v.name,
-      capacity_kg: v.capacity_kg,
-      fixed_cost: v.fixed_cost,
-      description: v.category
-    }));
+    const carpDemand = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+    const wizCap = concreteVehicles.reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
+    const curCap = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
+    if (!State.carpConfig.vehicles || State.carpConfig.vehicles.length === 0 || wizCap >= carpDemand || curCap < carpDemand) {
+      State.carpConfig.vehicles = concreteVehicles.map(v => ({
+        name: v.name,
+        capacity_kg: v.capacity_kg,
+        fixed_cost: v.fixed_cost,
+        description: v.category
+      }));
+    }
     if (State.activeTab === 'tab-carp') renderCarpTables();
   }
 
@@ -2502,7 +2507,7 @@ async function loadCarpConfig() {
   if (!State.carpConfig) {
     State.carpConfig = {
       name: 'CARP Servizio Stradale',
-      depot: { name: 'Cantiere Deposito Conegliano', lat: 45.89, lon: 12.30, node_id: 0 },
+      depot: { name: 'Sede / Deposito Aziendale', lat: 45.951391386254286, lon: 12.312502178579223, node_id: 0 },
       streets: [],
       vehicles: []
     };
@@ -2513,8 +2518,431 @@ async function loadCarpConfig() {
   renderCarpTables();
 }
 
+// ==========================================
+// GESTIONE FRAZIONI RIFIUTI CARP (STIME FAQ & DATI STORICI AZIENDALI)
+// ==========================================
+State.carpFractions = [
+  { id: 'umido', icon: '🥑', name: 'Umido / Organico (FORSU)', faqRange: '0,80 – 1,10', faqMin: 0.80, faqAvg: 0.95, faqMax: 1.10, rate: 0.95, selected: true, note: 'Bisettimanale (Peso elevato)' },
+  { id: 'carta', icon: '📦', name: 'Carta e Cartone', faqRange: '0,70 – 1,40', faqMin: 0.70, faqAvg: 1.00, faqMax: 1.40, rate: 1.00, selected: false, note: 'Settimanale (Compatt. 1:3)' },
+  { id: 'vetro', icon: '🍾', name: 'Vetro', faqRange: '0,60 – 1,00', faqMin: 0.60, faqAvg: 0.80, faqMax: 1.00, rate: 0.80, selected: false, note: 'Quindicinale (Non compatt.)' },
+  { id: 'plastica', icon: '🧴', name: 'Plastica e Lattine', faqRange: '0,25 – 0,40', faqMin: 0.25, faqAvg: 0.32, faqMax: 0.40, rate: 0.32, selected: false, note: 'Settimanale (Satura volume m³*)' },
+  { id: 'secco', icon: '🗑️', name: 'Secco Residuo (PAYT)', faqRange: '0,20 – 0,35', faqMin: 0.20, faqAvg: 0.28, faqMax: 0.35, rate: 0.28, selected: false, note: 'Tariffa Puntuale (2-3 sett.)' }
+];
+State.carpCustomHistoricalMode = false;
+
+function getActiveCarpFractionRate() {
+  const selected = (State.carpFractions || []).filter(f => f.selected);
+  if (selected.length === 0) return 0.0;
+  const sum = selected.reduce((acc, f) => acc + (parseFloat(f.rate) || 0), 0);
+  return Math.round(sum * 100) / 100;
+}
+
+function getActiveCarpFractionsLabel() {
+  if (State.carpCustomHistoricalMode) {
+    return 'Calibrazione da Pesata Storica Aziendale';
+  }
+  const selected = (State.carpFractions || []).filter(f => f.selected);
+  if (selected.length === 0) return 'Nessuna frazione selezionata';
+  if (selected.length === State.carpFractions.length) return 'Tutte le 5 Frazioni (Settimana Completa)';
+  return selected.map(f => `${f.icon} ${f.name.split(' (')[0]}`).join(' + ');
+}
+
+function isStreetCollectible(s) {
+  if (!s) return false;
+  if (s.id === 'R0' || (s.name && s.name.toLowerCase().includes('raccordo cantiere deposito'))) return false;
+  const desc = (s.description || '').toLowerCase();
+  if (desc.includes('superstrada') || desc.includes('transito veloce')) return false;
+  return true;
+}
+
+function getStreetLengthMeters(s) {
+  const lm = parseFloat(s.length_m);
+  if (!isNaN(lm) && lm > 0) return lm;
+  const tc = parseFloat(s.transit_cost);
+  if (!isNaN(tc) && tc > 0) return Math.round(tc * 100.0);
+  return 100.0;
+}
+
+function getCarpActiveNetworkStats() {
+  const streets = (State.carpConfig && State.carpConfig.streets) ? State.carpConfig.streets : [];
+  let totalMeters = 0;
+  let activeCount = 0;
+  streets.forEach(s => {
+    if (isStreetCollectible(s)) {
+      totalMeters += getStreetLengthMeters(s);
+      activeCount += 1;
+    }
+  });
+  return {
+    totalMeters: totalMeters,
+    totalKm: totalMeters / 1000.0,
+    activeCount: activeCount,
+    totalStreets: streets.length
+  };
+}
+
+function renderCarpFractionsConfig() {
+  const tbody = document.getElementById('carpFractionsConfigBody');
+  if (tbody && State.carpFractions) {
+    tbody.innerHTML = '';
+    State.carpFractions.forEach((f, idx) => {
+      const tr = document.createElement('tr');
+      if (f.selected) {
+        tr.style.background = 'rgba(56, 189, 248, 0.08)';
+      }
+      tr.innerHTML = `
+        <td style="text-align: center;">
+          <input type="checkbox" ${f.selected ? 'checked' : ''} onchange="toggleCarpFraction('${f.id}', this.checked)" style="cursor: pointer; accent-color: #38bdf8; width: 15px; height: 15px;">
+        </td>
+        <td>
+          <b style="color: ${f.selected ? '#38bdf8' : 'var(--text-main)'};">${f.icon} ${f.name}</b>
+          <br><small style="color: var(--text-muted); font-size: 10px;">${f.note}</small>
+        </td>
+        <td>
+          <span class="code-tag" style="font-size: 10.5px; color: #94a3b8;">${f.faqRange} kg/m</span>
+        </td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="number" class="cell-inp" style="width: 65px; font-size: 11.5px; font-weight: 700; color: ${f.selected ? '#34d399' : 'var(--text-secondary)'};" min="0.05" max="10.0" step="0.05" value="${f.rate.toFixed(2)}" onchange="updateCarpFractionRate('${f.id}', this.value)">
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  const summaryEl = document.getElementById('carpActiveFractionSummary');
+  const rate = getActiveCarpFractionRate();
+  const totalDemand = ((State.carpConfig && State.carpConfig.streets) || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+  const qt = (totalDemand / 100.0).toFixed(1);
+  if (summaryEl) {
+    const label = getActiveCarpFractionsLabel();
+    summaryEl.innerHTML = `
+      Giro: <b style="color:#38bdf8;">${label}</b> (${rate.toFixed(2)} kg/m) &rarr; Totale: <b style="color:#fbbf24;">${totalDemand.toLocaleString()} kg (${qt} qt)</b>
+    `;
+  }
+
+  const unlockBtn = document.getElementById('btnUnlockManualStreets');
+  if (unlockBtn && State.carpConfig && State.carpConfig.streets) {
+    const hasManual = State.carpConfig.streets.some(s => s.manual_override);
+    unlockBtn.style.display = hasManual ? 'inline-flex' : 'none';
+  }
+}
+
+function toggleCarpFraction(fracId, checked) {
+  const f = (State.carpFractions || []).find(x => x.id === fracId);
+  if (!f) return;
+  f.selected = !!checked;
+  // Assicura che almeno 1 frazione resti attiva se l'utente deseleziona tutto per errore
+  if (!State.carpFractions.some(x => x.selected)) {
+    f.selected = true;
+    showToast('ℹ️ Almeno una frazione merceologica deve essere attiva per il giro di raccolta.');
+  }
+  State.carpCustomHistoricalMode = false;
+  applyCarpFractionsToStreets(false);
+}
+
+function updateCarpFractionRate(fracId, val) {
+  const f = (State.carpFractions || []).find(x => x.id === fracId);
+  if (!f) return;
+  const num = parseFloat(val);
+  f.rate = (!isNaN(num) && num >= 0.01) ? Math.round(num * 100) / 100 : f.faqAvg;
+  State.carpCustomHistoricalMode = false;
+  if (f.selected) {
+    applyCarpFractionsToStreets(false);
+  } else {
+    renderCarpFractionsConfig();
+    renderCarpMunicipalitySummaryTable();
+  }
+}
+
+function setCarpFractionPreset(mode) {
+  (State.carpFractions || []).forEach(f => {
+    if (mode === 'min') f.rate = f.faqMin;
+    else if (mode === 'max') f.rate = f.faqMax;
+    else f.rate = f.faqAvg;
+  });
+  State.carpCustomHistoricalMode = false;
+  applyCarpFractionsToStreets(true);
+  const label = mode === 'min' ? 'Minimo FAQ' : (mode === 'max' ? 'Massimo FAQ' : 'Medio FAQ');
+  showToast(`Applicati coefficienti teorici '${label}' e ricalcolata la rete stradale.`);
+}
+
+function applyCarpFractionsToStreets(autoResizeFleet = false) {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  const rate = getActiveCarpFractionRate();
+  const factor = (State.carpConfig.settings && State.carpConfig.settings.service_speed_factor)
+    ? parseFloat(State.carpConfig.settings.service_speed_factor) : 1.8;
+
+  State.carpConfig.streets.forEach(s => {
+    if (!isStreetCollectible(s)) {
+      s.demand_kg = 0;
+      return;
+    }
+    if (s.manual_override) {
+      return; // Preserva le vie modificate manualmente con dati storici puntuali
+    }
+    const lengthM = getStreetLengthMeters(s);
+    s.length_m = Math.round(lengthM * 10) / 10;
+    if (rate > 0) {
+      const raw = Math.round((lengthM * rate) / 10.0) * 10.0;
+      s.demand_kg = Math.max(10, raw);
+    } else {
+      s.demand_kg = 0;
+    }
+    const tCost = parseFloat(s.transit_cost) || Math.max(0.5, Math.round((lengthM / 100.0) * 100) / 100);
+    s.service_cost = s.demand_kg > 0 ? Math.max(0.9, Math.round(tCost * factor * 100) / 100) : tCost;
+  });
+
+  if (State.carpConfig.settings) {
+    State.carpConfig.settings.demand_per_meter = rate;
+  }
+
+  if (autoResizeFleet) {
+    resizeCarpFleetToMatchDemand();
+  }
+
+  renderCarpTables();
+}
+
+function resizeCarpFleetToMatchDemand() {
+  if (!State.carpConfig) return;
+  const totalDemand = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+  const existing = State.carpConfig.vehicles || [];
+  const avgCap = existing.length > 0
+    ? (existing.reduce((a, v) => a + (parseFloat(v.capacity_kg) || 4500), 0) / existing.length)
+    : 4500;
+  const avgFixed = existing.length > 0
+    ? (existing.reduce((a, v) => a + (parseFloat(v.fixed_cost) || 100), 0) / existing.length)
+    : 100.0;
+
+  // Calcola numero ottimale di compattatori con margine operativo del 20%
+  const targetCount = Math.max(2, Math.floor(totalDemand / (avgCap * 0.80)) + 1);
+  const newVehicles = [];
+  for (let i = 0; i < targetCount; i++) {
+    if (i < existing.length) {
+      newVehicles.push(existing[i]);
+    } else {
+      newVehicles.push({
+        name: `Compattatore_${i + 1}`,
+        capacity_kg: Math.round(avgCap),
+        fixed_cost: Math.round(avgFixed * 100) / 100,
+        description: `Compattatore RSU #${i + 1}`
+      });
+    }
+  }
+  State.carpConfig.vehicles = newVehicles;
+}
+
+function applyCarpHistoricalTotalKg() {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  const inp = document.getElementById('carpHistoricalTotalKg');
+  const targetTotal = parseFloat(inp ? inp.value : 0);
+  if (isNaN(targetTotal) || targetTotal <= 0) {
+    showToast('⚠️ Inserisci un valore valido in kg dalla bolla di pesata storica (es. 36800).');
+    return;
+  }
+
+  // Calcola quanti kg sono già bloccati manualmente e quanti metri sono liberi
+  let lockedKg = 0;
+  let unlockedMeters = 0;
+  State.carpConfig.streets.forEach(s => {
+    if (!isStreetCollectible(s)) return;
+    if (s.manual_override) {
+      lockedKg += (parseFloat(s.demand_kg) || 0);
+    } else {
+      unlockedMeters += getStreetLengthMeters(s);
+    }
+  });
+
+  const remainingKg = Math.max(0, targetTotal - lockedKg);
+  if (unlockedMeters <= 0) {
+    showToast('Tutte le vie hanno un valore manuale bloccato. Sbloccale prima di riproporzionare.');
+    return;
+  }
+
+  const effectiveRate = remainingKg / unlockedMeters;
+  State.carpConfig.streets.forEach(s => {
+    if (!isStreetCollectible(s) || s.manual_override) return;
+    const lm = getStreetLengthMeters(s);
+    s.demand_kg = Math.max(5, Math.round((lm * effectiveRate) / 5.0) * 5.0);
+  });
+
+  State.carpCustomHistoricalMode = true;
+  resizeCarpFleetToMatchDemand();
+  renderCarpTables();
+  showToast(`✅ Domanda riproporzionata su ${targetTotal.toLocaleString()} kg storici (${effectiveRate.toFixed(2)} kg/m medi)!`);
+}
+
+function unlockCarpStreetManual(idx) {
+  if (!State.carpConfig || !State.carpConfig.streets || !State.carpConfig.streets[idx]) return;
+  delete State.carpConfig.streets[idx].manual_override;
+  applyCarpFractionsToStreets(false);
+  showToast('Via sbloccata e riallineata alla stima della frazione.');
+}
+
+function unlockAllCarpManualStreets() {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  State.carpConfig.streets.forEach(s => { delete s.manual_override; });
+  applyCarpFractionsToStreets(false);
+  showToast('🔓 Tutte le vie modificate manualmente sono state riallineate ai coefficienti di frazione.');
+}
+
+function simulateSingleCarpFraction(fracId) {
+  if (!State.carpFractions) return;
+  if (fracId === 'ALL') {
+    State.carpFractions.forEach(f => { f.selected = true; });
+  } else {
+    State.carpFractions.forEach(f => { f.selected = (f.id === fracId); });
+  }
+  State.carpCustomHistoricalMode = false;
+  applyCarpFractionsToStreets(true);
+  solveCarp();
+}
+
+function renderCarpMunicipalitySummaryTable() {
+  const tbody = document.getElementById('carpMunicipalitySummaryBody');
+  const titleEl = document.getElementById('carpSummaryTitle');
+  const badgeEl = document.getElementById('carpSummaryNetBadge');
+  if (!tbody || !State.carpConfig) return;
+
+  const stats = getCarpActiveNetworkStats();
+  const placeName = State.carpConfig.place_name
+    || (document.getElementById('inpOsmPlace') ? document.getElementById('inpOsmPlace').value.trim() : '')
+    || 'Comune Caricato';
+
+  if (titleEl) {
+    titleEl.innerText = `Prospetto Frazioni & Stime di Carico — ${placeName}`;
+  }
+  if (badgeEl) {
+    badgeEl.innerText = `${stats.totalKm.toFixed(1)} km rete (${stats.activeCount} vie con raccolta)`;
+  }
+  const netKpi = document.getElementById('carpNetworkKpi');
+  if (netKpi) {
+    netKpi.innerHTML = `${stats.totalKm.toFixed(1)} km <span style="font-size:11.5px; color:#34d399; font-weight:600;">(${stats.activeCount} vie)</span>`;
+  }
+
+  const vehicles = State.carpConfig.vehicles || [];
+  const avgCap = vehicles.length > 0
+    ? (vehicles.reduce((a, v) => a + (parseFloat(v.capacity_kg) || 4500), 0) / vehicles.length)
+    : 4500;
+
+  tbody.innerHTML = '';
+
+  let sumMinRate = 0;
+  let sumMaxRate = 0;
+  let sumActiveRate = 0;
+
+  (State.carpFractions || []).forEach(f => {
+    sumMinRate += f.faqMin;
+    sumMaxRate += f.faqMax;
+    sumActiveRate += f.rate;
+
+    // Calcola il carico esatto che questa frazione genera sulle vie del comune
+    let estKg = 0;
+    (State.carpConfig.streets || []).forEach(s => {
+      if (isStreetCollectible(s)) {
+        const lm = getStreetLengthMeters(s);
+        estKg += Math.max(10, Math.round((lm * f.rate) / 10.0) * 10.0);
+      }
+    });
+    const estQt = (estKg / 100.0).toFixed(1);
+    const estTrucksWeight = Math.max(1, Math.ceil(estKg / (avgCap * 0.85)));
+    let fleetLabel = `~${estTrucksWeight} mezzi`;
+    if (f.id === 'plastica') {
+      const estTrucksVol = Math.max(estTrucksWeight + 1, Math.ceil((estKg * 1.9) / (avgCap * 0.85)));
+      fleetLabel = `~${estTrucksWeight} (peso) / ~${estTrucksVol} (vol.*)`;
+    }
+
+    const isSoleSelected = !State.carpCustomHistoricalMode
+      && f.selected
+      && State.carpFractions.filter(x => x.selected).length === 1;
+
+    const tr = document.createElement('tr');
+    if (f.selected && !State.carpCustomHistoricalMode) {
+      tr.style.background = 'rgba(52, 211, 153, 0.10)';
+      tr.style.borderLeft = '3px solid #34d399';
+    }
+    tr.innerHTML = `
+      <td>
+        <b>${f.icon} ${f.name}</b>
+        ${f.selected && !State.carpCustomHistoricalMode ? '<span class="code-tag" style="margin-left:4px; color:#34d399; border-color:rgba(52,211,153,0.4); font-size:9.5px;">NEL GIRO</span>' : ''}
+      </td>
+      <td><span style="color:var(--text-muted);">${f.faqRange} kg/m</span></td>
+      <td><b style="color:#38bdf8;">${f.rate.toFixed(2)} kg/m</b></td>
+      <td>
+        <b style="color:#fbbf24;">${estQt} qt</b>
+        <span style="color:var(--text-muted); font-size:10.5px;">(${estKg.toLocaleString()} kg)</span>
+      </td>
+      <td><span style="color:var(--text-secondary);">${fleetLabel}</span></td>
+      <td style="text-align: center;">
+        <button type="button" class="btn ${isSoleSelected ? 'btn-primary' : 'btn-secondary'} btn-sm" style="font-size:10.5px; padding:3px 8px;" onclick="simulateSingleCarpFraction('${f.id}')">
+          ${isSoleSelected ? '✅ Attivo' : '⚡ Simula'}
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Riga Giro Attuale (se sono selezionate più frazioni insieme o storico manuale)
+  const selectedFracs = (State.carpFractions || []).filter(x => x.selected);
+  const currentActualKg = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+  const currentActualQt = (currentActualKg / 100.0).toFixed(1);
+  const currentEffRate = stats.totalMeters > 0 ? (currentActualKg / stats.totalMeters) : getActiveCarpFractionRate();
+  const currentTrucks = Math.max(1, Math.ceil(currentActualKg / (avgCap * 0.85)));
+
+  if (selectedFracs.length > 1 || State.carpCustomHistoricalMode) {
+    const trCur = document.createElement('tr');
+    trCur.style.background = 'rgba(56, 189, 248, 0.14)';
+    trCur.innerHTML = `
+      <td><b style="color:#38bdf8;">🎯 Giro Attuale (${getActiveCarpFractionsLabel()})</b></td>
+      <td><span style="color:var(--text-muted);">Personalizzato</span></td>
+      <td><b style="color:#38bdf8;">${currentEffRate.toFixed(2)} kg/m</b></td>
+      <td><b style="color:#34d399;">${currentActualQt} qt</b> <span style="color:var(--text-muted); font-size:10.5px;">(${currentActualKg.toLocaleString()} kg)</span></td>
+      <td><b style="color:#34d399;">~${currentTrucks} mezzi</b></td>
+      <td style="text-align:center;"><span class="code-tag" style="color:#38bdf8; font-size:10px;">ATTIVO</span></td>
+    `;
+    tbody.appendChild(trCur);
+  }
+
+  // Riga Somma Settimanale Tutte le 5 Frazioni
+  let totalWeekKg = 0;
+  (State.carpConfig.streets || []).forEach(s => {
+    if (isStreetCollectible(s)) {
+      const lm = getStreetLengthMeters(s);
+      totalWeekKg += Math.max(10, Math.round((lm * sumActiveRate) / 10.0) * 10.0);
+    }
+  });
+  const totalWeekQt = (totalWeekKg / 100.0).toFixed(1);
+  const allSelected = selectedFracs.length === (State.carpFractions || []).length && !State.carpCustomHistoricalMode;
+
+  const trTotal = document.createElement('tr');
+  trTotal.style.background = 'rgba(245, 158, 11, 0.08)';
+  trTotal.style.borderTop = '2px solid rgba(255, 255, 255, 0.12)';
+  trTotal.innerHTML = `
+    <td><b>🔄 Somma Tutte le 5 Frazioni (Intera Settimana)</b></td>
+    <td><span style="color:var(--text-muted);">${sumMinRate.toFixed(2).replace('.', ',')} – ${sumMaxRate.toFixed(2).replace('.', ',')} kg/m</span></td>
+    <td><b style="color:#fbbf24;">${sumActiveRate.toFixed(2)} kg/m</b></td>
+    <td>
+      <b style="color:#fbbf24;">${totalWeekQt} qt</b>
+      <span style="color:var(--text-muted); font-size:10.5px;">(${totalWeekKg.toLocaleString()} kg)</span>
+    </td>
+    <td><span style="color:var(--text-secondary);">Ciclo 6 giorni</span></td>
+    <td style="text-align: center;">
+      <button type="button" class="btn ${allSelected ? 'btn-primary' : 'btn-secondary'} btn-sm" style="font-size:10.5px; padding:3px 8px;" onclick="simulateSingleCarpFraction('ALL')">
+        ${allSelected ? '✅ Attivo' : '⚡ Simula'}
+      </button>
+    </td>
+  `;
+  tbody.appendChild(trTotal);
+}
+
 function renderCarpTables() {
   if (!State.carpConfig) return;
+
+  // Renderizza selettore frazioni e tabella riassuntiva del comune
+  renderCarpFractionsConfig();
+  renderCarpMunicipalitySummaryTable();
 
   // 0. Deposito CARP
   const dep = State.carpConfig.depot || {};
@@ -2548,11 +2976,19 @@ function renderCarpTables() {
         tr.className = 'carp-street-row';
         tr.dataset.name = (s.name || '').toLowerCase();
         tr.dataset.nodes = `${s.u}-${s.v}`;
+        const lm = getStreetLengthMeters(s);
+        const manualBadge = s.manual_override
+          ? `<button type="button" onclick="unlockCarpStreetManual(${idx})" title="Dato storico manuale bloccato. Clicca per sbloccare" style="background:rgba(245,158,11,0.2); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer; margin-left:4px;">🔒 Manuale</button>`
+          : '';
         tr.innerHTML = `
-          <td><b>${s.name}</b><br><small style="color:var(--text-muted);">${s.description || ''}</small></td>
+          <td>
+            <b>${s.name}</b> ${manualBadge}
+            <br><small style="color:var(--text-muted);">${s.description || ''} (${lm.toFixed(0)} m)</small>
+          </td>
           <td><span class="code-tag">${s.u} &rarr; ${s.v}</span></td>
           <td>
-            <input type="number" class="cell-inp" min="0" step="50" value="${s.demand_kg}"
+            <input type="number" class="cell-inp" min="0" step="10" value="${s.demand_kg}"
+              style="${s.manual_override ? 'border-color:#fbbf24; color:#fbbf24; font-weight:700;' : ''}"
               onchange="updateCarpStreetDemand(${idx}, this.value)">
           </td>
           <td>
@@ -2724,8 +3160,10 @@ function updateCarpVehicleCost(idx, val) {
 }
 
 function updateCarpStreetDemand(idx, val) {
+  if (!State.carpConfig || !State.carpConfig.streets || !State.carpConfig.streets[idx]) return;
   State.carpConfig.streets[idx].demand_kg = parseFloat(val) || 0;
-  updateCarpFleetCapacitySummary();
+  State.carpConfig.streets[idx].manual_override = true;
+  renderCarpTables();
 }
 
 function updateCarpStreetTransit(idx, val) {
@@ -2891,11 +3329,45 @@ async function solveCarp() {
       return;
     }
 
+    const solvedKg = data.total_demand_kg || 0;
+    const solvedQt = (solvedKg / 100.0).toFixed(1);
     document.getElementById('carpStatus').innerText = data.status;
     document.getElementById('carpCost').innerText = data.objective_value ? `${data.objective_value.toFixed(2)} €` : 'N/D';
-    document.getElementById('carpDemand').innerText = `${(data.total_demand_kg || 0).toLocaleString()} kg`;
+    document.getElementById('carpDemand').innerText = `${solvedQt} qt (${solvedKg.toLocaleString()} kg)`;
 
-    // Render report veicoli
+    // Calcolo KPI aggiuntivi Layout 1 (Compattatori Attivi, Saturazione Media, Rete & Efficienza)
+    const vEntries = Object.entries(data.vehicles || {});
+    const usedVehicles = vEntries.filter(([_, v]) => v.used);
+    const usedCount = usedVehicles.length;
+    const totalVehCount = vEntries.length || (State.carpConfig.vehicles || []).length;
+    const activeVehKpi = document.getElementById('carpActiveVehiclesKpi');
+    if (activeVehKpi) {
+      activeVehKpi.innerText = `${usedCount} / ${totalVehCount} Mezzi`;
+    }
+
+    const avgSatKpi = document.getElementById('carpAvgSaturationKpi');
+    if (avgSatKpi) {
+      const totalUsedCap = usedVehicles.reduce((acc, [_, v]) => acc + (parseFloat(v.capacity) || 4500), 0);
+      const totalUsedCol = usedVehicles.reduce((acc, [_, v]) => acc + (parseFloat(v.total_collected) || 0), 0);
+      const avgSat = totalUsedCap > 0 ? ((totalUsedCol / totalUsedCap) * 100.0).toFixed(1) : '0.0';
+      avgSatKpi.innerText = `${avgSat}%`;
+    }
+
+    const netStats = getCarpActiveNetworkStats();
+    const netKpi = document.getElementById('carpNetworkKpi');
+    if (netKpi) {
+      netKpi.innerHTML = `${netStats.totalKm.toFixed(1)} km <span style="font-size:11.5px; color:#34d399; font-weight:600;">(${netStats.activeCount} vie)</span>`;
+    }
+
+    // Aggiorna ed evidenzia la Tabella Riassuntiva Merceologica del Comune
+    renderCarpMunicipalitySummaryTable();
+    const sumCard = document.getElementById('carpMunicipalitySummaryCard');
+    if (sumCard) {
+      sumCard.style.borderColor = '#34d399';
+      sumCard.style.boxShadow = '0 0 18px rgba(52, 211, 153, 0.15)';
+    }
+
+    // Render report veicoli (Tabella Comparativa Flotta del Layout 2)
     renderCarpVehicleReport(data);
 
     // Ricarica Iframe Mappa Folium
@@ -2919,12 +3391,24 @@ async function solveCarp() {
   }
 }
 
+function toggleCarpVehicleMovesRow(rowId, btnEl) {
+  const detailRow = document.getElementById(rowId);
+  if (!detailRow) return;
+  const isHidden = detailRow.style.display === 'none';
+  detailRow.style.display = isHidden ? 'table-row' : 'none';
+  if (btnEl) {
+    const count = btnEl.dataset.count || '';
+    btnEl.innerHTML = isHidden ? `🔼 Chiudi (${count})` : `🔍 Vedi ${count} Vie`;
+  }
+}
+
 function renderCarpVehicleReport(data) {
   const container = document.getElementById('carpVehiclesReport');
   if (!container) return;
   container.innerHTML = '';
 
   const carpVehicleColors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+  const hideUnused = document.getElementById('chkHideUnusedCarpVehicles')?.checked || false;
 
   const streetNameMap = {};
   if (State.carpConfig && State.carpConfig.streets) {
@@ -2942,102 +3426,134 @@ function renderCarpVehicleReport(data) {
     return;
   }
 
-  vehiclesEntries.forEach(([vName, vInfo], idx) => {
-    const color = carpVehicleColors[idx % carpVehicleColors.length];
-    const card = document.createElement('div');
-    card.style.cssText = 'background: #090f1d; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 12px;';
+  const tableWrap = document.createElement('div');
+  tableWrap.className = 'table-responsive';
+  tableWrap.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; overflow-x: auto;';
 
+  let rowsHtml = '';
+  vehiclesEntries.forEach(([vName, vInfo], idx) => {
+    if (hideUnused && !vInfo.used) return;
+
+    const color = vInfo.used ? carpVehicleColors[idx % carpVehicleColors.length] : '#64748b';
     const fixedCost = parseFloat(vInfo.fixed_cost) || 0;
     const movements = vInfo.movements || [];
     const opCost = movements.reduce((acc, m) => acc + (parseFloat(m.cost) || 0), 0);
-    const totalCost = fixedCost + opCost;
-    const capacity = parseFloat(vInfo.capacity) || 1;
+    const totalCost = vInfo.used ? (fixedCost + opCost) : 0;
+    const capacity = parseFloat(vInfo.capacity) || 4500;
     const collected = parseFloat(vInfo.total_collected) || 0;
+    const collectedQt = (collected / 100.0).toFixed(1);
     const satPct = capacity > 0 ? ((collected / capacity) * 100).toFixed(1) : '0.0';
 
     const serviceMoves = movements.filter(m => m.type === 'SERVIZIO');
     const transitMoves = movements.filter(m => m.type === 'TRANSITO');
     const transitCount = transitMoves.reduce((acc, m) => acc + (m.times || 1), 0);
+    const detailRowId = `carpVehMoves_${idx}`;
 
+    let movesHtml = '';
     if (vInfo.used) {
-      let movesHtml = '';
-      movements.forEach(m => {
+      movements.forEach((m, mIdx) => {
         const sName = streetNameMap[`${m.u}-${m.v}`] || `Tratta ${m.u} &rarr; ${m.v}`;
         if (m.type === 'SERVIZIO') {
           movesHtml += `
-            <div style="font-size: 11.5px; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between;">
-              <span><b style="color: #34d399;">[SERVIZIO]</b> ${sName} (${m.u} &rarr; ${m.v})</span>
-              <span style="color: var(--text-secondary);">${m.demand_kg} kg | Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
+            <div style="font-size: 11.5px; padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+              <span><b style="color: #34d399;">${mIdx + 1}. [SERVIZIO]</b> ${sName} <span class="code-tag" style="font-size:10px;">${m.u} &rarr; ${m.v}</span></span>
+              <span style="color: var(--text-secondary);"><b>${m.demand_kg} kg</b> | Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
             </div>
           `;
         } else {
           movesHtml += `
-            <div style="font-size: 11.5px; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; color: var(--text-muted);">
-              <span><b style="color: #fbbf24;">[TRANSITO]</b> ${sName} (${m.u} &rarr; ${m.v}) ${m.times > 1 ? `(${m.times}x a vuoto)` : ''}</span>
+            <div style="font-size: 11.5px; padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted);">
+              <span><b style="color: #fbbf24;">${mIdx + 1}. [TRANSITO]</b> ${sName} <span class="code-tag" style="font-size:10px;">${m.u} &rarr; ${m.v}</span> ${m.times > 1 ? `(${m.times}x a vuoto)` : ''}</span>
               <span>Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
             </div>
           `;
         }
       });
-
-      card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${color};"></span>
-            <b style="color: ${color}; font-size: 14.5px;">🚛 ${vName}</b>
-          </div>
-          <span class="badge-free" style="background: rgba(16,185,129,0.15); color: #34d399; font-weight: 700;">ATTIVO</span>
-        </div>
-
-        <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px;">
-          Rifiuti Caricati: <b>${collected.toLocaleString()} kg</b> su ${capacity.toLocaleString()} kg (${satPct}%)
-        </div>
-
-        <div style="background: #17243c; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
-          <div style="background: ${color}; height: 100%; width: ${Math.min(parseFloat(satPct), 100)}%;"></div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; font-size: 12px; margin-bottom: 10px;">
-          <div>Costo Fisso: <b>${fixedCost.toFixed(2)} €</b></div>
-          <div>Costo Operativo: <b>${opCost.toFixed(2)} €</b></div>
-          <div style="color: #38bdf8;">Totale Mezzo: <b>${totalCost.toFixed(2)} €</b></div>
-        </div>
-
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
-          <span class="code-tag" style="color: #34d399; border-color: rgba(52,211,153,0.3); font-size: 11px;">
-            ✅ ${serviceMoves.length} tratte con raccolta
-          </span>
-          <span class="code-tag" style="color: #fbbf24; border-color: rgba(251,191,36,0.3); font-size: 11px;">
-            🔄 ${transitCount} transiti a vuoto (deadhead)
-          </span>
-        </div>
-
-        <details style="margin-top: 6px;">
-          <summary style="cursor: pointer; font-size: 11.5px; color: var(--text-muted); outline: none;">
-            ▶ Mostra sequenza completa movimenti (${movements.length} tratte)
-          </summary>
-          <div style="margin-top: 8px; max-height: 160px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 4px;">
-            ${movesHtml}
-          </div>
-        </details>
-      `;
-    } else {
-      card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #475569;"></span>
-            <b style="color: var(--text-muted); font-size: 13.5px;">🚛 ${vName}</b>
-          </div>
-          <span style="font-size: 11.5px; color: var(--text-muted);">NON UTILIZZATO</span>
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
-          Flotta attiva sufficiente a coprire l'intera domanda. Costo fisso evitato: <b>${fixedCost.toFixed(2)} €</b>.
-        </div>
-      `;
     }
 
-    container.appendChild(card);
+    rowsHtml += `
+      <tr style="${vInfo.used ? '' : 'opacity: 0.55;'}">
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: ${color};"></span>
+            <b style="color: ${vInfo.used ? color : 'var(--text-muted)'}; font-size: 13px;">🚛 ${vName}</b>
+          </div>
+        </td>
+        <td>
+          <span class="code-tag" style="color: ${vInfo.used ? '#34d399' : '#94a3b8'}; border-color: ${vInfo.used ? 'rgba(52,211,153,0.35)' : 'rgba(148,163,184,0.25)'}; font-size: 10.5px;">
+            ${vInfo.used ? 'ATTIVO' : 'RISERVA'}
+          </span>
+        </td>
+        <td>
+          <b>${collected.toLocaleString()} kg</b> <span style="color: #fbbf24; font-weight: 600;">(${collectedQt} qt)</span>
+          <br><small style="color: var(--text-muted); font-size: 10.5px;">su ${capacity.toLocaleString()} kg max</small>
+        </td>
+        <td style="min-width: 155px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="flex: 1; background: #17243c; height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="background: ${color}; height: 100%; width: ${Math.min(parseFloat(satPct), 100)}%;"></div>
+            </div>
+            <b style="font-size: 12px; min-width: 42px; text-align: right;">${satPct}%</b>
+          </div>
+        </td>
+        <td>
+          <span style="color: #34d399; font-weight: 700;">✅ ${serviceMoves.length} vie</span>
+        </td>
+        <td>
+          <span style="color: #fbbf24; font-weight: 600;">🔄 ${transitCount} transiti</span>
+        </td>
+        <td style="font-size: 11.5px; color: var(--text-secondary);">
+          ${vInfo.used ? `${fixedCost.toFixed(0)} € + ${opCost.toFixed(1)} €` : `<span style="color:#34d399;">Risparmiato (-${fixedCost.toFixed(0)} €)</span>`}
+        </td>
+        <td>
+          <b style="color: #38bdf8; font-size: 13px;">${totalCost.toFixed(2)} €</b>
+        </td>
+        <td style="text-align: center;">
+          ${vInfo.used ? `
+            <button type="button" class="btn btn-secondary btn-sm" data-count="${serviceMoves.length}" style="font-size: 11px; padding: 4px 9px;" onclick="toggleCarpVehicleMovesRow('${detailRowId}', this)">
+              🔍 Vedi ${serviceMoves.length} Vie
+            </button>
+          ` : '<span style="color: var(--text-muted);">—</span>'}
+        </td>
+      </tr>
+      ${vInfo.used ? `
+      <tr id="${detailRowId}" style="display: none; background: rgba(2, 6, 23, 0.75);">
+        <td colspan="9" style="padding: 10px 14px;">
+          <div style="font-size: 12px; font-weight: 700; color: ${color}; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>🗺️ Foglio di Marcia Sequenziale — ${vName} (${serviceMoves.length} tratte servite, ${transitCount} transiti a vuoto)</span>
+            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: ${collected.toLocaleString()} kg (${collectedQt} qt)</span>
+          </div>
+          <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(9, 15, 29, 0.9); padding: 4px;">
+            ${movesHtml}
+          </div>
+        </td>
+      </tr>
+      ` : ''}
+    `;
   });
+
+  tableWrap.innerHTML = `
+    <table class="opt-table" style="font-size: 12px;">
+      <thead>
+        <tr style="background: rgba(56, 189, 248, 0.12);">
+          <th>Compattatore</th>
+          <th>Stato</th>
+          <th>Rifiuti Caricati</th>
+          <th>Saturazione Portata</th>
+          <th>Tratte Servite</th>
+          <th>Transiti a Vuoto</th>
+          <th>Costo Fisso + Op.</th>
+          <th>Totale Mezzo</th>
+          <th style="text-align: center;">Foglio di Marcia</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+  `;
+
+  container.appendChild(tableWrap);
 }
 
 // ==========================================

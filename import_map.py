@@ -286,12 +286,12 @@ def import_osm_by_point(
 
 
 def import_osm_by_place(
-    place_name: str,
+    place_name: str = "Conegliano, Italy",
     depot_lat: Optional[float] = None,
     depot_lon: Optional[float] = None,
-    depot_query: Optional[str] = None,
-    demand_per_meter: float = 1.5,
-    max_streets: int = 35
+    depot_query: Optional[str] = "45.951391386254286, 12.312502178579223",
+    demand_per_meter: float = 0.95,
+    max_streets: int = 0
 ) -> Dict[str, Any]:
     """
     Scarica la rete stradale reale di un comune, frazione o quartiere.
@@ -345,8 +345,8 @@ def import_osm_by_place(
     except Exception as geo_err:
         print(f"[OSM] Avviso geocodifica centro urbano per '{clean_place}': {geo_err}", flush=True)
 
-    ref_lat = depot_lat if depot_lat is not None else urban_lat
-    ref_lon = depot_lon if depot_lon is not None else urban_lon
+    ref_lat = urban_lat if urban_lat is not None else depot_lat
+    ref_lon = urban_lon if urban_lon is not None else depot_lon
     bbox_fallback = None
     if ref_lat is not None and ref_lon is not None:
         dist_m = 750
@@ -384,7 +384,8 @@ def import_osm_by_place(
         exact_depot_lon=depot_lon,
         depot_address=depot_query or f"Centro Operativo {clean_place} ({depot_lat:.5f}, {depot_lon:.5f})",
         max_streets=max_streets,
-        demand_per_meter=demand_per_meter
+        demand_per_meter=demand_per_meter,
+        place_name=clean_place
     )
 
 
@@ -488,7 +489,8 @@ def convert_networkx_to_carp_config(
     exact_depot_lon: Optional[float] = None,
     depot_address: Optional[str] = None,
     max_streets: int = 35,
-    demand_per_meter: float = 1.5
+    demand_per_meter: float = 1.5,
+    place_name: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Converte un grafo NetworkX/OSMnx in una configurazione JSON per il modello CARP.
@@ -674,6 +676,7 @@ def convert_networkx_to_carp_config(
     ]
 
     config = {
+        "place_name": place_name or "Conegliano, Italy",
         "depot_node": 0,
         "depot_info": {
             "exact_lat": exact_depot_lat,
@@ -685,7 +688,8 @@ def convert_networkx_to_carp_config(
         "vehicles": vehicles_list,
         "settings": {
             "deadhead_upper_bound": 5,
-            "service_speed_factor": 1.8
+            "service_speed_factor": 1.8,
+            "demand_per_meter": demand_per_meter
         }
     }
     return config
@@ -693,22 +697,21 @@ def convert_networkx_to_carp_config(
 
 def main():
     parser = argparse.ArgumentParser(description="Importa una nuova mappa stradale per l'ottimizzazione RSU CARP")
-    parser.add_argument("--place", type=str, help="Nome del comune o quartiere (es: 'Treviso, Centro Storico, Italy')")
-    parser.add_argument("--depot", type=str, help="Punto Deposito di Partenza: coordinate GPS 'lat, lon' o indirizzo (es: '45.803, 11.912')")
+    parser.add_argument("--place", type=str, default="Conegliano, Italy", help="Nome del comune o quartiere (default: 'Conegliano, Italy')")
+    parser.add_argument("--depot", type=str, default="45.951391386254286, 12.312502178579223", help="Punto Deposito di Partenza: coordinate GPS 'lat, lon' o indirizzo")
     parser.add_argument("--lat", type=float, help="Latitudine centro / deposito GPS")
     parser.add_argument("--lon", type=float, help="Longitudine centro / deposito GPS")
     parser.add_argument("--dist", type=int, default=600, help="Raggio in metri da scaricare (default: 600m)")
+    parser.add_argument("--max-streets", type=int, default=0, help="Numero massimo di vie (0 = tutto il comune)")
     parser.add_argument("--out", type=str, default="data/config_aree_raccolta.json", help="File JSON di destinazione")
     args = parser.parse_args()
 
-    if args.place:
-        cfg = import_osm_by_place(args.place, depot_lat=args.lat, depot_lon=args.lon, depot_query=args.depot)
-    elif args.lat is not None and args.lon is not None:
-        cfg = import_osm_by_point(args.lat, args.lon, dist_meters=args.dist)
+    if args.lat is not None and args.lon is not None and not args.place:
+        cfg = import_osm_by_point(args.lat, args.lon, dist_meters=args.dist, max_streets=args.max_streets)
+    elif args.place:
+        cfg = import_osm_by_place(args.place, depot_lat=args.lat, depot_lon=args.lon, depot_query=args.depot, max_streets=args.max_streets)
     else:
         print("Errore: specifica '--place <nome>' oppure '--lat <lat> --lon <lon>'.")
-        print("Esempio 1: python import_map.py --place 'Asolo, Italy' --depot '45.803, 11.912'")
-        print("Esempio 2: python import_map.py --lat 45.667 --lon 12.245 --dist 500")
         return
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)

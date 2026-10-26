@@ -582,7 +582,8 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 lat = req.get("lat")
                 lon = req.get("lon")
                 dist = int(req.get("dist", 600))
-                max_streets = int(req.get("max_streets", 35))
+                max_streets = int(req.get("max_streets", 0))
+                demand_per_meter = float(req.get("demand_per_meter", 1.5))
 
                 depot_query = req.get("depot_query") or req.get("depot")
                 depot_lat = req.get("depot_lat")
@@ -591,9 +592,10 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if place:
                     d_lat = float(depot_lat) if depot_lat is not None and str(depot_lat).strip() != "" else None
                     d_lon = float(depot_lon) if depot_lon is not None and str(depot_lon).strip() != "" else None
-                    new_cfg = import_osm_by_place(place, depot_lat=d_lat, depot_lon=d_lon, depot_query=depot_query, max_streets=max_streets)
+                    new_cfg = import_osm_by_place(place, depot_lat=d_lat, depot_lon=d_lon, depot_query=depot_query, demand_per_meter=demand_per_meter, max_streets=max_streets)
                 elif lat is not None and lon is not None:
-                    new_cfg = import_osm_by_point(float(lat), float(lon), dist_meters=dist)
+                    new_cfg = import_osm_by_point(float(lat), float(lon), dist_meters=dist, demand_per_meter=demand_per_meter)
+                    new_cfg["place_name"] = f"Area GPS ({float(lat):.4f}, {float(lon):.4f})"
                 else:
                     raise ValueError("Specificare un toponimo o coordinate GPS.")
 
