@@ -888,7 +888,7 @@ function exportPlatformSettings() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  showToast('📥 Backup impostazioni scaricato con successo in formato JSON!');
+  showToast('📥 Configurazione scaricata con successo in formato JSON!');
 }
 
 function handleImportConfigFile(event) {
@@ -1004,10 +1004,10 @@ function handleImportConfigFile(event) {
       }
 
       saveToLocalStorage();
-      showToast('📤 Backup importato e tutte le impostazioni ripristinate con successo!');
+      showToast('📤 Configurazione caricata e tutte le impostazioni ripristinate con successo!');
       evaluateWizard();
     } catch (err) {
-      alert('Errore durante l\'importazione del file di backup: ' + err.message);
+      alert('Errore durante il caricamento della configurazione: ' + err.message);
     } finally {
       event.target.value = '';
     }

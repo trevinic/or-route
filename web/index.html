@@ -56,10 +56,10 @@
           </select>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON con tutte le impostazioni, costi e mappe della tua flotta">
-          📥 Esporta Backup (.json)
+          📥 Salva Configurazione
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importConfigFileInput').click()" title="Importa e ripristina un file JSON precedentemente salvato">
-          📤 Importa Backup
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importConfigFileInput').click()" title="Carica e ripristina un file JSON precedentemente salvato">
+          📤 Carica Configurazione
         </button>
         <input type="file" id="importConfigFileInput" accept=".json" style="display: none;" onchange="handleImportConfigFile(event)">
         <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)">
@@ -355,7 +355,7 @@
                   ⚡ Inietta Questa Flotta nel Modello & Avvia Simulazione ➔
                 </button>
                 <button class="btn btn-secondary" onclick="exportPlatformSettings()" style="padding: 12px 18px;">
-                  💾 Salva Questi Parametri nel Backup Locale (.json)
+                  💾 Salva Questa Configurazione (.json)
                 </button>
               </div>
             </div>
@@ -2029,12 +2029,12 @@
           <div class="citation-card" style="border-left-color: #ec4899; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="background: rgba(236, 72, 153, 0.2); color: #f472b6; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 5</span>
-              <span style="font-size: 12px; color: var(--text-muted);">Salvataggio Backup & Report ROI</span>
+              <span style="font-size: 12px; color: var(--text-muted);">Salvataggio Configurazione & Report ROI</span>
             </div>
-            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">💾 5. Esportazione Dati, Backup Locale & Calcolo ROI Flotta</h4>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">💾 5. Salvataggio / Caricamento Configurazione & Calcolo ROI Flotta</h4>
             <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
-              <li><b>Esporta Backup (.json)</b>: clicca in alto a destra su <i>"📥 Esporta Backup (.json)"</i> per scaricare sul tuo disco locale il file con tutti i nodi, i clienti, i veicoli e le tariffe configurate.</li>
-              <li><b>Importa Backup</b>: in qualsiasi momento puoi ricaricare il file salvato con <i>"📤 Importa Backup"</i> per riprendere la sessione di lavoro.</li>
+              <li><b>Salva Configurazione</b>: clicca in alto a destra su <i>"📥 Salva Configurazione"</i> per scaricare sul tuo disco locale il file JSON con tutti i nodi, i clienti, i veicoli e le tariffe configurate.</li>
+              <li><b>Carica Configurazione</b>: in qualsiasi momento puoi ricaricare il file salvato con <i>"📤 Carica Configurazione"</i> per riprendere la sessione di lavoro.</li>
               <li><b>Calcolatore Risparmio ROI</b>: apri la scheda <b>"💰 Calcolatore Risparmio ROI Flotta"</b> per stimare la riduzione annua del consumo carburante, il risparmio economico complessivo (€/anno) e le tonnellate di CO2 evitate certificate secondo gli standard ESG Scope 1.</li>
               <li><b>Salvataggio in PDF</b>: premi il pulsante <i>"🖨️ Stampa / Salva Guida in PDF"</i> per stampare o archiviare l'intero manuale operativo e la dispensa scientifica.</li>
             </ul>
