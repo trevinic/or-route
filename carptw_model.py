@@ -233,6 +233,7 @@ def solve_carptw(
             curr_time_min = end_service_min
             curr_lat, curr_lon = exit_lat, exit_lon
 
+            slack_val = round(max(0.0, float(st["due_min"]) - float(start_service_min)), 1)
             stops.append({
                 "type": "street",
                 "id": st["id"],
@@ -246,6 +247,8 @@ def solve_carptw(
                 "end_service": minutes_to_hhmm(end_service_min, base_hour),
                 "end_service_time": minutes_to_hhmm(end_service_min, base_hour),
                 "service_min": round(st["serv_min"], 1),
+                "slack_min": slack_val,
+                "is_critical": slack_val <= 15.0 or violation,
                 "violation": violation,
                 "length_km": st["length_km"],
                 "demand_kg": st["demand_kg"],

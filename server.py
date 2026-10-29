@@ -720,7 +720,17 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "capacity": v.get("capacity", 0),
                         "fixed_cost": v.get("fixed_cost", 0.0),
                         "total_collected": v.get("total_collected", 0.0),
-                        "movements": v.get("movements", [])
+                        "movements": v.get("movements", []),
+                        "shift_duration_min": v.get("shift_duration_min", 0.0),
+                        "shift_max_min": v.get("shift_max_min", 360.0),
+                        "slack_min": v.get("slack_min", 360.0),
+                        "cpm_status": v.get("cpm_status", "RIPOSO"),
+                        "volume_m3": v.get("volume_m3", 0.0),
+                        "volume_capacity_m3": v.get("volume_capacity_m3", 18.0),
+                        "volume_saturation_pct": v.get("volume_saturation_pct", 0.0),
+                        "binding_constraint": v.get("binding_constraint", "PESO (kg)"),
+                        "service_cost_total": v.get("service_cost_total", 0.0),
+                        "deadhead_cost_total": v.get("deadhead_cost_total", 0.0),
                     }
 
                 streets = cfg.get("streets", [])
@@ -729,6 +739,7 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "is_optimal": result.get("is_optimal", True),
                     "objective_value": result.get("objective_value", 0.0),
                     "vehicles": clean_vehicles,
+                    "ro_analytics": result.get("ro_analytics", {}),
                     "total_demand_kg": sum(float(s.get("demand_kg", 0.0)) for s in streets),
                     "map_url": f"/output/percorso_raccolta.html?t={int(time.time())}"
                 }

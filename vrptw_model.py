@@ -266,6 +266,7 @@ def solve_vrptw(
                 })
             else:
                 cust_match = next((c for c in customers if c["id"] == n_id), None)
+                slack_val = round(max(0.0, float(due_times[n_id]) - float(w_val)), 1)
                 stops_detail.append({
                     "id": n_id,
                     "name": cust_match.get("name", f"Cliente {n_id}") if cust_match else f"Cliente {n_id}",
@@ -276,6 +277,8 @@ def solve_vrptw(
                     "service_start_min": round(w_val, 1),
                     "service_start_time": time_formatted,
                     "service_duration_min": service_times[n_id],
+                    "slack_min": slack_val,
+                    "is_critical": slack_val <= 15.0,
                     "window": f"{minutes_to_time_str(ready_times[n_id])} - {minutes_to_time_str(due_times[n_id])}"
                 })
 

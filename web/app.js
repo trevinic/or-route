@@ -2002,10 +2002,13 @@ function renderVrptwTimeline(data) {
       const item = document.createElement('div');
       item.className = `timeline-item ${stop.is_depot ? 'depot' : ''}`;
       item.style.borderLeftColor = color;
+      const slackHtml = (!stop.is_depot && stop.slack_min !== undefined)
+        ? ` | <span style="color: ${stop.is_critical ? '#f87171' : '#34d399'}; font-weight: 600;">Margine CPM (Slack): +${stop.slack_min} min ${stop.is_critical ? '🔴 CRITICA' : '🟢'}</span>`
+        : '';
       item.innerHTML = `
         <div>
           <b>${stop.is_depot ? '🏠 ' + stop.name : '📍 ' + stop.name}</b>
-          ${!stop.is_depot ? `<div style="font-size: 11.5px; color: var(--text-muted);">Finestra ammessa: ${stop.window} (Scarico: ${stop.demand} kg)</div>` : ''}
+          ${!stop.is_depot ? `<div style="font-size: 11.5px; color: var(--text-muted);">Finestra ammessa: ${stop.window} (Scarico: ${stop.demand} kg)${slackHtml}</div>` : ''}
         </div>
         <div>
           <span class="time-badge">Arrivo/Inizio: ${stop.service_start_time}</span>
@@ -3367,6 +3370,9 @@ async function solveCarp() {
       sumCard.style.boxShadow = '0 0 18px rgba(52, 211, 153, 0.15)';
     }
 
+    // Renderizza il Pannello Analisi Avanzata Ricerca Operativa (Cap. 3, 4, 6, 7, 8 RO_displat)
+    renderCarpRoAnalytics(data);
+
     // Render report veicoli (Tabella Comparativa Flotta del Layout 2)
     renderCarpVehicleReport(data);
 
@@ -3402,13 +3408,128 @@ function toggleCarpVehicleMovesRow(rowId, btnEl) {
   }
 }
 
+function getCarpCurrentCompactedDensityKgM3() {
+  // Densità specifica nel cassone compattato in base alle frazioni selezionate (Knapsack Multidimensionale Cap. 4.1.1)
+  const selected = (State.carpFractions || []).filter(f => f.selected);
+  if (selected.length === 1) {
+    const id = selected[0].id;
+    if (id === 'plastica') return 135.0; // Multimateriale leggero: satura il volume molto prima del peso!
+    if (id === 'carta') return 210.0;    // Carta e cartone
+    if (id === 'secco') return 225.0;    // Secco residuo
+    if (id === 'umido') return 440.0;    // Organico pesante: satura sempre il peso prima del volume
+    if (id === 'vetro') return 480.0;    // Vetro pesante
+  }
+  return 265.0; // Media combinata
+}
+
+function renderCarpRoAnalytics(data) {
+  const panel = document.getElementById('carpRoAnalyticsPanel');
+  if (!panel) return;
+  const ro = data.ro_analytics;
+  if (!ro) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  const eq = ro.equity_minmax || {};
+  const cpm = ro.cpm_slack || {};
+  const bm = ro.bipartite_matching || {};
+  const sens = ro.sensitivity || {};
+  const densityKgM3 = getCarpCurrentCompactedDensityKgM3();
+  const isLightFraction = densityKgM3 < 200;
+
+  let matchedPairsHtml = '';
+  if (bm.matched_pairs && bm.matched_pairs.length > 0) {
+    matchedPairsHtml = bm.matched_pairs.slice(0, 4).map(p => `
+      <div style="font-size: 11px; padding: 3px 6px; background: rgba(2,6,23,0.55); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; display: flex; justify-content: space-between; margin-top: 3px;">
+        <span>🚛 <b style="color:#34d399;">${p.physical_vehicle}</b>: 1° Giro + 2° Giro (<span style="color:#38bdf8;">ex ${p.second_trip}</span>)</span>
+        <span style="color:var(--text-secondary);"><b>${p.total_daily_kg.toLocaleString()} kg</b> tot | ⏱️ ${p.combined_duration_min} min</span>
+      </div>
+    `).join('');
+  } else {
+    matchedPairsHtml = `<div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Tutti i giri saturano l'intero turno singolo (nessun accoppiamento multi-giro necessario).</div>`;
+  }
+
+  panel.innerHTML = `
+    <div style="background: rgba(9, 15, 29, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+        <h4 style="font-size: 14px; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>📐</span> Analisi Avanzata di Ricerca Operativa (Modelli &amp; Algoritmi da Dispensa Univ. La Sapienza)
+        </h4>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <span class="code-tag" style="color: #34d399; font-size: 10.5px;">2-Opt + DP Orientamento (Cap. 8.4)</span>
+          <span class="code-tag" style="color: #fbbf24; font-size: 10.5px;">Min-Max Equità (Cap. 4.1.5)</span>
+          <span class="code-tag" style="color: #c084fc; font-size: 10.5px;">Matching Bipartito (Cap. 7.8 &amp; 8.5)</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 12px;">
+        <!-- CARD 1: Lower Bound & Ricerca Locale 2-Opt (Cap. 4.2 & Cap. 8.4) -->
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 11px;">
+          <div style="font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+            ① Lower Bound &amp; Ricerca Locale 2-Opt (Cap. 8.2 &amp; 8.4)
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.55;">
+            <div>Lower Bound Teorico ($LB$): <b style="color: #e2e8f0;">${(ro.lower_bound_total || 0).toFixed(2)} €</b> <small style="color:var(--text-muted);">(Serv: ${(ro.lb_service_cost||0).toFixed(0)}€ + Flotta: ${(ro.lb_fixed_cost||0).toFixed(0)}€ + Parità: ${(ro.lb_deadhead_cost||0).toFixed(0)}€)</small></div>
+            <div>Costo Greedy Base &rarr; 2-Opt: <span style="text-decoration: line-through; color: #94a3b8;">${(ro.baseline_greedy_cost || 0).toFixed(2)} €</span> &rarr; <b style="color: #34d399;">${(ro.optimized_cost || 0).toFixed(2)} €</b></div>
+            <div>Risparmio Ricerca Locale: <b style="color: #34d399;">-${(ro.local_search_saved_eur || 0).toFixed(2)} € (-${ro.local_search_saved_pct || 0}%)</b></div>
+            <div>Gap rispetto a $LB$ teorico: <b style="color: #fbbf24;">${ro.optimality_gap_pct || 0}%</b></div>
+          </div>
+        </div>
+
+        <!-- CARD 2: Equità Min-Max & Knapsack Peso/Volume (Cap. 4.1.1 & 4.1.5) -->
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(52, 211, 153, 0.25); border-radius: 8px; padding: 11px;">
+          <div style="font-size: 12px; font-weight: 700; color: #34d399; margin-bottom: 6px;">
+            ② Equità Flotta Min-Max &amp; Peso/Volume (Cap. 4.1)
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.55;">
+            <div>Indice Equità tra Autisti: <b style="color: #34d399;">${eq.equity_index_pct || 0}%</b> <small style="color:var(--text-muted);">(scarto $\\sigma = ${eq.std_saturation_pct || 0}\\%$)</small></div>
+            <div>Range Saturazione Flotta: <b>${eq.min_saturation_pct || 0}%</b> (min) &ndash; <b>${eq.max_saturation_pct || 0}%</b> (max)</div>
+            <div>Densità Cassone Compattato: <b>~${densityKgM3.toFixed(0)} kg/m³</b></div>
+            <div>Vincolo Dominante: <b style="color: ${isLightFraction ? '#f59e0b' : '#38bdf8'};">${isLightFraction ? '📦 VOLUME (m³) — frazione leggera' : '⚖️ PESO (kg) — portata cassone'}</b></div>
+          </div>
+        </div>
+
+        <!-- CARD 3: Accoppiamento Bipartito Multi-Giro (Cap. 7.8 & Cap. 8.5, p. 197) -->
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(192, 132, 252, 0.3); border-radius: 8px; padding: 11px;">
+          <div style="font-size: 12px; font-weight: 700; color: #c084fc; margin-bottom: 6px;">
+            ③ Doppio Giro con Matching Bipartito (Cap. 8.5, p. 197)
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">
+            <div>Giri totali: <b>${bm.active_tours_count || 0}</b> &rarr; Camion fisici con scarico intermedio: <b style="color: #34d399; font-size: 13px;">${bm.physical_trucks_needed || 0} mezzi</b></div>
+            <div>Mezzi fisici risparmiati: <b style="color: #fbbf24;">-${bm.vehicles_saved || 0} compattatori</b> (<b>-${(bm.fixed_cost_saved_eur || 0).toFixed(0)} €/turno</b> | <b>~${(bm.annual_saved_eur || 0).toLocaleString()} €/anno</b>)</div>
+            ${matchedPairsHtml}
+          </div>
+        </div>
+
+        <!-- CARD 4: Prezzi Ombra, Sensibilità & CPM Slack Time (Cap. 3.5 & Cap. 6.4.1) -->
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(251, 191, 36, 0.25); border-radius: 8px; padding: 11px;">
+          <div style="font-size: 12px; font-weight: 700; color: #fbbf24; margin-bottom: 6px;">
+            ④ Prezzi Ombra &amp; Margine Orario CPM (Cap. 3.5 &amp; 6.4)
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.55;">
+            <div>Costo Marginale Raccolta: <b>${(sens.marginal_cost_per_ton_eur || 0).toFixed(2)} €/ton</b> | Incidenza Transiti: <b>${sens.deadhead_ratio_pct || 0}%</b></div>
+            <div>Prezzo Ombra Capacità ($u_Q^*$): <b style="color: #38bdf8;">${(sens.shadow_price_per_ton_capacity_eur || 0).toFixed(2)} € / ton portata</b></div>
+            <div>What-If Portata <b>+15%</b>: <b style="color: #34d399;">-${sens.plus_15pct_capacity_trucks_saved || 0} mezzi (-${(sens.plus_15pct_capacity_eur_saved || 0).toFixed(1)} €/turno)</b></div>
+            <div>Durata Media Giro (CPM): <b>${cpm.avg_duration_min || 0} min</b> | Slack min su 6h: <b style="color: ${(cpm.min_slack_min || 0) < 60 ? '#f87171' : '#34d399'};">+${cpm.min_slack_min || 0} min</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderCarpVehicleReport(data) {
   const container = document.getElementById('carpVehiclesReport');
   if (!container) return;
   container.innerHTML = '';
 
+  renderCarpRoAnalytics(data);
+
   const carpVehicleColors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
   const hideUnused = document.getElementById('chkHideUnusedCarpVehicles')?.checked || false;
+  const densityKgM3 = getCarpCurrentCompactedDensityKgM3();
 
   const streetNameMap = {};
   if (State.carpConfig && State.carpConfig.streets) {
@@ -3443,6 +3564,30 @@ function renderCarpVehicleReport(data) {
     const collected = parseFloat(vInfo.total_collected) || 0;
     const collectedQt = (collected / 100.0).toFixed(1);
     const satPct = capacity > 0 ? ((collected / capacity) * 100).toFixed(1) : '0.0';
+
+    // Calcolo Volume m3 e Vincolo Dominante (Knapsack Multidimensionale Cap. 4.1.1)
+    const volCapM3 = vInfo.volume_capacity_m3 || Math.round((capacity / 250.0) * 10) / 10;
+    const volUsedM3 = vInfo.used ? Math.round((collected / densityKgM3) * 10) / 10 : 0.0;
+    const volSatPct = volCapM3 > 0 ? Math.min(130, Math.round((volUsedM3 / volCapM3) * 1000) / 10) : 0.0;
+    const isVolBinding = volSatPct > parseFloat(satPct);
+
+    // Calcolo Durata & Slack Time CPM (Cap. 6.4.1)
+    const durMin = vInfo.shift_duration_min || 0;
+    const slackMin = vInfo.slack_min !== undefined ? vInfo.slack_min : (360 - durMin);
+    const durHours = Math.floor(durMin / 60);
+    const durRemMin = Math.round(durMin % 60);
+    const durFormatted = vInfo.used ? `${durHours}h ${String(durRemMin).padStart(2, '0')}m` : '—';
+    const cpmStatus = vInfo.cpm_status || 'MARGINE_AMPIO';
+    let cpmBadgeHtml = '<span style="color:var(--text-muted);">—</span>';
+    if (vInfo.used) {
+      if (cpmStatus === 'CRITICO') {
+        cpmBadgeHtml = `<span class="code-tag" style="color:#f87171; border-color:rgba(248,113,113,0.4); font-size:10px;" title="Saturazione o durata prossima al limite del giro">🔴 CRITICO (Slack +${Math.round(slackMin)}m)</span>`;
+      } else if (cpmStatus === 'ATTENZIONE') {
+        cpmBadgeHtml = `<span class="code-tag" style="color:#fbbf24; border-color:rgba(251,191,36,0.4); font-size:10px;">🟡 ATTENZIONE (Slack +${Math.round(slackMin)}m)</span>`;
+      } else {
+        cpmBadgeHtml = `<span class="code-tag" style="color:#34d399; border-color:rgba(52,211,153,0.4); font-size:10px;">🟢 AMPIO (Slack +${Math.round(slackMin)}m)</span>`;
+      }
+    }
 
     const serviceMoves = movements.filter(m => m.type === 'SERVIZIO');
     const transitMoves = movements.filter(m => m.type === 'TRANSITO');
@@ -3488,7 +3633,7 @@ function renderCarpVehicleReport(data) {
           <b>${collected.toLocaleString()} kg</b> <span style="color: #fbbf24; font-weight: 600;">(${collectedQt} qt)</span>
           <br><small style="color: var(--text-muted); font-size: 10.5px;">su ${capacity.toLocaleString()} kg max</small>
         </td>
-        <td style="min-width: 155px;">
+        <td style="min-width: 145px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <div style="flex: 1; background: #17243c; height: 8px; border-radius: 4px; overflow: hidden;">
               <div style="background: ${color}; height: 100%; width: ${Math.min(parseFloat(satPct), 100)}%;"></div>
@@ -3497,10 +3642,20 @@ function renderCarpVehicleReport(data) {
           </div>
         </td>
         <td>
-          <span style="color: #34d399; font-weight: 700;">✅ ${serviceMoves.length} vie</span>
+          ${vInfo.used ? `
+            <b>${volUsedM3.toFixed(1)} / ${volCapM3.toFixed(0)} m³</b> <span style="color:${volSatPct > 95 ? '#f87171' : '#38bdf8'};">(${volSatPct.toFixed(0)}%)</span>
+            <br><small style="color: ${isVolBinding ? '#f59e0b' : 'var(--text-muted)'}; font-size: 10px;">Vincolo: <b>${isVolBinding ? '📦 VOLUME' : '⚖️ PESO'}</b></small>
+          ` : '<span style="color:var(--text-muted);">—</span>'}
         </td>
         <td>
-          <span style="color: #fbbf24; font-weight: 600;">🔄 ${transitCount} transiti</span>
+          ${vInfo.used ? `
+            <b>⏱️ ${durFormatted}</b> <small style="color:var(--text-muted);">(${Math.round(durMin)}m)</small>
+            <br>${cpmBadgeHtml}
+          ` : '<span style="color:var(--text-muted);">—</span>'}
+        </td>
+        <td>
+          <span style="color: #34d399; font-weight: 700;">✅ ${serviceMoves.length} vie</span>
+          <br><span style="color: #fbbf24; font-size: 11px;">🔄 ${transitCount} transiti</span>
         </td>
         <td style="font-size: 11.5px; color: var(--text-secondary);">
           ${vInfo.used ? `${fixedCost.toFixed(0)} € + ${opCost.toFixed(1)} €` : `<span style="color:#34d399;">Risparmiato (-${fixedCost.toFixed(0)} €)</span>`}
@@ -3518,10 +3673,10 @@ function renderCarpVehicleReport(data) {
       </tr>
       ${vInfo.used ? `
       <tr id="${detailRowId}" style="display: none; background: rgba(2, 6, 23, 0.75);">
-        <td colspan="9" style="padding: 10px 14px;">
+        <td colspan="10" style="padding: 10px 14px;">
           <div style="font-size: 12px; font-weight: 700; color: ${color}; margin-bottom: 6px; display: flex; justify-content: space-between;">
             <span>🗺️ Foglio di Marcia Sequenziale — ${vName} (${serviceMoves.length} tratte servite, ${transitCount} transiti a vuoto)</span>
-            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: ${collected.toLocaleString()} kg (${collectedQt} qt)</span>
+            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: ${collected.toLocaleString()} kg (${collectedQt} qt) | Volume: ~${volUsedM3.toFixed(1)} m³ | Durata: ${durFormatted}</span>
           </div>
           <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(9, 15, 29, 0.9); padding: 4px;">
             ${movesHtml}
@@ -3539,9 +3694,10 @@ function renderCarpVehicleReport(data) {
           <th>Compattatore</th>
           <th>Stato</th>
           <th>Rifiuti Caricati</th>
-          <th>Saturazione Portata</th>
-          <th>Tratte Servite</th>
-          <th>Transiti a Vuoto</th>
+          <th>Saturazione Peso</th>
+          <th>Volume &amp; Vincolo (Cap. 4.1)</th>
+          <th>Durata &amp; Slack CPM (Cap. 6.4)</th>
+          <th>Tratte &amp; Transiti</th>
           <th>Costo Fisso + Op.</th>
           <th>Totale Mezzo</th>
           <th style="text-align: center;">Foglio di Marcia</th>
@@ -6353,6 +6509,9 @@ function renderCarptwReport(data) {
         const violBadge = st.violation
           ? `<span style="background: #ef4444; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 6px;">RITARDO</span>`
           : `<span style="background: #10b981; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-left: 6px;">PUNTUALE</span>`;
+        const slackInfo = (st.slack_min !== undefined)
+          ? ` | <span style="color: ${st.is_critical ? '#f87171' : '#34d399'}; font-weight: 600;">Slack CPM: +${st.slack_min} min ${st.is_critical ? '🔴' : ''}</span>`
+          : '';
         
         timelineHtml += `
           <div style="font-size: 11.5px; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
@@ -6360,7 +6519,7 @@ function renderCarptwReport(data) {
               <b style="color: #fbbf24;">🛣️ ${st.name}</b> ${violBadge}
               <div style="color: var(--text-muted); font-size: 11px;">
                 Finestra richiesta: ${st.window} | Durata servizio: ${st.service_min} min
-                ${st.wait_min > 0 ? ` | <span style="color: #38bdf8;">Attesa: ${st.wait_min.toFixed(0)} min</span>` : ''}
+                ${st.wait_min > 0 ? ` | <span style="color: #38bdf8;">Attesa: ${st.wait_min.toFixed(0)} min</span>` : ''}${slackInfo}
               </div>
             </div>
             <div style="text-align: right; color: var(--text-secondary);">
