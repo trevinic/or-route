@@ -3455,7 +3455,7 @@ function renderCarpRoAnalytics(data) {
     <div style="background: rgba(9, 15, 29, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 14px;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
         <h4 style="font-size: 14px; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 8px;">
-          <span>📐</span> Analisi Avanzata di Ricerca Operativa (Modelli &amp; Algoritmi da Dispensa Univ. La Sapienza)
+          <span>📐</span> Analisi Avanzata di Ricerca Operativa
         </h4>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <span class="code-tag" style="color: #34d399; font-size: 10.5px;">2-Opt + DP Orientamento (Cap. 8.4)</span>
