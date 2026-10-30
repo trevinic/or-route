@@ -78,10 +78,10 @@ L'architettura software è modulare, disaccoppiata e completamente containerizza
 
 ---
 
-## 3. GLI 8 MODELLI MATEMATICI DI RICERCA OPERATIVA IMPLEMENTATI
+## 3. I 10 MODELLI MATEMATICI DI RICERCA OPERATIVA IMPLEMENTATI
 
 ### 3.1 CARP (Capacitated Arc Routing Problem - Servizi Stradali e RSU)
-* **File sorgente:** [`carp_waste_collection.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carp_waste_collection.py)
+* **File sorgente:** [`carp_waste_collection.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carp_waste_collection.py) e [`carp_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carp_model.py)
 * **Problema:** Il servizio (raccolta rifiuti, spazzamento, lavaggio strade) si svolge lungo gli **archi stradali** e non su singoli nodi puntiformi.
 * **Algoritmo:** Modello Single-Commodity Flow con bilanciamento ai nodi combinato con euristica costruttiva Augmented Path-Scanning e partizionamento a K-Means per grandi reti (>40 vie).
 
@@ -96,7 +96,7 @@ L'architettura software è modulare, disaccoppiata e completamente containerizza
 * **Formulazione:** Variabili temporali continue $t_{ik}$ con vincoli di Big-M per la propagazione dell'orario di arrivo, penalità di attesa e finestre chiuse $[e_i, l_i]$.
 
 ### 3.4 WCVRPTW-IF / EV-VRP (Flotte Elettriche & Tappe Intermedie)
-* **File sorgente:** [`server.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/server.py) (modulo `/api/solve_intermediate`)
+* **File sorgente:** [`ev_vrp_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/ev_vrp_model.py)
 * **Problema:** Mezzi compattatori che durante il turno devono scaricare presso impianti intermedi TMB/discariche prima di ripartire, oppure veicoli elettrici che richiedono ricariche veloci DC a colonnine intermedie.
 * **Formulazione:** Resettaggio dinamico del carico $q(t) = 0$ / stato di carica batteria $SoC(t) = 100\%$ all'uscita dalla tappa intermedia.
 
@@ -117,6 +117,16 @@ L'architettura software è modulare, disaccoppiata e completamente containerizza
 * **File sorgente:** [`carptw_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carptw_model.py)
 * **Problema:** Spazzamento meccanizzato, lavaggio strade e raccolta rifiuti lungo vie soggette a finestre orarie tassative (es. varchi ZTL prima delle 07:30, strade scolastiche prima delle 08:00, pulizia post-mercato rionale).
 * **Formulazione:** Sincronizzazione cronologica dei passaggi lungo gli archi con calcolo esatto dei tempi di viaggio a velocità urbana, tempi di servizio, minimizzazione delle attese al cancello ed eliminazione al 100% delle violazioni temporali (Mourão, Tagmouti et al., 2011).
+
+### 3.9 CARPIF (Capacitated Arc Routing Problem with Intermediate Facilities)
+* **File sorgente:** [`carpif_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/carpif_model.py)
+* **Problema:** Raccolta rifiuti su territori comunali o comprensoriali estesi dotati di stazioni di trasferimento, impianti TMB o discariche intermedie.
+* **Formulazione:** Tracciamento del carico continuo lungo gli archi e reset controllato della capacità $Q_k$ al transito presso ciascun nodo $f \in IF$. Consente ai compattatori di svolgere corse multiple (*multi-trip intra-shift*) nello stesso turno di lavoro, dimezzando il fabbisogno di compattatori fisici attivati e azzerando i costi e i chilometri a vuoto di rientro al deposito centrale lontano (Ghirardi, Mansini, Speranza, 2013).
+
+### 3.10 DCARP (Dynamic Capacitated Arc Routing Problem & Gestione Eventi in Tempo Reale)
+* **File sorgente:** [`dcarp_model.py`](file:///c:/Users/User/Downloads/Ricerca%20Operativa/rsu_carp_optimization/dcarp_model.py)
+* **Problema:** Gestione operativa in tempo reale di imprevisti critici mentre la flotta è già in transito: nuove richieste urgenti estemporanee (es. sgombero ghiaccio, rifiuti ingombranti), interruzioni stradali improvvise (cantieri, fughe di gas, incidenti) e avarie meccaniche di compattatori.
+* **Formulazione:** Paradigma consolidato dei **Compiti Virtuali (Virtual Tasks)**. All'evento di trigger: congelamento dello stato delle tratte completate, proiezione della posizione istantanea e carico residuo dei compattatori in origini virtuali mobili, e re-ottimizzazione rapida (< 1 secondo) con minimizzazione del disturbo operativo (*Disruption Management*) rispetto al piano originale (Vidal, Cordeau et al., HGS-TDCARP; HySonLab ArcRoute).
 
 ---
 

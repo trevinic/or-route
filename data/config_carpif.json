@@ -1,0 +1,174 @@
+{
+  "name": "Igiene Urbana Conegliano-Vittorio con Scarichi Intermedi (CARPIF)",
+  "depot": {
+    "id": 0,
+    "name": "Deposito Centrale Cantiere Servizi",
+    "lat": 45.885,
+    "lon": 12.301,
+    "address": "Via dell'Industria 12, Area Artigianale"
+  },
+  "intermediate_facilities": [
+    {
+      "id": 101,
+      "name": "Impianto TMB / Trasbordo Rifiuti Nord",
+      "lat": 45.908,
+      "lon": 12.315,
+      "dump_time_min": 20,
+      "dump_cost_eur": 18.0,
+      "type": "TMB_RECYCLING",
+      "color": "#10b981",
+      "description": "Impianto di selezione e biostabilizzazione Nord"
+    },
+    {
+      "id": 102,
+      "name": "Piattaforma Ecologica & Discarica Sud",
+      "lat": 45.862,
+      "lon": 12.285,
+      "dump_time_min": 25,
+      "dump_cost_eur": 22.0,
+      "type": "LANDFILL_TRANSFER",
+      "color": "#06b6d4",
+      "description": "Centro comprensoriale per inerti e RSU Sud"
+    }
+  ],
+  "vehicles": [
+    {
+      "name": "Compattatore_IF_1",
+      "capacity_kg": 4000,
+      "fixed_cost": 130.0,
+      "cost_per_km": 1.35,
+      "max_shift_hours": 7.0,
+      "description": "Compattatore 2 assi per centro urbano e assi primari"
+    },
+    {
+      "name": "Compattatore_IF_2",
+      "capacity_kg": 4000,
+      "fixed_cost": 130.0,
+      "cost_per_km": 1.35,
+      "max_shift_hours": 7.0,
+      "description": "Compattatore 2 assi satellite per quadrante periferico"
+    }
+  ],
+  "streets": [
+    {
+      "id": 1,
+      "name": "Via Roma (Centro Storico)",
+      "u": 1,
+      "v": 2,
+      "lat1": 45.889,
+      "lon1": 12.298,
+      "lat2": 45.894,
+      "lon2": 12.305,
+      "length_km": 1.8,
+      "demand_kg": 1600,
+      "transit_cost": 2.5,
+      "service_cost": 4.5,
+      "description": "Zona residenziale compatta ad alta densità"
+    },
+    {
+      "id": 2,
+      "name": "Corso Mazzini (Asse Commerciale)",
+      "u": 2,
+      "v": 3,
+      "lat1": 45.894,
+      "lon1": 12.305,
+      "lat2": 45.899,
+      "lon2": 12.312,
+      "length_km": 2.2,
+      "demand_kg": 2100,
+      "transit_cost": 3.0,
+      "service_cost": 5.2,
+      "description": "Negozi, bar e grandi utenze commerciali"
+    },
+    {
+      "id": 3,
+      "name": "Viale Carducci (Quartiere Ospedaliero)",
+      "u": 3,
+      "v": 4,
+      "lat1": 45.899,
+      "lon1": 12.312,
+      "lat2": 45.905,
+      "lon2": 12.308,
+      "length_km": 1.9,
+      "demand_kg": 1700,
+      "transit_cost": 2.7,
+      "service_cost": 4.8,
+      "description": "Area ospedale e servizi socio-sanitari"
+    },
+    {
+      "id": 4,
+      "name": "Via Garibaldi (Borgo Vecchio)",
+      "u": 4,
+      "v": 1,
+      "lat1": 45.905,
+      "lon1": 12.308,
+      "lat2": 45.889,
+      "lon2": 12.298,
+      "length_km": 2.4,
+      "demand_kg": 1500,
+      "transit_cost": 3.2,
+      "service_cost": 5.5,
+      "description": "Vie storiche e vicoli lastricati"
+    },
+    {
+      "id": 5,
+      "name": "Via Dante Alighieri (Quartiere Est)",
+      "u": 2,
+      "v": 5,
+      "lat1": 45.894,
+      "lon1": 12.305,
+      "lat2": 45.888,
+      "lon2": 12.32,
+      "length_km": 2.6,
+      "demand_kg": 2200,
+      "transit_cost": 3.5,
+      "service_cost": 5.8,
+      "description": "Condomini plurifamiliari e plessi scolastici"
+    },
+    {
+      "id": 6,
+      "name": "Via Cavour (Raccordo Circonvallazione)",
+      "u": 5,
+      "v": 6,
+      "lat1": 45.888,
+      "lon1": 12.32,
+      "lat2": 45.875,
+      "lon2": 12.31,
+      "length_km": 2.5,
+      "demand_kg": 1900,
+      "transit_cost": 3.1,
+      "service_cost": 5.0,
+      "description": "Arteria di scorrimento veloce con attività artigianali"
+    },
+    {
+      "id": 7,
+      "name": "Viale Europa (Distretto Sud)",
+      "u": 6,
+      "v": 7,
+      "lat1": 45.875,
+      "lon1": 12.31,
+      "lat2": 45.867,
+      "lon2": 12.292,
+      "length_km": 2.8,
+      "demand_kg": 2300,
+      "transit_cost": 3.6,
+      "service_cost": 6.0,
+      "description": "Supermercati e zona artigianale sud"
+    },
+    {
+      "id": 8,
+      "name": "Via Matteotti (Quartiere Residenziale Sud)",
+      "u": 7,
+      "v": 1,
+      "lat1": 45.867,
+      "lon1": 12.292,
+      "lat2": 45.889,
+      "lon2": 12.298,
+      "length_km": 2.7,
+      "demand_kg": 1800,
+      "transit_cost": 3.4,
+      "service_cost": 5.4,
+      "description": "Villette e condomini a bassa densità"
+    }
+  ]
+}

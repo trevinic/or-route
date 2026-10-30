@@ -53,6 +53,8 @@
             <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
             <option value="tab-pcarp">📅 7. PCARP (Raccolta Settimanale Differenziata)</option>
             <option value="tab-carptw">⏱️🛣️ 8. CARPTW (Finestre Orarie su Strade & ZTL)</option>
+            <option value="tab-carpif">♻️🛣️ 9. CARPIF (Scarichi Intermedi TMB/Discarica)</option>
+            <option value="tab-dcarp">⚡🛣️ 10. DCARP (Dynamic CARP: Compiti Virtuali)</option>
           </select>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON con tutte le impostazioni, costi e mappe della tua flotta">
@@ -1905,6 +1907,315 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 9: MODELLO CARPIF (CARP WITH INTERMEDIATE FACILITIES)
+         --------------------------------------------------------------------- -->
+    <section id="tab-carpif" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">♻️🛣️</span>
+            <span>Modello CARPIF &mdash; Arc Routing con Impianti Intermedi TMB/Discariche</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="addCarpifFacilityRow()">+ Aggiungi Impianto IF</button>
+            <button class="btn btn-secondary btn-sm" onclick="addCarpifStreetRow()">+ Aggiungi Via</button>
+            <button class="btn btn-secondary btn-sm" onclick="addCarpifVehicleRow()">+ Aggiungi Veicolo</button>
+            <button class="btn btn-secondary btn-sm" onclick="resetCarpif()">🔄 Ripristina Default</button>
+            <button id="btnSolveCarpif" class="btn btn-primary btn-sm" onclick="solveCarpif()">⚡ Risolvi CARPIF (Scarichi Intermedi)</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> Raccolta rifiuti e servizi stradali (spazzamento, salatura invernale) su <b>territori comunali o comprensoriali estesi</b> con presenza di <b>stazioni di trasferimento TMB, discariche o silos intermedi</b>.<br>
+            <b>Principio Funzionale & Vincoli:</b> Nel CARP classico il veicolo saturo deve tornare al deposito centrale. Con il <b>CARPIF</b>, al raggiungimento di un nodo <i>Intermediate Facility (IF)</i>, la capacità a bordo subisce un <b>reset istantaneo (scarico eseguito)</b>. Il mezzo può svolgere <b>multipli viaggi all'interno dello stesso turno</b>, dimezzando la flotta fisica necessaria e azzerando costosi transiti di rientro.
+          </div>
+        </div>
+
+        <!-- Mappa Geografica Interattiva Leaflet CARPIF -->
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13.5px; font-weight: 700; color: #38bdf8;">🗺️ Stradario Interattivo CARPIF (OpenStreetMap & Impianti Intermedi)</span>
+            <span style="font-size: 12px; color: var(--text-muted);">Quadrante Conegliano-Vittorio & Impianti TMB</span>
+          </div>
+          <div id="carpifMap" style="height: 480px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #0f172a;"></div>
+        </div>
+
+        <!-- Sezione Risultati Ottimi & KPI Comparativi (Nascosta inizialmente) -->
+        <div id="carpifResultsCard" class="card" style="display: none; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(16, 185, 129, 0.4); margin-bottom: 24px;">
+          <div class="card-header" style="border-bottom: 1px solid rgba(16, 185, 129, 0.3);">
+            <div class="card-title">
+              <span class="icon">🏆</span>
+              <span style="color: #34d399;">Risultati CARPIF & Confronto Risparmio Flotta</span>
+            </div>
+            <span class="badge-free" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4);">
+              Efficienza Multi-Viaggio Dimostrata
+            </span>
+          </div>
+
+          <!-- KPI Comparativi: CARPIF vs CARP Tradizionale Senza IF -->
+          <div id="carpifKpiGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; margin-bottom: 20px;">
+            <div class="kpi-card" style="border-left: 3px solid #38bdf8;">
+              <div class="kpi-label">Compattatori CARPIF</div>
+              <div class="kpi-val" id="carpifKpiVehUsed" style="color: #38bdf8;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Con scarichi intermedi</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #ef4444;">
+              <div class="kpi-label">Compattatori Senza IF</div>
+              <div class="kpi-val" id="carpifKpiVehWithout" style="color: #ef4444;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">CARP classico singolo viaggio</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #10b981;">
+              <div class="kpi-label">Mezzi Risparmiati</div>
+              <div class="kpi-val" id="carpifKpiVehSaved" style="color: #10b981;">--</div>
+              <small id="carpifKpiVehSavedPct" style="color: var(--text-muted); font-size: 11px;">--% di flotta in meno</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #f59e0b;">
+              <div class="kpi-label">Costi Fissi Risparmiati</div>
+              <div class="kpi-val" id="carpifKpiCapitalSaved" style="color: #f59e0b;">-- €</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Capitale & ammortamento</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #8b5cf6;">
+              <div class="kpi-label">Scarichi Intermedi Totali</div>
+              <div class="kpi-val" id="carpifKpiDumpsCount" style="color: #8b5cf6;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Soste agli impianti IF</small>
+            </div>
+          </div>
+
+          <!-- Tracciati Dettagliati per Veicolo e Singoli Viaggi -->
+          <div id="carpifRoutesContainer"></div>
+        </div>
+
+        <!-- 1. Tabella Impianti Intermedi (IF) -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            1. Strutture Intermedie (Intermediate Facilities - IF: TMB, Discariche, Silos)
+          </h4>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">ID Nodo</th>
+                  <th>Nome Struttura Intermedia</th>
+                  <th style="width: 140px;">Tipologia</th>
+                  <th style="width: 130px;">Tempo Scarico (min)</th>
+                  <th style="width: 120px;">Costo Sosta (€)</th>
+                  <th style="width: 110px;">Latitudine</th>
+                  <th style="width: 110px;">Longitudine</th>
+                  <th style="width: 70px;">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="carpifFacilitiesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Tabella Tratte Stradali CARPIF -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            2. Tratte Stradali da Raccogliere (Archi del Grafo)
+          </h4>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">ID</th>
+                  <th>Nome Via / Quartiere</th>
+                  <th style="width: 80px;">Da (u)</th>
+                  <th style="width: 80px;">A (v)</th>
+                  <th style="width: 120px;">Lunghezza (km)</th>
+                  <th style="width: 130px;">Domanda Rifiuti (kg)</th>
+                  <th style="width: 110px;">Costo Transito</th>
+                  <th style="width: 110px;">Costo Servizio</th>
+                  <th style="width: 70px;">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="carpifStreetsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Tabella Flotta Compattatori CARPIF -->
+        <div>
+          <h4 style="font-size: 14px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            3. Flotta Compattatori Abilitata al Multi-Viaggio con Scarichi Intermedi
+          </h4>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome Mezzo</th>
+                  <th style="width: 150px;">Capacità Cassone (kg)</th>
+                  <th style="width: 130px;">Costo Fisso (€)</th>
+                  <th style="width: 130px;">Costo per km (€)</th>
+                  <th style="width: 140px;">Max Ore Turno</th>
+                  <th style="width: 70px;">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="carpifVehiclesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------------
+         SEZIONE 10: MODELLO DCARP (DYNAMIC CAPACITATED ARC ROUTING)
+         --------------------------------------------------------------------- -->
+    <section id="tab-dcarp" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">⚡🛣️</span>
+            <span>Modello DCARP &mdash; Dynamic Arc Routing con Compiti Virtuali in Tempo Reale</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="resetDcarp()">🔄 Ripristina Scenario Dinamico</button>
+            <button id="btnSolveDcarp" class="btn btn-primary btn-sm" onclick="solveDcarp()">🚨 Simula Evento & Ricalcola (Re-Optimization)</button>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <b>A chi serve:</b> <b>Centrali operative e sale di controllo</b> per la gestione in tempo reale degli imprevisti mentre i mezzi sono già sul territorio.<br>
+            <b>Paradigma dei Compiti Virtuali (Virtual Tasks):</b> Quando si verifica un evento (nuova emergenza, strada bloccata o guasto di un mezzo), l'algoritmo <b>congela lo stato corrente</b>, trasforma le posizioni istantanee dei compattatori in <b>origini virtuali con carico residuo limitato</b> e ricalcola all'istante i percorsi ottimali minimizzando il disturbo operativo (<i>Disruption Management</i>).
+          </div>
+        </div>
+
+        <!-- Selettore Evento di Trigger Dinamico -->
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 13.5px; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+            ⚠️ Seleziona l'Evento Operativo Improvviso da Simulare in Tempo Reale:
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;" id="dcarpEventSelector">
+            <div class="wizard-option-card selected" style="cursor: pointer; padding: 14px; border: 2px solid #38bdf8; border-radius: 8px; background: rgba(56, 189, 248, 0.1);" onclick="selectDcarpEvent('URGENT_DEMAND', this)">
+              <div style="font-weight: 700; color: #38bdf8; font-size: 14px; margin-bottom: 4px;">🚨 1. Nuova Tratta Urgente</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Segnalazione urgente: Via dell'Ospedale (1200 kg) richiede intervento immediato.</div>
+            </div>
+            <div class="wizard-option-card" style="cursor: pointer; padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(30, 41, 59, 0.5);" onclick="selectDcarpEvent('ROAD_BLOCK', this)">
+              <div style="font-weight: 700; color: #ef4444; font-size: 14px; margin-bottom: 4px;">⛔ 2. Blocco Stradale Improvviso</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Incidente o cantiere su Via Garibaldi: tratta interrotta con necessità di bypass.</div>
+            </div>
+            <div class="wizard-option-card" style="cursor: pointer; padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(30, 41, 59, 0.5);" onclick="selectDcarpEvent('VEHICLE_BREAKDOWN', this)">
+              <div style="font-weight: 700; color: #f97316; font-size: 14px; margin-bottom: 4px;">💥 3. Guasto Meccanico Veicolo</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Compattatore 1 in panne all'Incrocio 2: riassegnazione immediata delle tratte orfane.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mappa Geografica Interattiva Leaflet DCARP -->
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13.5px; font-weight: 700; color: #38bdf8;">🗺️ Mappa Dinamica DCARP (Posizioni Live Mezzi, Tratte Congelate & Ricalcolate)</span>
+            <span style="font-size: 12px; color: var(--text-muted);">Sincronizzazione Real-Time Centrale Operativa</span>
+          </div>
+          <div id="dcarpMap" style="height: 480px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #0f172a;"></div>
+        </div>
+
+        <!-- Terminale Log Eventi Real-Time -->
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13.5px; font-weight: 700; color: #10b981;">💻 Cronologia Eventi & Log Re-Routing in Tempo Reale</span>
+            <span style="font-size: 12px; color: var(--text-muted);">Timestamp: Minuto 75 di turno operativo</span>
+          </div>
+          <div id="dcarpTerminalLog" style="background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #cbd5e1; max-height: 180px; overflow-y: auto; line-height: 1.6;">
+            <span style="color: #64748b;">[In attesa di trigger evento dinamico...]</span>
+          </div>
+        </div>
+
+        <!-- Sezione Risultati Ottimi DCARP (Nascosta inizialmente) -->
+        <div id="dcarpResultsCard" class="card" style="display: none; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.4); margin-bottom: 24px;">
+          <div class="card-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.3);">
+            <div class="card-title">
+              <span class="icon">🛰️</span>
+              <span style="color: #38bdf8;">Piano Ricalcolato & Metriche di Disruption DCARP</span>
+            </div>
+            <span class="badge-free" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);">
+              Re-Optimization in &lt; 1 sec
+            </span>
+          </div>
+
+          <!-- KPI Disruption -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; margin-bottom: 20px;">
+            <div class="kpi-card" style="border-left: 3px solid #38bdf8;">
+              <div class="kpi-label">Stato Disruption</div>
+              <div class="kpi-val" id="dcarpKpiSeverity" style="color: #38bdf8;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Gravità dell'imprevisto</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #10b981;">
+              <div class="kpi-label">Flotta Operativa</div>
+              <div class="kpi-val" id="dcarpKpiFleetPct" style="color: #10b981;">--%</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Mezzi attivi residui</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #f59e0b;">
+              <div class="kpi-label">Tratte Riassegnate</div>
+              <div class="kpi-val" id="dcarpKpiReassigned" style="color: #f59e0b;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Ricalcolo carichi orfani</small>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #8b5cf6;">
+              <div class="kpi-label">Tratte Completate Pre-Evento</div>
+              <div class="kpi-val" id="dcarpKpiServedPre" style="color: #8b5cf6;">--</div>
+              <small style="color: var(--text-muted); font-size: 11px;">Stato congelato sicuro</small>
+            </div>
+          </div>
+
+          <!-- Dettaglio Percorsi Ricalcolati per Veicolo -->
+          <div id="dcarpRoutesContainer"></div>
+        </div>
+
+        <!-- 1. Tabella Flotta e Compiti Virtuali -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            1. Stato Attuale della Flotta (Compiti Virtuali al Minuto 75)
+          </h4>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome Mezzo</th>
+                  <th style="width: 140px;">Stato Operativo</th>
+                  <th style="width: 150px;">Posizione Corrente (Nodo)</th>
+                  <th style="width: 150px;">Carico a Bordo (kg)</th>
+                  <th style="width: 150px;">Capacità Totale (kg)</th>
+                  <th style="width: 150px;">Capacità Residua (kg)</th>
+                </tr>
+              </thead>
+              <tbody id="dcarpFleetBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Tabella Tratte Stradali e Stato Dinamico -->
+        <div>
+          <h4 style="font-size: 14px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            2. Tratte Stradali (Completate vs Da Servire vs Nuove Emergenze)
+          </h4>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">ID</th>
+                  <th>Nome Tratta</th>
+                  <th style="width: 80px;">Da (u)</th>
+                  <th style="width: 80px;">A (v)</th>
+                  <th style="width: 120px;">Lunghezza (km)</th>
+                  <th style="width: 130px;">Domanda (kg)</th>
+                  <th style="width: 150px;">Stato Dinamico</th>
+                  <th style="width: 170px;">Assegnazione Mezzo</th>
+                </tr>
+              </thead>
+              <tbody id="dcarpStreetsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </section>
 

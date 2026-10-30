@@ -83,7 +83,7 @@ function switchMainTab(tabId, btnElement) {
   }
 
   // Mostra/nascondi sezioni
-  const sections = ['tab-selector', 'tab-cvrp', 'tab-vrptw', 'tab-carp', 'tab-intermediate', 'tab-vrppd', 'tab-mdvrp', 'tab-pcarp', 'tab-carptw', 'tab-roi', 'tab-faq'];
+  const sections = ['tab-selector', 'tab-cvrp', 'tab-vrptw', 'tab-carp', 'tab-intermediate', 'tab-vrppd', 'tab-mdvrp', 'tab-pcarp', 'tab-carptw', 'tab-carpif', 'tab-dcarp', 'tab-roi', 'tab-faq'];
   sections.forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = (s === tabId) ? 'block' : 'none';
@@ -132,6 +132,12 @@ function switchMainTab(tabId, btnElement) {
   } else if (tabId === 'tab-carptw') {
     if (!State.carptwConfig) loadCarptwConfig();
     else drawCarptwCanvas('carptwCanvas', State.carptwConfig, State.carptwResult || null);
+  } else if (tabId === 'tab-carpif') {
+    if (!State.carpifConfig) loadCarpifConfig();
+    else if (State.carpifResult) renderCarpifLeafletMap(State.carpifConfig, State.carpifResult);
+  } else if (tabId === 'tab-dcarp') {
+    if (!State.dcarpConfig) loadDcarpConfig();
+    else if (State.dcarpResult) renderDcarpLeafletMap(State.dcarpConfig, State.dcarpResult);
   }
 
   // Invalida dimensione mappa Leaflet dopo la visualizzazione per garantire il rendering fluido delle mattonelle Stradario
@@ -143,7 +149,9 @@ function switchMainTab(tabId, btnElement) {
       'tab-vrppd': 'vrppdMap',
       'tab-mdvrp': 'mdvrpMap',
       'tab-pcarp': 'pcarpMap',
-      'tab-carptw': 'carptwMap'
+      'tab-carptw': 'carptwMap',
+      'tab-carpif': 'carpifMap',
+      'tab-dcarp': 'dcarpMap'
     };
     const targetMapId = mapIdMap[tabId];
     if (targetMapId && State.leafletMaps && State.leafletMaps[targetMapId]) {
@@ -871,7 +879,9 @@ function exportPlatformSettings() {
     vrppd_config: State.vrppdConfig,
     mdvrp_config: State.mdvrpConfig,
     pcarp_config: State.pcarpConfig,
-    carptw_config: State.carptwConfig
+    carptw_config: State.carptwConfig,
+    carpif_config: State.carpifConfig,
+    dcarp_config: State.dcarpConfig
   };
 
   const jsonStr = JSON.stringify(exportData, null, 2);
@@ -1001,6 +1011,28 @@ function handleImportConfigFile(event) {
           body: JSON.stringify(State.carptwConfig)
         });
         renderCarptwTables();
+      }
+
+      // Ripristino CARPIF
+      if (data.carpif_config) {
+        State.carpifConfig = data.carpif_config;
+        await fetch('/api/carpif/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(State.carpifConfig)
+        });
+        renderCarpifTables();
+      }
+
+      // Ripristino DCARP
+      if (data.dcarp_config) {
+        State.dcarpConfig = data.dcarp_config;
+        await fetch('/api/dcarp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(State.dcarpConfig)
+        });
+        renderDcarpTables();
       }
 
       saveToLocalStorage();
@@ -6694,6 +6726,702 @@ function closeFleetCapacityModal() {
 }
 
 // ==========================================
+
+// ==========================================
+// 9. CARPIF: ARC ROUTING CON IMPIANTI INTERMEDI (IF)
+// ==========================================
+async function loadCarpifConfig() {
+  try {
+    const res = await fetch('/api/carpif/config');
+    if (!res.ok) throw new Error('Errore HTTP ' + res.status);
+    State.carpifConfig = await res.json();
+    renderCarpifTables();
+    renderCarpifLeafletMap(State.carpifConfig, null);
+  } catch (err) {
+    console.error('Errore loadCarpifConfig:', err);
+    showToast('Errore caricamento scenario CARPIF', 'error');
+  }
+}
+
+function renderCarpifTables() {
+  if (!State.carpifConfig) return;
+
+  // 1. Facilities
+  const facBody = document.getElementById('carpifFacilitiesBody');
+  if (facBody) {
+    facBody.innerHTML = '';
+    (State.carpifConfig.intermediate_facilities || []).forEach((fac, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:700; color:#38bdf8;">${fac.id}</td>
+        <td><input type="text" class="cell-inp" style="width:100%; font-weight:600;" value="${fac.name || ''}" onchange="updateCarpifFacility(${idx}, 'name', this.value)"></td>
+        <td>
+          <select class="cell-inp" onchange="updateCarpifFacility(${idx}, 'type', this.value)">
+            <option value="TMB_RECYCLING" ${fac.type === 'TMB_RECYCLING' ? 'selected' : ''}>TMB / Riciclo</option>
+            <option value="LANDFILL_TRANSFER" ${fac.type === 'LANDFILL_TRANSFER' ? 'selected' : ''}>Discarica / Inerti</option>
+            <option value="SALT_SILO" ${fac.type === 'SALT_SILO' ? 'selected' : ''}>Silo Rifornimento Sale</option>
+          </select>
+        </td>
+        <td><input type="number" class="cell-inp" style="width:75px;" value="${fac.dump_time_min || 20}" onchange="updateCarpifFacility(${idx}, 'dump_time_min', parseFloat(this.value)||20)"></td>
+        <td><input type="number" class="cell-inp" style="width:75px;" value="${fac.dump_cost_eur || 15}" onchange="updateCarpifFacility(${idx}, 'dump_cost_eur', parseFloat(this.value)||15)"></td>
+        <td><input type="number" step="0.0001" class="cell-inp" style="width:85px;" value="${fac.lat || 45.90}" onchange="updateCarpifFacility(${idx}, 'lat', parseFloat(this.value))"></td>
+        <td><input type="number" step="0.0001" class="cell-inp" style="width:85px;" value="${fac.lon || 12.31}" onchange="updateCarpifFacility(${idx}, 'lon', parseFloat(this.value))"></td>
+        <td><button class="btn btn-secondary btn-sm" style="color:#ef4444;" onclick="deleteCarpifFacilityRow(${idx})">🗑️</button></td>
+      `;
+      facBody.appendChild(tr);
+    });
+  }
+
+  // 2. Streets
+  const strBody = document.getElementById('carpifStreetsBody');
+  if (strBody) {
+    strBody.innerHTML = '';
+    (State.carpifConfig.streets || []).forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:700;">#${s.id}</td>
+        <td><input type="text" class="cell-inp" style="width:100%; font-weight:600;" value="${s.name || ''}" onchange="updateCarpifStreet(${idx}, 'name', this.value)"></td>
+        <td><input type="number" class="cell-inp" style="width:55px;" value="${s.u}" onchange="updateCarpifStreet(${idx}, 'u', parseInt(this.value)||0)"></td>
+        <td><input type="number" class="cell-inp" style="width:55px;" value="${s.v}" onchange="updateCarpifStreet(${idx}, 'v', parseInt(this.value)||0)"></td>
+        <td><input type="number" step="0.1" class="cell-inp" style="width:70px;" value="${s.length_km || 2.0}" onchange="updateCarpifStreet(${idx}, 'length_km', parseFloat(this.value)||1.0)"></td>
+        <td><input type="number" step="50" class="cell-inp" style="width:85px; font-weight:700; color:#f59e0b;" value="${s.demand_kg || 0}" onchange="updateCarpifStreet(${idx}, 'demand_kg', parseFloat(this.value)||0)"></td>
+        <td><input type="number" step="0.1" class="cell-inp" style="width:70px;" value="${s.transit_cost || 2.5}" onchange="updateCarpifStreet(${idx}, 'transit_cost', parseFloat(this.value)||1.0)"></td>
+        <td><input type="number" step="0.1" class="cell-inp" style="width:70px;" value="${s.service_cost || 4.5}" onchange="updateCarpifStreet(${idx}, 'service_cost', parseFloat(this.value)||1.0)"></td>
+        <td><button class="btn btn-secondary btn-sm" style="color:#ef4444;" onclick="deleteCarpifStreetRow(${idx})">🗑️</button></td>
+      `;
+      strBody.appendChild(tr);
+    });
+  }
+
+  // 3. Vehicles
+  const vehBody = document.getElementById('carpifVehiclesBody');
+  if (vehBody) {
+    vehBody.innerHTML = '';
+    (State.carpifConfig.vehicles || []).forEach((v, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" class="cell-inp" style="width:100%; font-weight:600;" value="${v.name || ''}" onchange="updateCarpifVehicle(${idx}, 'name', this.value)"></td>
+        <td><input type="number" step="100" class="cell-inp" style="width:100px; font-weight:700; color:#38bdf8;" value="${v.capacity_kg || 4000}" onchange="updateCarpifVehicle(${idx}, 'capacity_kg', parseFloat(this.value)||4000)"></td>
+        <td><input type="number" class="cell-inp" style="width:85px;" value="${v.fixed_cost || 130}" onchange="updateCarpifVehicle(${idx}, 'fixed_cost', parseFloat(this.value)||130)"></td>
+        <td><input type="number" step="0.05" class="cell-inp" style="width:85px;" value="${v.cost_per_km || 1.35}" onchange="updateCarpifVehicle(${idx}, 'cost_per_km', parseFloat(this.value)||1.35)"></td>
+        <td><input type="number" step="0.5" class="cell-inp" style="width:85px;" value="${v.max_shift_hours || 7.0}" onchange="updateCarpifVehicle(${idx}, 'max_shift_hours', parseFloat(this.value)||7.0)"></td>
+        <td><button class="btn btn-secondary btn-sm" style="color:#ef4444;" onclick="deleteCarpifVehicleRow(${idx})">🗑️</button></td>
+      `;
+      vehBody.appendChild(tr);
+    });
+  }
+}
+
+function updateCarpifFacility(idx, field, val) {
+  if (State.carpifConfig && State.carpifConfig.intermediate_facilities && State.carpifConfig.intermediate_facilities[idx]) {
+    State.carpifConfig.intermediate_facilities[idx][field] = val;
+    renderCarpifLeafletMap(State.carpifConfig, State.carpifResult || null);
+  }
+}
+
+function addCarpifFacilityRow() {
+  if (!State.carpifConfig) return;
+  if (!State.carpifConfig.intermediate_facilities) State.carpifConfig.intermediate_facilities = [];
+  const nextId = 100 + State.carpifConfig.intermediate_facilities.length + 1;
+  State.carpifConfig.intermediate_facilities.push({
+    id: nextId,
+    name: 'Nuovo Impianto IF #' + nextId,
+    type: 'TMB_RECYCLING',
+    dump_time_min: 20,
+    dump_cost_eur: 18.0,
+    lat: 45.8900,
+    lon: 12.3100,
+    color: '#10b981'
+  });
+  renderCarpifTables();
+  renderCarpifLeafletMap(State.carpifConfig, State.carpifResult || null);
+  showToast('Nuovo impianto intermedio aggiunto!');
+}
+
+function deleteCarpifFacilityRow(idx) {
+  if (State.carpifConfig && State.carpifConfig.intermediate_facilities) {
+    State.carpifConfig.intermediate_facilities.splice(idx, 1);
+    renderCarpifTables();
+    renderCarpifLeafletMap(State.carpifConfig, State.carpifResult || null);
+  }
+}
+
+function updateCarpifStreet(idx, field, val) {
+  if (State.carpifConfig && State.carpifConfig.streets && State.carpifConfig.streets[idx]) {
+    State.carpifConfig.streets[idx][field] = val;
+    renderCarpifLeafletMap(State.carpifConfig, State.carpifResult || null);
+  }
+}
+
+function addCarpifStreetRow() {
+  if (!State.carpifConfig) return;
+  if (!State.carpifConfig.streets) State.carpifConfig.streets = [];
+  const nextId = State.carpifConfig.streets.length + 1;
+  State.carpifConfig.streets.push({
+    id: nextId,
+    name: 'Nuova Via Raccolta ' + nextId,
+    u: 1, v: 2,
+    length_km: 2.0,
+    demand_kg: 1500,
+    transit_cost: 2.5,
+    service_cost: 4.5,
+    lat1: 45.8900, lon1: 12.3000,
+    lat2: 45.8950, lon2: 12.3080
+  });
+  renderCarpifTables();
+  renderCarpifLeafletMap(State.carpifConfig, State.carpifResult || null);
+  showToast('Nuova tratta stradale aggiunta!');
+}
+
+function deleteCarpifStreetRow(idx) {
+  if (State.carpifConfig && State.carpifConfig.streets) {
+    State.carpifConfig.streets.splice(idx, 1);
+    renderCarpifTables();
+    renderCarpifLeafletMap(State.carpifConfig, State.carpifResult || null);
+  }
+}
+
+function updateCarpifVehicle(idx, field, val) {
+  if (State.carpifConfig && State.carpifConfig.vehicles && State.carpifConfig.vehicles[idx]) {
+    State.carpifConfig.vehicles[idx][field] = val;
+  }
+}
+
+function addCarpifVehicleRow() {
+  if (!State.carpifConfig) return;
+  if (!State.carpifConfig.vehicles) State.carpifConfig.vehicles = [];
+  const nextIdx = State.carpifConfig.vehicles.length + 1;
+  State.carpifConfig.vehicles.push({
+    name: 'Compattatore_IF_' + nextIdx,
+    capacity_kg: 4000,
+    fixed_cost: 130.0,
+    cost_per_km: 1.35,
+    max_shift_hours: 7.0
+  });
+  renderCarpifTables();
+  showToast('Nuovo compattatore CARPIF aggiunto!');
+}
+
+function deleteCarpifVehicleRow(idx) {
+  if (State.carpifConfig && State.carpifConfig.vehicles) {
+    State.carpifConfig.vehicles.splice(idx, 1);
+    renderCarpifTables();
+  }
+}
+
+async function resetCarpif() {
+  try {
+    const res = await fetch('/api/carpif/reset', { method: 'POST' });
+    if (!res.ok) throw new Error('Errore reset CARPIF');
+    const data = await res.json();
+    State.carpifConfig = data.config;
+    State.carpifResult = null;
+    const resCard = document.getElementById('carpifResultsCard');
+    if (resCard) resCard.style.display = 'none';
+    renderCarpifTables();
+    renderCarpifLeafletMap(State.carpifConfig, null);
+    showToast('Scenario CARPIF ripristinato ai valori predefiniti.');
+  } catch (err) {
+    console.error('Errore resetCarpif:', err);
+    showToast('Errore durante il ripristino CARPIF', 'error');
+  }
+}
+
+async function solveCarpif() {
+  const btn = document.getElementById('btnSolveCarpif');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Risoluzione CARPIF in corso...';
+  }
+
+  try {
+    const res = await fetch('/api/carpif/solve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(State.carpifConfig)
+    });
+    if (!res.ok) throw new Error('Errore risoluzione CARPIF: ' + res.statusText);
+    const result = await res.json();
+    State.carpifResult = result;
+    renderCarpifResults(result);
+    renderCarpifLeafletMap(State.carpifConfig, result);
+    showToast('Ottimizzazione CARPIF completata con successo!', 'success');
+  } catch (err) {
+    console.error('Errore solveCarpif:', err);
+    showToast('Errore nel calcolo CARPIF: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '⚡ Risolvi CARPIF (Scarichi Intermedi)';
+    }
+  }
+}
+
+function renderCarpifResults(res) {
+  const card = document.getElementById('carpifResultsCard');
+  if (!card || !res) return;
+  card.style.display = 'block';
+
+  const kpi = res.carpif_kpi || {};
+  document.getElementById('carpifKpiVehUsed').innerText = kpi.vehicles_needed_carpif ?? res.active_vehicles_count ?? '--';
+  document.getElementById('carpifKpiVehWithout').innerText = kpi.vehicles_needed_without_if ?? '--';
+  document.getElementById('carpifKpiVehSaved').innerText = '-' + (kpi.vehicles_saved_count ?? 0) + ' compattatori';
+  document.getElementById('carpifKpiVehSavedPct').innerText = (kpi.efficiency_gain_pct ?? 0) + '% flotta fisica risparmiata';
+  document.getElementById('carpifKpiCapitalSaved').innerText = (kpi.fixed_capital_saved_eur ?? 0) + ' €';
+  document.getElementById('carpifKpiDumpsCount').innerText = kpi.total_intermediate_dumps ?? 0;
+
+  // Dettaglio corse per veicolo
+  const container = document.getElementById('carpifRoutesContainer');
+  if (container) {
+    container.innerHTML = '';
+    const vehMap = res.vehicles || {};
+    Object.keys(vehMap).forEach(vname => {
+      const v = vehMap[vname];
+      if (!v.used) return;
+
+      const vCard = document.createElement('div');
+      vCard.style.cssText = 'background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 12px;';
+
+      let tripsHtml = '';
+      (v.trips || []).forEach(t => {
+        tripsHtml += `
+          <div style="background: rgba(15, 23, 42, 0.5); border-left: 3px solid #10b981; padding: 8px 12px; margin-top: 8px; border-radius: 4px; font-size: 12.5px;">
+            <div style="font-weight: 700; color: #34d399; margin-bottom: 4px;">
+              🚛 Viaggio #${t.trip_number}: ${t.collected_kg} kg raccolti &mdash; Scarico: <span style="color: #38bdf8;">${t.unloaded_at}</span> (${t.duration_min} min)
+            </div>
+            <div style="color: var(--text-secondary);">
+              <b>Vie coperte:</b> ${t.streets_serviced.join(', ')}
+            </div>
+          </div>
+        `;
+      });
+
+      let dumpsHtml = '';
+      if (v.dumps && v.dumps.length > 0) {
+        dumpsHtml = '<div style="margin-top: 8px; font-size: 12px; color: #a7f3d0;"><b>Soste agli Impianti IF:</b> ' +
+          v.dumps.map(d => `${d.facility_name} (${d.dumped_kg} kg, +${d.dump_time_min}m sosta)`).join(' &bull; ') + '</div>';
+      }
+
+      vCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <h4 style="font-size: 14.5px; color: #38bdf8; margin: 0;">🚚 ${vname}</h4>
+          <span style="font-size: 12px; color: var(--text-muted);">
+            Carico Totale: <b>${v.total_collected_kg} kg</b> | Costo Operativo: <b>${v.total_cost_eur} €</b> | Durata Turno: <b>${v.duration_min} min / ${v.max_shift_min} min</b> (Margine: ${v.slack_min} min)
+          </span>
+        </div>
+        ${dumpsHtml}
+        <div style="margin-top: 10px;">
+          ${tripsHtml}
+        </div>
+      `;
+      container.appendChild(vCard);
+    });
+  }
+
+  // Scroll verso i risultati
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderCarpifLeafletMap(cfg, res) {
+  const mapDiv = document.getElementById('carpifMap');
+  if (!mapDiv || typeof L === 'undefined') return;
+
+  if (!State.leafletMaps) State.leafletMaps = {};
+  if (State.leafletMaps['carpifMap']) {
+    try { State.leafletMaps['carpifMap'].remove(); } catch (_) {}
+  }
+
+  const depot = (cfg && cfg.depot) ? cfg.depot : { lat: 45.885, lon: 12.301 };
+  const map = L.map('carpifMap').setView([depot.lat, depot.lon], 13);
+  State.leafletMaps['carpifMap'] = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors | CARPIF Multi-Trip'
+  }).addTo(map);
+
+  // Marker Deposito
+  const depotIcon = L.divIcon({
+    className: 'custom-depot-marker',
+    html: '<div style="background: #2563eb; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">🏢</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+  L.marker([depot.lat, depot.lon], { icon: depotIcon })
+    .addTo(map)
+    .bindPopup(`<b>${depot.name || 'Deposito Centrale'}</b><br>Base operativa di partenza e rientro flotta.`);
+
+  // Marker Impianti Intermedi (IF)
+  (cfg.intermediate_facilities || []).forEach(fac => {
+    const facIcon = L.divIcon({
+      className: 'custom-fac-marker',
+      html: `<div style="background: #10b981; color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(16,185,129,0.5);">♻️</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+    L.marker([fac.lat, fac.lon], { icon: facIcon })
+      .addTo(map)
+      .bindPopup(`
+        <b style="color:#10b981;">${fac.name}</b><br>
+        <b>Tipo:</b> ${fac.type}<br>
+        <b>Tempo Scarico:</b> ${fac.dump_time_min} min<br>
+        <b>Tariffa Sosta:</b> ${fac.dump_cost_eur} €<br>
+        <i>Struttura di azzeramento carico a bordo (CARPIF)</i>
+      `);
+  });
+
+  // Polylines strade della rete
+  (cfg.streets || []).forEach(s => {
+    if (s.lat1 && s.lon1 && s.lat2 && s.lon2) {
+      const line = L.polyline([[s.lat1, s.lon1], [s.lat2, s.lon2]], {
+        color: '#64748b',
+        weight: 4,
+        opacity: 0.6
+      }).addTo(map);
+      line.bindPopup(`<b>${s.name}</b><br>Domanda: <b>${s.demand_kg} kg</b><br>Lunghezza: ${s.length_km} km`);
+    }
+  });
+
+  // Se ci sono risultati, disegna i percorsi colorati per veicolo
+  if (res && res.vehicles) {
+    const colors = ['#38bdf8', '#f59e0b', '#ec4899', '#8b5cf6'];
+    let cIdx = 0;
+    Object.keys(res.vehicles).forEach(vname => {
+      const v = res.vehicles[vname];
+      if (!v.used) return;
+      const vehColor = colors[cIdx % colors.length];
+      cIdx++;
+
+      (v.movements || []).forEach(m => {
+        // Disegna collegamento per movimenti di transito verso IF o servizio
+        if (m.type === 'TRANSITO_IF' || m.type === 'SCARICO_IF') {
+          // Trova la struttura
+          const fac = (cfg.intermediate_facilities || []).find(f => f.id === m.facility_id || f.id === m.to_node);
+          if (fac) {
+            L.circleMarker([fac.lat, fac.lon], {
+              radius: 12,
+              color: '#34d399',
+              fillColor: '#10b981',
+              fillOpacity: 0.8
+            }).addTo(map).bindPopup(`<b>Scarico ${vname}</b><br>${m.description}`);
+          }
+        }
+      });
+    });
+  }
+}
+
+// ==========================================
+// 10. DCARP: DYNAMIC CARP & GESTIONE IMPREVISTI REAL-TIME
+// ==========================================
+async function loadDcarpConfig() {
+  try {
+    const res = await fetch('/api/dcarp/config');
+    if (!res.ok) throw new Error('Errore HTTP ' + res.status);
+    State.dcarpConfig = await res.json();
+    State.dcarpSelectedEvent = (State.dcarpConfig.available_events && State.dcarpConfig.available_events[0]) 
+      ? State.dcarpConfig.available_events[0] 
+      : { type: 'URGENT_DEMAND' };
+    renderDcarpTables();
+    renderDcarpLeafletMap(State.dcarpConfig, null);
+  } catch (err) {
+    console.error('Errore loadDcarpConfig:', err);
+    showToast('Errore caricamento scenario DCARP', 'error');
+  }
+}
+
+function renderDcarpTables() {
+  if (!State.dcarpConfig) return;
+
+  // 1. Fleet
+  const fleetBody = document.getElementById('dcarpFleetBody');
+  if (fleetBody) {
+    fleetBody.innerHTML = '';
+    (State.dcarpConfig.vehicles || []).forEach(v => {
+      const isBroken = (v.status === 'IN_AVARIA');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:700; color:#38bdf8;">${v.name}</td>
+        <td><span class="badge" style="background:${isBroken ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}; color:${isBroken ? '#ef4444' : '#34d399'}; padding:3px 8px; border-radius:4px; font-weight:700;">${v.status || 'OPERATIVO'}</span></td>
+        <td style="font-weight:600;">Incrocio Nodo #${v.current_node}</td>
+        <td style="font-weight:700; color:#f59e0b;">${v.current_load_kg} kg</td>
+        <td>${v.capacity_kg} kg</td>
+        <td style="font-weight:700; color:#10b981;">${Math.max(0, v.capacity_kg - v.current_load_kg)} kg</td>
+      `;
+      fleetBody.appendChild(tr);
+    });
+  }
+
+  // 2. Streets
+  const strBody = document.getElementById('dcarpStreetsBody');
+  if (strBody) {
+    strBody.innerHTML = '';
+    (State.dcarpConfig.streets || []).forEach(s => {
+      const isServed = (s.status === 'SERVED');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:700;">#${s.id}</td>
+        <td style="font-weight:600;">${s.name}</td>
+        <td>Nodo ${s.u}</td>
+        <td>Nodo ${s.v}</td>
+        <td>${s.length_km} km</td>
+        <td style="font-weight:700; color:#f59e0b;">${s.demand_kg} kg</td>
+        <td>
+          <span class="badge" style="background:${isServed ? 'rgba(56,189,248,0.2)' : 'rgba(245,158,11,0.2)'}; color:${isServed ? '#38bdf8' : '#f59e0b'}; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">
+            ${isServed ? 'COMPLETATA (Congelata)' : 'IN PROGRAMMA'}
+          </span>
+        </td>
+        <td style="color:var(--text-secondary);">${s.serviced_by || s.original_vehicle || '--'}</td>
+      `;
+      strBody.appendChild(tr);
+    });
+  }
+}
+
+function selectDcarpEvent(type, el) {
+  if (!State.dcarpConfig) return;
+  const cards = document.querySelectorAll('#dcarpEventSelector .wizard-option-card');
+  cards.forEach(c => {
+    c.classList.remove('selected');
+    c.style.border = '1px solid var(--border-color)';
+    c.style.background = 'rgba(30, 41, 59, 0.5)';
+  });
+
+  if (el) {
+    el.classList.add('selected');
+    el.style.border = '2px solid #38bdf8';
+    el.style.background = 'rgba(56, 189, 248, 0.1)';
+  }
+
+  const found = (State.dcarpConfig.available_events || []).find(e => e.type === type);
+  if (found) {
+    State.dcarpSelectedEvent = found;
+    showToast('Evento selezionato: ' + found.title);
+  }
+}
+
+async function resetDcarp() {
+  try {
+    const res = await fetch('/api/dcarp/reset', { method: 'POST' });
+    if (!res.ok) throw new Error('Errore reset DCARP');
+    const data = await res.json();
+    State.dcarpConfig = data.config;
+    State.dcarpResult = null;
+    State.dcarpSelectedEvent = (data.config.available_events && data.config.available_events[0]) ? data.config.available_events[0] : null;
+
+    const term = document.getElementById('dcarpTerminalLog');
+    if (term) term.innerHTML = '<span style="color: #64748b;">[Scenario ripristinato. In attesa di trigger evento dinamico...]</span>';
+
+    const resCard = document.getElementById('dcarpResultsCard');
+    if (resCard) resCard.style.display = 'none';
+
+    renderDcarpTables();
+    renderDcarpLeafletMap(State.dcarpConfig, null);
+    showToast('Scenario dinamico DCARP ripristinato.');
+  } catch (err) {
+    console.error('Errore resetDcarp:', err);
+    showToast('Errore ripristino DCARP', 'error');
+  }
+}
+
+async function solveDcarp() {
+  const btn = document.getElementById('btnSolveDcarp');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Re-routing real-time in corso...';
+  }
+
+  try {
+    const payload = {
+      ...State.dcarpConfig,
+      trigger_event: State.dcarpSelectedEvent || (State.dcarpConfig.available_events ? State.dcarpConfig.available_events[0] : null)
+    };
+
+    const res = await fetch('/api/dcarp/solve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Errore HTTP ' + res.status);
+    const result = await res.json();
+    State.dcarpResult = result;
+    renderDcarpResults(result);
+    renderDcarpLeafletMap(State.dcarpConfig, result);
+    showToast('Re-ottimizzazione dinamica completata!', 'success');
+  } catch (err) {
+    console.error('Errore solveDcarp:', err);
+    showToast('Errore re-routing DCARP: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '🚨 Simula Evento & Ricalcola (Re-Optimization)';
+    }
+  }
+}
+
+function renderDcarpResults(res) {
+  const card = document.getElementById('dcarpResultsCard');
+  if (!card || !res) return;
+  card.style.display = 'block';
+
+  // Terminal log
+  const term = document.getElementById('dcarpTerminalLog');
+  if (term && res.event_logs) {
+    term.innerHTML = res.event_logs.map(log => `<div>${log}</div>`).join('');
+    term.scrollTop = term.scrollHeight;
+  }
+
+  // KPI
+  const kpi = res.disruption_kpi || {};
+  document.getElementById('dcarpKpiSeverity').innerText = kpi.disruption_severity || '--';
+  document.getElementById('dcarpKpiFleetPct').innerText = (kpi.operational_fleet_pct || 100) + '%';
+  document.getElementById('dcarpKpiReassigned').innerText = (kpi.reassigned_streets_total || 0) + ' tratte';
+  document.getElementById('dcarpKpiServedPre').innerText = (res.already_served_count || 0) + ' tratte';
+
+  // Routes container
+  const container = document.getElementById('dcarpRoutesContainer');
+  if (container) {
+    container.innerHTML = '';
+    const vehMap = res.vehicles || {};
+    Object.keys(vehMap).forEach(vid => {
+      const v = vehMap[vid];
+      const isBroken = (v.status === 'IN_AVARIA_FERMO');
+
+      const vCard = document.createElement('div');
+      vCard.style.cssText = `background: rgba(30, 41, 59, 0.6); border: 1px solid ${isBroken ? 'rgba(239,68,68,0.4)' : 'rgba(56,189,248,0.4)'}; border-radius: 8px; padding: 14px; margin-bottom: 12px;`;
+
+      let movesHtml = '';
+      (v.movements || []).forEach(m => {
+        let badgeColor = '#38bdf8';
+        if (m.type === 'AVARIA_STOP') badgeColor = '#ef4444';
+        else if (m.type === 'SERVIZIO_URGENTE') badgeColor = '#f97316';
+        else if (m.type === 'TRANSITO_BYPASS') badgeColor = '#f59e0b';
+
+        movesHtml += `
+          <div style="font-size: 12px; padding: 4px 8px; border-left: 2px solid ${badgeColor}; margin-top: 4px; background: rgba(15, 23, 42, 0.4);">
+            <span style="font-weight: 700; color: ${badgeColor};">[${m.type}]</span> ${m.description}
+          </div>
+        `;
+      });
+
+      vCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <h4 style="font-size: 14.5px; color: ${isBroken ? '#ef4444' : '#38bdf8'}; margin: 0;">
+            ${isBroken ? '💥 [IN AVARIA] ' : '🚚 '} ${v.vehicle_name}
+          </h4>
+          <span style="font-size: 12px; color: var(--text-muted);">
+            Origine Virtuale: <b>Nodo #${v.virtual_start_node}</b> | Carico Pre-Evento: <b>${v.initial_load_at_event_kg} kg</b> | Carico Finale: <b>${v.final_load_kg} kg / ${v.capacity_kg} kg</b>
+          </span>
+        </div>
+        ${v.reassigned_streets && v.reassigned_streets.length > 0 ? `<div style="font-size: 12.5px; color: #a7f3d0; margin-top: 6px;"><b>Tratte Riassegnate Post-Evento:</b> ${v.reassigned_streets.join(', ')}</div>` : ''}
+        <div style="margin-top: 8px;">
+          ${movesHtml}
+        </div>
+      `;
+      container.appendChild(vCard);
+    });
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderDcarpLeafletMap(cfg, res) {
+  const mapDiv = document.getElementById('dcarpMap');
+  if (!mapDiv || typeof L === 'undefined') return;
+
+  if (!State.leafletMaps) State.leafletMaps = {};
+  if (State.leafletMaps['dcarpMap']) {
+    try { State.leafletMaps['dcarpMap'].remove(); } catch (_) {}
+  }
+
+  const depot = (cfg && cfg.depot) ? cfg.depot : { lat: 45.885, lon: 12.301 };
+  const map = L.map('dcarpMap').setView([depot.lat, depot.lon], 13);
+  State.leafletMaps['dcarpMap'] = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors | DCARP Real-Time Dispatch'
+  }).addTo(map);
+
+  // Marker Deposito
+  const depotIcon = L.divIcon({
+    className: 'custom-depot-marker',
+    html: '<div style="background: #2563eb; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">🏢</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+  L.marker([depot.lat, depot.lon], { icon: depotIcon })
+    .addTo(map)
+    .bindPopup(`<b>${depot.name || 'Deposito Autoparco'}</b>`);
+
+  // Strade
+  (cfg.streets || []).forEach(s => {
+    if (s.lat1 && s.lon1 && s.lat2 && s.lon2) {
+      const isServed = (s.status === 'SERVED');
+      const line = L.polyline([[s.lat1, s.lon1], [s.lat2, s.lon2]], {
+        color: isServed ? '#10b981' : '#f59e0b',
+        weight: 5,
+        opacity: isServed ? 0.7 : 0.9,
+        dashArray: isServed ? '6, 6' : null
+      }).addTo(map);
+      line.bindPopup(`
+        <b>${s.name}</b><br>
+        Stato: <b>${isServed ? 'COMPLETATA (Pre-evento)' : 'DA SERVIRE'}</b><br>
+        Domanda: ${s.demand_kg} kg | Lunghezza: ${s.length_km} km
+      `);
+    }
+  });
+
+  // Posizioni live compattatori (Compiti Virtuali)
+  (cfg.vehicles || []).forEach(v => {
+    const isBroken = (v.status === 'IN_AVARIA');
+    // Trova le coordinate del nodo corrente cercando nelle strade
+    let p = [depot.lat, depot.lon];
+    (cfg.streets || []).forEach(s => {
+      if (s.u === v.current_node) p = [s.lat1, s.lon1];
+      else if (s.v === v.current_node) p = [s.lat2, s.lon2];
+    });
+
+    const truckIcon = L.divIcon({
+      className: 'custom-truck-marker',
+      html: `<div style="background: ${isBroken ? '#ef4444' : '#38bdf8'}; color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">${isBroken ? '💥' : '🚚'}</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+    L.marker(p, { icon: truckIcon })
+      .addTo(map)
+      .bindPopup(`
+        <b style="color:${isBroken ? '#ef4444' : '#38bdf8'};">${v.name}</b><br>
+        <b>Stato:</b> ${v.status || 'OPERATIVO'}<br>
+        <b>Posizione Istantanea:</b> Nodo #${v.current_node}<br>
+        <b>Carico a bordo:</b> ${v.current_load_kg} kg / ${v.capacity_kg} kg<br>
+        <i>Origine Compito Virtuale</i>
+      `);
+  });
+
+  // Se l'evento selezionato include una strada bloccata o urgente, evidenziala
+  const ev = (res && res.trigger_event) ? res.trigger_event : State.dcarpSelectedEvent;
+  if (ev && ev.type === 'ROAD_BLOCK' && ev.data) {
+    // Cerchiamo la via bloccata
+    const blkStreet = (cfg.streets || []).find(s => s.id === ev.data.blocked_street_id || (s.u === ev.data.blocked_u && s.v === ev.data.blocked_v));
+    if (blkStreet && blkStreet.lat1) {
+      L.polyline([[blkStreet.lat1, blkStreet.lon1], [blkStreet.lat2, blkStreet.lon2]], {
+        color: '#ef4444',
+        weight: 8,
+        opacity: 0.9
+      }).addTo(map).bindPopup(`<b style="color:#ef4444;">⛔ STRADA BLOCCATA</b><br>${blkStreet.name}<br>Cantiere / Fuga gas: bypass attivo`);
+    }
+  } else if (ev && ev.type === 'URGENT_DEMAND' && ev.data) {
+    if (ev.data.lat1 && ev.data.lon1 && ev.data.lat2 && ev.data.lon2) {
+      L.polyline([[ev.data.lat1, ev.data.lon1], [ev.data.lat2, ev.data.lon2]], {
+        color: '#f97316',
+        weight: 7,
+        opacity: 0.95
+      }).addTo(map).bindPopup(`<b style="color:#f97316;">🚨 TRATTA URGENTE INSERITA</b><br>${ev.data.name}<br>Domanda: ${ev.data.demand_kg} kg`);
+    }
+  }
+}
+
 // AVVIO DOMContentLoaded
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {

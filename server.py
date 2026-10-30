@@ -27,6 +27,8 @@ import vrppd_model
 import mdvrp_model
 import pcarp_model
 import carptw_model
+import carpif_model
+import dcarp_model
 
 PORT = int(os.environ.get("PORT", 8085))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +47,8 @@ VRPPD_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_vrppd.json")
 MDVRP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_mdvrp.json")
 PCARP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_pcarp.json")
 CARPTW_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_carptw.json")
+CARPIF_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_carpif.json")
+DCARP_CONFIG_PATH = os.path.join(BASE_DIR, "data", "config_dcarp.json")
 OUTPUT_MAP_PATH = os.path.join(BASE_DIR, "output", "percorso_raccolta.html")
 WEB_DIR = os.path.join(BASE_DIR, "web")
 
@@ -217,6 +221,38 @@ def save_carptw_config(cfg: Dict[str, Any]):
         json.dump(cfg, f, indent=2, ensure_ascii=False)
 
 
+def load_carpif_config() -> Dict[str, Any]:
+    if os.path.exists(CARPIF_CONFIG_PATH):
+        try:
+            with open(CARPIF_CONFIG_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return carpif_model.get_default_carpif_scenario()
+
+
+def save_carpif_config(cfg: Dict[str, Any]):
+    os.makedirs(os.path.dirname(CARPIF_CONFIG_PATH), exist_ok=True)
+    with open(CARPIF_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+
+def load_dcarp_config() -> Dict[str, Any]:
+    if os.path.exists(DCARP_CONFIG_PATH):
+        try:
+            with open(DCARP_CONFIG_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return dcarp_model.get_default_dcarp_scenario()
+
+
+def save_dcarp_config(cfg: Dict[str, Any]):
+    os.makedirs(os.path.dirname(DCARP_CONFIG_PATH), exist_ok=True)
+    with open(DCARP_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+
 class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def check_auth(self) -> bool:
         auth_user = os.environ.get("OR_ROUTE_AUTH_USER")
@@ -375,6 +411,22 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(cfg).encode("utf-8"))
             return
 
+        elif path == "/api/carpif/config":
+            cfg = load_carpif_config()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(cfg).encode("utf-8"))
+            return
+
+        elif path == "/api/dcarp/config":
+            cfg = load_dcarp_config()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(cfg).encode("utf-8"))
+            return
+
         elif path == "/api/models-info":
             info = {
                 "models": [
@@ -441,6 +493,22 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "description": "Garantisce il servizio su archi stradali rispettando fasce orarie stringenti (es. prima dell'orario scolastico o varchi ZTL).",
                         "typical_savings": "100% conformità oraria, 0 sanzioni ZTL",
                         "constraints": ["Finestre orarie [ready, due] su archi", "Tempi di attesa", "Sequenziamento cronologico"]
+                    },
+                    {
+                        "id": "carpif",
+                        "title": "CARPIF - Arc Routing con Impianti Intermedi TMB/Discariche",
+                        "target": "Igiene Urbana con Stazioni di Trasferimento, TMB, Discariche e Silos Sale",
+                        "description": "Permette ai compattatori di svuotare il carico in strutture intermedie e ripartire per più corse nello stesso turno, abbattendo mezzi fisici e km a vuoto.",
+                        "typical_savings": "30% - 50% compattatori fisici attivati in meno",
+                        "constraints": ["Reset capacità presso nodi IF", "Durata massima turno", "Multi-trip con scarichi intermedi"]
+                    },
+                    {
+                        "id": "dcarp",
+                        "title": "DCARP - Dynamic CARP & Gestione Imprevisti in Tempo Reale",
+                        "target": "Centrale Operativa Real-Time: Vie Urgenti, Strade Interrotte, Guasti Meccanici",
+                        "description": "Algoritmo reattivo a 'Compiti Virtuali' che congela lo stato operativo al momento dell'evento e ricalcola all'istante l'itinerario ottimale.",
+                        "typical_savings": "Re-routing istantaneo in tempo reale, continuità 100% di servizio",
+                        "constraints": ["Origini virtuali con capacità residua", "Bypass strade interrotte", "Riassegnazione rapida carichi orfani"]
                     }
                 ]
             }
@@ -1077,6 +1145,107 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif path == "/api/carptw/reset":
             def_cfg = carptw_model.get_default_carptw_scenario()
             save_carptw_config(def_cfg)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "config": def_cfg}).encode("utf-8"))
+            return
+
+        # --------------------- CARPIF ENDPOINTS ---------------------
+        elif path == "/api/carpif/solve":
+            try:
+                req_data = json.loads(body) if body.strip() and body != "{}" else {}
+                data = load_carpif_config()
+                if "streets" in req_data:
+                    data = req_data
+                    save_carpif_config(data)
+                res = carpif_model.solve_carpif(
+                    depot=data["depot"],
+                    intermediate_facilities=data.get("intermediate_facilities", []),
+                    streets=data["streets"],
+                    vehicles=data["vehicles"]
+                )
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/carpif/config":
+            try:
+                data = json.loads(body)
+                save_carpif_config(data)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/carpif/reset":
+            def_cfg = carpif_model.get_default_carpif_scenario()
+            save_carpif_config(def_cfg)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "config": def_cfg}).encode("utf-8"))
+            return
+
+        # --------------------- DCARP ENDPOINTS ---------------------
+        elif path == "/api/dcarp/solve":
+            try:
+                req_data = json.loads(body) if body.strip() and body != "{}" else {}
+                data = load_dcarp_config()
+                if "streets" in req_data and "vehicles" in req_data:
+                    data = req_data
+                    save_dcarp_config(data)
+                trigger_event = req_data.get("trigger_event")
+                if not trigger_event:
+                    # Default trigger event (primo evento disponibile)
+                    avail = data.get("available_events", [])
+                    trigger_event = avail[0] if avail else {"type": "URGENT_DEMAND", "data": {}}
+                res = dcarp_model.solve_dcarp(
+                    scenario=data,
+                    trigger_event=trigger_event
+                )
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(res).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/dcarp/config":
+            try:
+                data = json.loads(body)
+                save_dcarp_config(data)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/dcarp/reset":
+            def_cfg = dcarp_model.get_default_dcarp_scenario()
+            save_dcarp_config(def_cfg)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
