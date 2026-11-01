@@ -9071,3 +9071,166 @@ async function deleteScenarioById(id, name) {
     showToast('Errore comunicazione server: ' + err.message);
   }
 }
+
+
+// =========================================================================
+// SISTEMA GUIDA RAPIDA (?) CON PROMPT INTERATTIVO & RIMANDO FAQ
+// =========================================================================
+
+const FAQ_HELP_TOPICS = {
+  'login-scenarios': {
+    title: 'Autenticazione & Salvataggio Scenari',
+    subtitle: 'Gestione Multi-Utente e Configurazioni Personali',
+    faqId: 'faq-login-scenarios',
+    text: `
+      <b>Salvataggio Cloud & Spazio di Lavoro Privato:</b><br>
+      • Effettuando il login con il tuo account, tutte le tue mappe stradali, le flotte di compattatori e le impostazioni del cantiere vengono salvate in modo isolato e protetto sul database centrale.<br>
+      • Puoi salvare infiniti scenari con nomi personalizzati (es. <i>"Tarzo Umido Lunedì"</i>, <i>"Conegliano Centro"</i>) e richiamarli istantaneamente con un click.<br>
+      • Ogni scenario memorizza la rete viaria reale, le domande in kg personalizzate e gli itinerari calcolati.
+    `
+  },
+  'nodes-explained': {
+    title: 'Cosa sono i Nodi nella Rete Stradale?',
+    subtitle: 'Nodi (Incroci) vs Archi (Vie di Raccolta)',
+    faqId: 'faq-nodes-explained',
+    text: `
+      <b>Incroci e Topologia Stradale (CARP):</b><br>
+      • Nei modelli di raccolta rifiuti porta a porta (CARP), <b>i Nodi rappresentano gli INCROCI o i punti di svolta</b> della viabilità comunale reale (ciascuno con coordinate GPS).<br>
+      • Le <b>Vie</b> (archi compresi tra il nodo <i>u</i> e il nodo <i>v</i>) sono invece i tratti stradali effettivi dove si effettua la raccolta dei rifiuti.<br>
+      • Il <b>Nodo 0</b> identifica convenzionalmente la <b>Sede Aziendale / Cantiere Deposito</b> da cui i mezzi partono e a cui rientrano.<br>
+      • <i>Nota per l'autista:</i> non occorre memorizzare i numeri dei nodi! Lo stradario operativo riporta chiaramente il nome della via e la sequenza cronologica di percorrenza.
+    `
+  },
+  'osm-import': {
+    title: 'Importazione Rete da OpenStreetMap',
+    subtitle: 'Download Stradario Reale e Cantiere Operativo',
+    faqId: 'faq-osm-import',
+    text: `
+      <b>Download Automatico GIS da OpenStreetMap:</b><br>
+      • Puoi inserire il nome di un singolo comune o più zone congiunte (es. <i>"Tarzo e Corbanese"</i>) per scaricare istantaneamente la rete viaria carrabile continua.<br>
+      • Indicando l'indirizzo o le coordinate del cantiere, il sistema calcola il percorso reale di innesto (<b>R0</b>) con zero rifiuti e solo costo di transito.<br>
+      • Vengono automaticamente escluse le tratte non carrabili (marciapiedi, scalinate, sentieri pedonali).
+    `
+  },
+  'fleet-config': {
+    title: 'Configurazione Flotta Compattatori',
+    subtitle: 'Portata Utile (kg), Costo Fisso e Costo al Km',
+    faqId: 'faq-fleet-config',
+    text: `
+      <b>Capacità e Costi Operativi dei Mezzi:</b><br>
+      • <b>Portata Max (kg):</b> carico utile massimo prima del rientro obbligatorio in discarica o impianto TMB.<br>
+      • <b>Costo Fisso (€):</b> costo di ingaggio giornaliero del mezzo e retribuzione dell'autista/equipaggio. Spinge il solutore a minimizzare il numero di camion usati.<br>
+      • <b>Costo al Km (€/km):</b> carburante e usura del veicolo. Spinge il solutore a compattare le tratte e tagliare i chilometri a vuoto.
+    `
+  },
+  'linear-density': {
+    title: 'Densità Lineare Rifiuti (kg/m)',
+    subtitle: 'Stima del Carico Rifiuti per Metro di Carreggiata',
+    faqId: 'faq-linear-density',
+    text: `
+      <b>Generazione Rifiuti & Stime di Carico:</b><br>
+      • Il carico di ciascuna via viene stimato moltiplicando la lunghezza della strada per la <b>densità lineare (kg/m)</b> specifica della frazione del giorno.<br>
+      • Valori tipici di riferimento: Umido/Organico ~0.8-1.1 kg/m; Carta ~0.7-1.4 kg/m; Plastica ~0.25-0.4 kg/m; Secco a tariffa puntuale ~0.2-0.35 kg/m.<br>
+      • Puoi sempre sovrascrivere direttamente i kg di qualsiasi via o riproporzionare l'intero giro dal totale pesato a fine turno.
+    `
+  },
+  'interactive-map': {
+    title: 'Mappa Stradale Interattiva & Schermo Intero',
+    subtitle: 'Disegno Vie, Eliminazione e Visualizzazione Frecce',
+    faqId: 'faq-interactive-map',
+    text: `
+      <b>Controlli Interattivi GIS su Mappa:</b><br>
+      • <b>➕ Aggiungi Via:</b> clicca 2 punti sulla mappa per inserire all'istante una nuova strada con il relativo carico di rifiuti.<br>
+      • <b>🗑️ Togli Vie:</b> tocca direttamente le strade da escludere dal giro di raccolta per rimuoverle con un click.<br>
+      • <b>⛶ Schermo Intero:</b> espande la mappa all'intero monitor mantenendo tutti gli strumenti di modifica e il pulsante per ricalcolare la flotta.<br>
+      • Le frecce colorate mostrano il verso di marcia calcolato dal solutore per ciascun compattatore.
+    `
+  },
+  'solver-optimization': {
+    title: 'Risolutore Matematico MILP (CARP)',
+    subtitle: 'Ottimizzazione Globale dei Circuiti di Raccolta',
+    faqId: 'faq-solver-optimization',
+    text: `
+      <b>Algoritmo di Ottimizzazione Combinatoria:</b><br>
+      • Il solutore matematico basato su <b>COIN-OR CBC / PuLP</b> calcola la sequenza esatta di percorrenza che minimizza la somma di costi fissi e chilometrici.<br>
+      • Rispetta rigidamente la portata di ciascun veicolo, azzera i transiti a vuoto (deadheading) e garantisce la continuità del percorso.<br>
+      • Calcola indicatori precisi su durata del turno, saturazione percentuale e km totali per ciascun mezzo.
+    `
+  },
+  'driver-sheet': {
+    title: "Foglio di Viaggio per l'Autista",
+    subtitle: 'Istruzioni Chiare di Guida e Sequenza Vie',
+    faqId: 'faq-driver-sheet',
+    text: `
+      <b>Istruzioni Stradali per l'Equipaggio:</b><br>
+      • Traduce il grafo matematico in un elenco cronologico semplice passo-passo delle vie da percorrere (1, 2, 3...).<br>
+      • Evidenzia dove effettuare la raccolta attiva e dove transitare a vuoto, indicando la direzione cardinale (Nord, Sud, Est, Ovest).<br>
+      • Stampabile con un click su scheda A4 o consultabile direttamente da tablet a bordo mezzo.
+    `
+  },
+  'deadhead': {
+    title: 'Transito a Vuoto (Deadheading) & Raccordo R0',
+    subtitle: 'Percorrenze di Trasferimento Senza Raccolta',
+    faqId: 'faq-deadhead',
+    text: `
+      <b>Tratte di Solo Transito:</b><br>
+      • Il <b>Deadheading</b> rappresenta la percorrenza di una via senza raccogliere rifiuti (es. perché già servita, senso unico o via di mero collegamento).<br>
+      • Il <b>Raccordo R0</b> è il tragitto stradale effettivo tra la sede aziendale e la prima via del comune: comporta consumo di tempo e carburante (domanda = 0 kg).<br>
+      • Il solutore minimizza rigorosamente tutti i chilometri a vuoto garantendo la chiusura euleriana del circuito.
+    `
+  }
+};
+
+function openFaqHelpModal(topicKey) {
+  const topic = FAQ_HELP_TOPICS[topicKey] || FAQ_HELP_TOPICS['nodes-explained'];
+  const modal = document.getElementById('modalFaqHelpPrompt');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('faqPromptTitle');
+  const subEl = document.getElementById('faqPromptSubtitle');
+  const bodyEl = document.getElementById('faqPromptBody');
+  const btnFaq = document.getElementById('btnGoToFullFaq');
+
+  if (titleEl) titleEl.innerText = topic.title;
+  if (subEl) subEl.innerText = topic.subtitle;
+  if (bodyEl) bodyEl.innerHTML = topic.text;
+  if (btnFaq) btnFaq.setAttribute('data-target-faq', topic.faqId);
+
+  modal.style.display = 'flex';
+}
+window.openFaqHelpModal = openFaqHelpModal;
+
+function closeFaqHelpModal() {
+  const modal = document.getElementById('modalFaqHelpPrompt');
+  if (modal) modal.style.display = 'none';
+}
+window.closeFaqHelpModal = closeFaqHelpModal;
+
+function goToFaqSectionFromPrompt() {
+  const btnFaq = document.getElementById('btnGoToFullFaq');
+  const targetFaqId = (btnFaq && btnFaq.getAttribute('data-target-faq')) || 'faq-nodes-explained';
+  closeFaqHelpModal();
+
+  // Passa al tab FAQ
+  switchMainTab('tab-faq', null);
+
+  setTimeout(() => {
+    const el = document.getElementById(targetFaqId);
+    if (el) {
+      el.open = true;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('faq-highlight-pulse');
+      setTimeout(() => {
+        try { el.classList.remove('faq-highlight-pulse'); } catch (_) {}
+      }, 3000);
+    }
+  }, 120);
+}
+window.goToFaqSectionFromPrompt = goToFaqSectionFromPrompt;
+
+// Listener tasto ESC per chiudere il modal Guida Rapida
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    closeFaqHelpModal();
+  }
+});

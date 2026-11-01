@@ -63,6 +63,7 @@
           <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
             👤 Accedi / Registrati
           </button>
+          <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Login e Salvataggio Scenari">?</button>
         </div>
 
         <!-- Indicatore Scenario Attivo -->
@@ -70,6 +71,7 @@
           <span>📌 Scenario:</span>
           <strong id="headerActiveScenarioName">Predefinito</strong>
           <button onclick="quickSaveActiveScenario()" title="Salva modifiche attuali in questo scenario" style="background:#10b981; color:#fff; border:none; border-radius:4px; padding:2px 7px; font-weight:700; cursor:pointer; font-size:11px; margin-left:4px;">💾 Salva</button>
+          <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Gestione Scenari Personali">?</button>
         </div>
 
         <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON di backup con tutte le impostazioni">
@@ -779,10 +781,11 @@
           <div class="card-title">
             <span class="icon">🚛</span>
             <span>Modello CARP &mdash; Raccolta Rifiuti Porta a Porta & Servizi Stradali</span>
+            <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa significa CARP e cosa sono i nodi?">?</button>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="openImportModal()">🌍 Importa da OpenStreetMap</button>
-            <button id="btnSolveCarp" class="btn btn-primary btn-sm" onclick="solveCarp()">⚡ Risolvi & Aggiorna Mappa GIS</button>
+            <button class="btn btn-secondary btn-sm" onclick="openImportModal()">🌍 Importa da OpenStreetMap</button><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('osm-import')" title="Guida all'importazione da OpenStreetMap">?</button>
+            <button id="btnSolveCarp" class="btn btn-primary btn-sm" onclick="solveCarp()">⚡ Risolvi & Aggiorna Mappa GIS</button><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('solver-optimization')" title="Guida al Calcolo Ottimo con Solutore MILP">?</button>
           </div>
         </div>
 
@@ -805,7 +808,7 @@
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 18px;">🏠</span>
                 <div>
-                  <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Base Operativa / Deposito:</span>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #34d399;">Base Operativa / Deposito:</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Spiegazione Deposito e Nodo 0">?</button>
                   <input type="text" id="carpDepotName" class="cell-inp" style="width: 140px; margin-left: 6px; font-weight: 600;" placeholder="es. Base Operativa RSU" onchange="updateCarpDepot('name', this.value)">
                 </div>
               </div>
@@ -819,7 +822,7 @@
             <div style="margin-bottom: 14px; background: rgba(14, 22, 38, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
                 <div style="font-size: 13px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                  <span>♻️</span> Frazioni del Giro (Stime FAQ & Dati Storici)
+                  <span>♻️</span> Frazioni del Giro (Stime FAQ & Dati Storici)<button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Guida su Frazioni Merceologiche e Densità Lineare (kg/m)">?</button>
                 </div>
                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                   <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px;" onclick="setCarpFractionPreset('min')" title="Imposta i valori minimi teorici delle FAQ">Min FAQ</button>
@@ -848,7 +851,7 @@
               <!-- Intervento Manuale da Dati Storici Aziendali (Totale Pesata Giro) -->
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(2, 6, 23, 0.55); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
                 <div style="font-size: 11.5px; color: var(--text-secondary);">
-                  <b>⚖️ Calibrazione da Storico Pesate Aziendali:</b>
+                  <b>⚖️ Calibrazione da Storico Pesate Aziendali:</b><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Guida sulla Calibrazione da Storico Pesata">?</button>
                   <span style="color: var(--text-muted); display: block; font-size: 10.5px;">Riproporziona tutte le vie sul totale storico pesato a fine giro</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px;">
@@ -879,7 +882,7 @@
             <!-- Selettore Rapido & Controlli di Riduzione / Partizionamento Area -->
             <div style="margin-bottom: 12px; background: rgba(14,22,38,0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">🌐 Partiziona Settore / Grandi Aree:</span>
+                <span style="font-size: 12.5px; font-weight: 700; color: #38bdf8;">🌐 Partiziona Settore / Grandi Aree:</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('osm-import')" title="Guida sul Partizionamento dell'Area Urbana">?</button>
                 <select id="carpQuickSectorSelect" style="background:#080d19; border:1px solid #283959; color:#38bdf8; padding:4px 8px; border-radius:6px; font-size:12px;" onchange="applyCarpSectorSize(this.value)">
                   <option value="keep" selected>Dimensione Attuale Rete</option>
                   <option value="0">🌐 Tutto il comune (copertura 100%)</option>
@@ -905,7 +908,7 @@
           <div>
             <!-- Intestazione Strade con Filtro di Ricerca -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #38bdf8;">🛣️ Rete Stradale & Domanda Rifiuti (kg)</h4>
+              <h4 style="font-size: 14px; color: #38bdf8; display: flex; align-items: center;"><span>🛣️ Rete Stradale & Domanda Rifiuti (kg)</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa sono i Nodi e le Vie?">?</button></h4>
               <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
             </div>
             
@@ -919,9 +922,9 @@
                 <thead>
                   <tr>
                     <th>Nome Strada</th>
-                    <th>Nodi</th>
-                    <th>Domanda (kg)</th>
-                    <th>Costo Transito</th>
+                    <th>Nodi <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa sono i nodi u e v?">?</button></th>
+                    <th>Domanda (kg) <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Come viene stimata la domanda in kg?">?</button></th>
+                    <th>Costo Transito <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('deadhead')" title="Cosa sono i costi di transito e deadheading?">?</button></th>
                   </tr>
                 </thead>
                 <tbody id="carpStreetsBody"></tbody>
@@ -930,7 +933,7 @@
 
             <!-- Tabella Flotta Compattatori RSU (Specifiche & Costi) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #34d399;">🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</h4>
+              <h4 style="font-size: 14px; color: #34d399; display: flex; align-items: center;"><span>🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('fleet-config')" title="Guida sulla Flotta e Costi Mezzi">?</button></h4>
               <button class="btn btn-secondary btn-sm" onclick="addCarpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
                 + Aggiungi Compattatore
               </button>
@@ -941,8 +944,8 @@
                 <thead>
                   <tr>
                     <th>Compattatore</th>
-                    <th>Portata Max (kg)</th>
-                    <th>Costo Fisso (€)</th>
+                    <th>Portata Max (kg) <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('fleet-config')" title="Capacità massima compattatore">?</button></th>
+                    <th>Costo Fisso (€) <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('fleet-config')" title="Costo fisso giornaliero equipaggio">?</button></th>
                     <th style="width: 40px;"></th>
                   </tr>
                 </thead>
@@ -998,22 +1001,22 @@
             <div id="carpMapCard" class="card" style="padding: 12px; margin-bottom: 0; display: flex; flex-direction: column;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <b style="font-size: 13.5px; color: #38bdf8;">🗺️ Mappa Stradale Interattiva (CARP)</b>
+                  <b style="font-size: 13.5px; color: #38bdf8;">🗺️ Mappa Stradale Interattiva (CARP)</b><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('interactive-map')" title="Guida all'uso della Mappa Interattiva">?</button>
                   <span id="carpMapModeBadge" class="code-tag" style="font-size: 10.5px; color: #34d399;">Clicca una via per modificarla</span>
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                   <button type="button" id="btnMapAddStreet" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="toggleMapAddStreetMode()" title="Disegna una nuova via direttamente cliccando 2 punti sulla mappa">
                     ➕ Aggiungi Via
-                  </button>
+                  </button><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('interactive-map')" title="Come disegnare una nuova via">?</button>
                   <button type="button" id="btnMapDeleteMode" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="toggleMapDeleteStreetMode()" title="Attiva modalità eliminazione per togliere vie al click">
                     🗑️ Togli Vie
-                  </button>
+                  </button><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('interactive-map')" title="Come rimuovere vie con un tocco">?</button>
                   <button type="button" class="btn btn-primary btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="solveCarp()" title="Ricalcola gli itinerari ottimi della flotta con le modifiche">
                     ⚡ Risolvi Flotta
                   </button>
                   <button type="button" id="btnCarpMapFullscreen" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8;" onclick="toggleCarpMapFullscreen()" title="Espandi la mappa interattiva a schermo intero mantenendo tutti i controlli (Aggiungi/Togli Vie, Risolvi Flotta)">
                     ⛶ Schermo Intero
-                  </button>
+                  </button><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('interactive-map')" title="Guida alla Mappa a Schermo Intero">?</button>
                   <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--text-muted); text-decoration: none; font-size: 11px; padding: 2px 4px;" title="Apri visualizzazione Folium statica in nuova scheda">Report HTML ↗</a>
                 </div>
               </div>
@@ -1033,7 +1036,7 @@
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
                   <h4 style="font-size: 13.5px; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 6px;">
-                    <span>📊</span> <span id="carpSummaryTitle">Prospetto Merceologico & Stime Rifiuti sul Comune</span>
+                    <span>📊</span> <span id="carpSummaryTitle">Prospetto Merceologico & Stime Rifiuti sul Comune</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Guida alle Frazioni e Stime Comunali">?</button>
                   </h4>
                   <span id="carpSummaryNetBadge" class="code-tag" style="color: #34d399; font-size: 11px;">-- km rete</span>
                 </div>
@@ -1069,7 +1072,7 @@
           <div class="card" style="padding: 14px; margin-bottom: 0; background: rgba(9, 15, 29, 0.9);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
               <h4 style="font-size: 14px; color: #34d399; margin: 0; display: flex; align-items: center; gap: 6px;">
-                <span>📋</span> Tabella Comparativa Flotta & Fogli di Marcia Compattatori
+                <span>📋</span> Tabella Comparativa Flotta & Fogli di Marcia Compattatori<button type="button" class="help-faq-btn" onclick="openFaqHelpModal('driver-sheet')" title="Guida al Foglio di Viaggio per l'Autista">?</button>
               </h4>
               <label style="font-size: 12px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px;">
                 <input type="checkbox" id="chkHideUnusedCarpVehicles" onchange="if (State.carpResult) renderCarpVehicleReport(State.carpResult);" style="accent-color: #38bdf8; cursor: pointer;">
@@ -2416,7 +2419,7 @@
           </details>
 
           <!-- FAQ 2 -->
-          <details class="faq-item">
+          <details class="faq-item" id="faq-cvrp-vs-carp">
             <summary class="faq-question">
               <span>2. Qual è la differenza fondamentale tra problemi "Node Routing" (CVRP, VRPTW) e "Arc Routing" (CARP)?</span>
               <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
@@ -2432,7 +2435,7 @@
           </details>
 
           <!-- FAQ 3 -->
-          <details class="faq-item">
+          <details class="faq-item" id="faq-fleet-config">
             <summary class="faq-question">
               <span>3. Come si bilanciano il "Costo Fisso di Ingaggio Mezzo" e il "Costo Chilometrico (€/km)"?</span>
               <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
@@ -2613,7 +2616,7 @@
           </details>
 
           <!-- Nuova FAQ 9: Densità Lineare Media Rifiuti & Focus Conegliano/Italia -->
-          <details class="faq-item">
+          <details class="faq-item" id="faq-linear-density">
             <summary class="faq-question">
               <span>⚖️ Come viene calcolata la "Densità Lineare (kg/m)" nei modelli CARP e come varia in Italia e nel Comune di Conegliano per tipologia di rifiuto e zona?</span>
               <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
@@ -2703,7 +2706,162 @@
               </ul>
             </div>
           </details>
-        </div>
+        
+          <!-- Nuova FAQ 10: Autenticazione Utente, Gestione Multi-Utente & Salvataggio Scenari -->
+          <details class="faq-item" id="faq-login-scenarios">
+            <summary class="faq-question">
+              <span>🔐 Come funziona l'Autenticazione Utente, la Gestione Multi-Utente e il Salvataggio dei Propri Scenari & Flotte?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              La piattaforma <b>OR-Route</b> include un'architettura completa di <b>autenticazione sicura e gestione multi-utente</b> basata su database relazionale SQLite integrato (<code>or_route_data.db</code>) con token di sessione univoci:<br><br>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">👤 1. Registrazione e Accesso Utente</h4>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Creazione Account</b>: cliccando su <b>"👤 Accedi / Registrati"</b> nella barra superiore, puoi registrare istantaneamente un nuovo profilo (es. <code>nico</code>) indicando nome visualizzato, email facoltativa e una password protetta.</li>
+                <li><b>Sicurezza delle Credenziali</b>: le password non vengono mai salvate in chiaro; il backend esegue l'hashing crittografico <i>PBKDF2-HMAC-SHA256</i> con salt crittografico casuale a 100.000 iterazioni.</li>
+                <li><b>Spazio di Lavoro Privato</b>: ogni utente dispone di un proprio catalogo riservato. Gli scenari creati da un utente non sono visibili né modificabili dagli altri utenti registrati.</li>
+              </ul>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">💾 2. Cosa viene Salvato nello Scenario?</h4>
+              Quando salvi uno scenario (pulsante <b>"💾 Salva Scenario"</b>), la piattaforma memorizza l'intero stato operativo del problema:
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Rete Stradale & Topologia GIS</b>: lo stradario completo scaricato da OpenStreetMap o modificato manualmente (tutte le vie, nodi, coordinate GPS reali, sensi unici e lunghezze metriche).</li>
+                <li><b>Domande di Rifiuto (kg)</b>: i quantitativi di spazzatura impostati per ciascuna via, inclusi eventuali override manuali o calibrazioni da formulari di pesata aziendali.</li>
+                <li><b>Flotta Veicoli</b>: il numero di compattatori a disposizione, la portata massima ($Q_k$), il costo fisso giornaliero di ingaggio e il costo chilometrico.</li>
+                <li><b>Cantiere / Deposito</b>: l'indirizzo e le coordinate geografiche esatte della sede aziendale con il relativo raccordo viario (R0).</li>
+                <li><b>Modello e Parametri</b>: il modello matematico di riferimento (CARP, CVRP, VRPTW, MDVRP, PCARP, CARPTW, CARPIF, DCARP) e i fattori di velocità operativa.</li>
+              </ul>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">📂 3. Richiamo, Modifica ed Eliminazione degli Scenari</h4>
+              <ul style="margin: 6px 0 0 20px; line-height: 1.6;">
+                <li><b>I Miei Scenari</b>: il pannello di gestione mostra l'elenco cronologico di tutti i tuoi scenari con data di creazione, modello utilizzato e badge identificativo.</li>
+                <li><b>Caricamento Rapido</b>: cliccando <i>"Carica"</i>, la dashboard, le tabelle e la mappa stradale vengono istantaneamente ripristinate con la configurazione salvata.</li>
+                <li><b>Salvataggio Rapido (Quick-Save)</b>: una volta caricato uno scenario, compare in testata l'indicatore con il pulsante verde <code>💾 Salva</code> per aggiornare direttamente lo scenario attivo dopo aver apportato modifiche a vie o mezzi.</li>
+                <li><b>Eliminazione Sicura</b>: puoi rimuovere in qualsiasi momento gli scenari obsoleti con conferma di sicurezza.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 11: Cosa sono i Nodi nella Rete Stradale -->
+          <details class="faq-item" id="faq-nodes-explained">
+            <summary class="faq-question">
+              <span>📍 Cosa sono i "Nodi" nella rete stradale e nei modelli di Ricerca Operativa (CARP vs VRP)?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Nella teoria dei grafi e nella Ricerca Operativa, qualsiasi territorio o mappa viaria viene modellato come un grafo matematico $G = (V, E)$, dove $V$ rappresenta l'insieme dei <b>Nodi (Vertici)</b> ed $E$ l'insieme degli <b>Archi (Strade o Segmenti Viari)</b>.<br><br>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🚦 1. Nei Modelli CARP (Raccolta Porta a Porta & Spazzamento Stradale)</h4>
+              Nel modello CARP la raccolta <b>non avviene nei nodi</b>, ma si svolge <b>lungo le vie</b> (sugli archi):
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>I Nodi sono gli INCROCI STRADALI, le intersezioni, le rotatorie o i punti di svolta/terminazione</b> della viabilità comunale. Ciascun nodo ha coordinate geografiche precise (Latitudine e Longitudine).</li>
+                <li><b>Gli Archi sono le VIE</b>: ogni tratta stradale (es. <code>Via Roma</code>) collega un nodo di inizio $u$ a un nodo di fine $v$. È qui che i cassonetti o mastelli dei residenti sono posizionati e generano la <b>domanda di rifiuti in kg</b>.</li>
+                <li><b>Il Nodo 0 (Sede / Cantiere Operativo)</b>: per convenzione matematica, il <b>Nodo 0</b> identifica la sede aziendale, l'autorimessa o il cantiere da cui partono i compattatori a inizio turno e a cui devono rientrare a fine servizio. Se il cantiere si trova fuori comune, la piattaforma genera automaticamente l'arco di raccordo viario <b>R0</b> per raggiungere il primo incrocio della viabilità comunale.</li>
+                <li><b>Perché il calcolatore ha bisogno dei nodi</b>: i numeri dei nodi (es. $1 \rightarrow 2$, $2 \rightarrow 5$) permettono al solutore matematico di verificare la <i>continuità di flusso</i>: quando un compattatore finisce di servire una strada all'incrocio $v$, la strada successiva deve obbligatoriamente partire dall'incrocio $v$ (oppure il camion compie un transito a vuoto <i>deadheading</i> verso un altro incrocio).</li>
+              </ul>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">📦 2. Nei Modelli CVRP e VRPTW (Consegna Merci & Cassonetti Intelligenti)</h4>
+              Nei problemi di <b>Node Routing (Instradamento su Vertici)</b>, il significato dei nodi è completamente differente:
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li>I nodi NON sono solo incroci, ma sono direttamente i <b>singoli punti di sosta, clienti o cassonetti fisici</b> (es. <code>Farmacia Centrale</code>, <code>Supermercato Conad</code>, <code>Campana Vetro #12</code>).</li>
+                <li>Il veicolo transita lungo la viabilità stradale e si arresta al nodo per compiere la consegna o lo svuotamento volumetrico, prima di ripartire verso il cliente successivo.</li>
+              </ul>
+
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">📋 3. Come spiegare il percorso all'autista (Driver Sheet)</h4>
+              <b>All'autista non serve conoscere o memorizzare i numeri dei nodi!</b><br>
+              Il <b>Foglio di Viaggio per l'Autista</b> generato dal software traduce automaticamente la topologia matematica in istruzioni stradali intuitive per la guida:
+              <div style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; padding: 8px 12px; margin: 8px 0; border-radius: 4px; font-size: 12.5px;">
+                <i>"Partenza da Cantiere Deposito &rarr; Transito R0 su SP635 &rarr; <b>1. Via Roma</b> (raccogli 850 kg, direzione Nord) &rarr; svolta a destra in <b>2. Via Piave</b> (raccogli 420 kg, direzione Est) &rarr; <b>3. Vicolo San Pio X</b>..."</i>
+              </div>
+              I numeri dei nodi rimangono un potente strumento di controllo tecnico visualizzato nella tabella della rete stradale e nei tooltip della mappa, per verificare al volo la coerenza geometrica delle intersezioni.
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 12: Importazione OpenStreetMap & Raccordi Stradali -->
+          <details class="faq-item" id="faq-osm-import">
+            <summary class="faq-question">
+              <span>🌍 Come funziona l'Importazione da OpenStreetMap, la ricerca Multi-Zona e il Raccordo Cantiere (R0)?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              La piattaforma <b>OR-Route</b> integra un connettore cartografico diretto con i server ufficiali mondiali di <b>OpenStreetMap (OSM)</b> e l'API di routing <b>OSRM</b>:<br><br>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Supporto Multi-Comune e Frazioni</b>: inserendo toponimi multipli (es. <code>Tarzo e Corbanese</code> oppure <code>Conegliano; Susegana</code>), il sistema identifica i centri urbani di ciascuna località, scarica la viabilità carrabile e collega i centri con i corridoi provinciali/statali reali tramite OSRM.</li>
+                <li><b>Filtraggio Viabilità Pubblica Carrabile</b>: vengono automaticamente esclusi edifici, marciapiedi, sentieri sterrati, scalinate e accessi privati, preservando esclusivamente le strade adatte al transito dei mezzi di raccolta (primarie, secondarie, terziarie e residenziali).</li>
+                <li><b>Raccordo Cantiere (R0)</b>: specificando le coordinate GPS o l'indirizzo della sede/deposito aziendale, il software calcola il tragitto stradale effettivo per innestarsi sulla prima via del comune. Questo tratto viene identificato come <b>R0</b> con domanda pari a 0 kg (solo transito).</li>
+                <li><b>Importazione per Raggio GPS</b>: ideale per quartieri o settori industriali specifici (raggio configurabile tra 200m e 750m attorno a un punto GPS).</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 13: Mappa Stradale Interattiva & Editing Vie -->
+          <details class="faq-item" id="faq-interactive-map">
+            <summary class="faq-question">
+              <span>🗺️ Come utilizzare la Mappa Stradale Interattiva, aggiungere/togliere vie ed espandere a Schermo Intero?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              La mappa Leaflet integrata permette il pieno controllo visivo e interattivo della rete:<br><br>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>➕ Aggiungi Via</b>: attiva la modalità disegno; clicca un primo punto sulla mappa per l'inizio e un secondo punto per la fine della via. Si aprirà una finestra per inserire il nome della strada e i kg di rifiuti stimati.</li>
+                <li><b>🗑️ Togli Vie</b>: attiva la modalità rimozione; toccando qualsiasi via sulla mappa, questa viene istantaneamente esclusa dal piano di raccolta.</li>
+                <li><b>Modifica Diretta al Click</b>: cliccando su qualsiasi strada in modalità normale, compare un popup per aggiornare il nome, modificare i kg di rifiuti o cancellare la via.</li>
+                <li><b>Frecce Direzionali e Senso di Percorrenza</b>: le frecce mostrano chiaramente la direzione di marcia dei veicoli calcolata dal solutore.</li>
+                <li><b>⛶ Schermo Intero</b>: espande l'intera mappa a tutto monitor mantenendo la toolbar con tutti gli strumenti di editing e il pulsante per ricalcolare la flotta (tasto <code>ESC</code> per uscire).</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 14: Solutore Matematico MILP & Calcolo Ottimo -->
+          <details class="faq-item" id="faq-solver-optimization">
+            <summary class="faq-question">
+              <span>⚡ Come funziona il Calcolo degli Itinerari Ottimi con Solutore Matematico MILP?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Premendo <b>"⚡ Risolvi Flotta"</b> o <b>"⚡ Calcola Itinerari Ottimi"</b>, il server esegue una risoluzione matematica avanzata basata su <b>COIN-OR CBC e PuLP</b>:<br><br>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Formulazione Single-Commodity Flow</b>: garantisce che ogni strada richiesta sia servita una e una sola volta per la raccolta e previene la formazione di sotto-giri disconnessi (sub-tour elimination).</li>
+                <li><b>Vincoli di Portata Capacitata</b>: nessun compattatore viene caricato oltre la sua portata utile ($Q_k$). Se il carico totale della rete supera la flotta disponibile, il sistema avverte e suggerisce opzioni di dimensionamento.</li>
+                <li><b>Minimizzazione Globale</b>: la funzione obiettivo minimizza la combinazione di costi fissi di uscita dei camion e costi vivi chilometrici, trovando la soluzione ottima globale certificata.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 15: Foglio di Viaggio per l'Autista -->
+          <details class="faq-item" id="faq-driver-sheet">
+            <summary class="faq-question">
+              <span>📋 Come interpretare e stampare il Foglio di Viaggio per l'Autista (Driver Sheet)?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Il <b>Foglio di Viaggio per l'Autista</b> è progettato per trasferire le soluzioni matematiche direttamente all'operatore sul mezzo in modo semplice e comprensibile:<br><br>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Sequenza Cronologica Vie</b>: elenca le strade nell'esatto ordine di percorrenza numerato (1, 2, 3...).</li>
+                <li><b>Tipologia Operativa</b>: evidenzia chiaramente con badge verde le tratte con <b>RACCOLTA ATTIVA</b> e in grigio/azzurro le tratte di <b>SOLO TRANSITO</b>.</li>
+                <li><b>Sensi di Marcia e Direzione</b>: indica i riferimenti cardinali e i punti di svolta per guidare in sicurezza.</li>
+                <li><b>Pulsante Stampa Rapida</b>: genera una scheda formattata A4 pronta per essere stampata o consegnata su tablet all'equipaggio.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- Nuova FAQ 16: Deadheading & Transiti a Vuoto -->
+          <details class="faq-item" id="faq-deadhead">
+            <summary class="faq-question">
+              <span>🔄 Cosa si intende per "Deadheading" (Transito a Vuoto) e come viene abbattuto?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              Il termine <b>Deadheading</b> (o percorrenza a vuoto) indica ogni chilometro percorso da un compattatore lungo strade dove non sta effettuando raccolta:<br><br>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Cause Tipiche</b>: strade a senso unico che costringono a fare il giro dell'isolato, tratte già servite in precedenza e riattraversate per raggiungere un altro quartiere, percorsi di trasferimento dalla sede al comune.</li>
+                <li><b>Impatto Economico</b>: nella gestione manuale il deadheading costituisce fino al 35% del chilometraggio totale, sprecando gasolio e ore-lavoro.</li>
+                <li><b>Ottimizzazione Euleriana</b>: il modello CARP risolve una variante avanzata del <i>Chinese Postman Problem</i> capacitato, minimizzando la duplicazione degli archi e garantendo la chiusura del circuito al minor costo possibile.</li>
+              </ul>
+            </div>
+          </details>
+</div>
 
         <!-- =================================================================
              GRUPPO 2: DISPENSA TEORICA (FORMULAZIONI MATEMATICHE MILP)
@@ -3272,7 +3430,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
         <div style="margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="font-size: 13px; font-weight: 700; color: #38bdf8;">
-              1. Comuni / Zone da Scaricare (anche multipli contemporaneamente):
+              1. Comuni / Zone da Scaricare (anche multipli contemporaneamente): <button type='button' class='help-faq-btn' onclick="openFaqHelpModal('osm-import')" title='Guida su Comuni e Multi-Zona'>?</button>
             </label>
             <span class="code-tag" style="font-size: 10.5px; color: #34d399;">Supporto Multi-Comune</span>
           </div>
@@ -3290,7 +3448,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
 
         <div style="margin-bottom: 14px; background: rgba(14, 22, 38, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
           <label style="display: block; font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
-            2. Punto di Partenza dei Mezzi / Cantiere Deposito (Nodo 0):
+            2. Punto di Partenza dei Mezzi / Cantiere Deposito (Nodo 0): <button type='button' class='help-faq-btn' onclick="openFaqHelpModal('nodes-explained')" title='Spiegazione Deposito e Nodo 0'>?</button>
           </label>
           <input type="text" id="inpOsmDepot" value="45.951391386254286, 12.312502178579223" class="cell-inp" style="max-width: 100%; width: 100%;" placeholder="es. 45.951391386254286, 12.312502178579223 oppure indirizzo">
           <small style="color: var(--text-secondary); font-size: 11.5px; display: block; margin-top: 6px; line-height: 1.5;">
@@ -3300,7 +3458,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
 
         <div style="margin-bottom: 14px;">
           <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
-            3. Dimensione Settore Operativo (Numero Vie):
+            3. Dimensione Settore Operativo (Numero Vie): <button type='button' class='help-faq-btn' onclick="openFaqHelpModal('osm-import')" title='Guida sulla Dimensione del Settore'>?</button>
           </label>
           <select id="inpOsmMaxStreets" style="background:#080d19; border:1px solid #283959; color:#38bdf8; padding:8px 10px; border-radius:6px; font-size:13px; width:100%;">
             <option value="0" selected>🌐 Tutto il comune (copertura totale di tutte le vie)</option>
@@ -3477,6 +3635,34 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
       <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
         <button type="button" class="btn btn-secondary btn-sm" onclick="closeAddStreetModal()">Annulla</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="confirmAddStreetFromMap()">💾 Inserisci nella Rete</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal Prompt Guida Rapida FAQ con Rimando Approfondimento -->
+  <div id="modalFaqHelpPrompt" class="modal-overlay" style="display: none; z-index: 12000;">
+    <div class="modal-card" style="max-width: 530px; border: 1px solid rgba(56, 189, 248, 0.45); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9); background: #0c1427; border-radius: 12px; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px; background: rgba(56, 189, 248, 0.2); width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #38bdf8;">💡</span>
+          <div>
+            <h4 id="faqPromptTitle" style="margin: 0; font-size: 15.5px; color: #38bdf8; font-weight: 700;">Guida Rapida</h4>
+            <small id="faqPromptSubtitle" style="color: var(--text-muted); font-size: 11.5px;">Spiegazione &amp; Contesto Operativo</small>
+          </div>
+        </div>
+        <button onclick="closeFaqHelpModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; line-height: 1;" title="Chiudi finestra">&times;</button>
+      </div>
+
+      <div id="faqPromptBody" style="font-size: 13px; line-height: 1.6; color: #e2e8f0; margin-bottom: 16px; background: rgba(15, 23, 42, 0.65); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+        <!-- Contenuto dinamico inserito da app.js -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeFaqHelpModal()">Chiudi</button>
+        <button type="button" id="btnGoToFullFaq" class="btn btn-primary btn-sm" onclick="goToFaqSectionFromPrompt()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
+          <span>📖</span> Leggi Approfondimento Completo nelle FAQ &rarr;
+        </button>
       </div>
     </div>
   </div>
