@@ -834,12 +834,12 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     raise ValueError("Specificare un toponimo o coordinate GPS.")
 
-                # Se l'utente aveva già una flotta configurata con adeguata capacità, preservala!
+                # Se l'utente aveva già una flotta configurata con capacità compatibile col nuovo scenario, preservala!
                 old_cfg = load_config()
                 if old_cfg.get("vehicles"):
                     old_fleet_cap = sum(float(v.get("capacity_kg", 0)) for v in old_cfg["vehicles"])
                     total_req_cap = sum(float(s.get("demand_kg", 0)) for s in new_cfg.get("streets", []))
-                    if old_fleet_cap >= total_req_cap * 0.9:
+                    if total_req_cap * 1.05 <= old_fleet_cap <= max(9000.0, total_req_cap * 1.6):
                         new_cfg["vehicles"] = old_cfg["vehicles"]
 
                 save_config(new_cfg)
@@ -870,9 +870,15 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     exact_depot_lat=cfg.get("depot_info", {}).get("exact_lat"),
                     exact_depot_lon=cfg.get("depot_info", {}).get("exact_lon"),
                     depot_address=cfg.get("depot_info", {}).get("address"),
-                    max_streets=max_s
+                    max_streets=max_s,
+                    place_name=cfg.get("place_name"),
+                    urban_centers=cfg.get("urban_centers")
                 )
-                new_cfg["vehicles"] = cfg.get("vehicles", new_cfg.get("vehicles"))
+                old_vehicles = cfg.get("vehicles", [])
+                old_cap = sum(float(v.get("capacity_kg", 0)) for v in old_vehicles)
+                req_cap = sum(float(s.get("demand_kg", 0)) for s in new_cfg.get("streets", []))
+                if old_vehicles and req_cap * 1.05 <= old_cap <= max(9000.0, req_cap * 1.8):
+                    new_cfg["vehicles"] = old_vehicles
                 save_config(new_cfg)
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
@@ -895,14 +901,21 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 req_data = json.loads(body) if body else {}
                 target_cap = float(req_data.get("target_capacity_kg", 9000.0))
                 G = build_graph_from_config(cfg)
-                G_cropped = crop_sector_by_capacity(G, depot_node_id=0, max_capacity_kg=target_cap)
+                G_cropped = crop_sector_by_capacity(
+                    G,
+                    depot_node_id=0,
+                    max_capacity_kg=target_cap,
+                    urban_centers=cfg.get("urban_centers")
+                )
                 new_cfg = convert_networkx_to_carp_config(
                     G_cropped, 
                     depot_node_id=0, 
                     exact_depot_lat=cfg.get("depot_info", {}).get("exact_lat"),
                     exact_depot_lon=cfg.get("depot_info", {}).get("exact_lon"),
                     depot_address=cfg.get("depot_info", {}).get("address"),
-                    max_streets=0
+                    max_streets=0,
+                    place_name=cfg.get("place_name"),
+                    urban_centers=cfg.get("urban_centers")
                 )
                 # Conserva la flotta corrente dell'utente
                 new_cfg["vehicles"] = cfg.get("vehicles", new_cfg.get("vehicles"))
