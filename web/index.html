@@ -3733,188 +3733,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
         @media print { button { display: none !important; } }
       </style></head><body>`);
       w.document.write(content.innerHTML);
-      w.document.write(`
-  <!-- Modal Autenticazione Utente (Login / Registrazione) -->
-  <div id="modalAuth" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 440px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 id="authModalTitle" style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-          <span>👤</span> Profilo Utente & Scenari
-        </h3>
-        <button onclick="closeAuthModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
-      </div>
-
-      <!-- Tabs Accedi / Registrati -->
-      <div class="auth-tabs-nav">
-        <button id="authTabBtnLogin" class="auth-tab-btn active" onclick="switchAuthTab('login')">🔑 Accedi</button>
-        <button id="authTabBtnRegister" class="auth-tab-btn" onclick="switchAuthTab('register')">📝 Crea Account</button>
-      </div>
-
-      <!-- Tab Content: Accedi -->
-      <div id="authPanelLogin">
-        <div id="authLoginError" class="auth-error-msg" style="display: none;"></div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Nome Utente o Email</label>
-          <input type="text" id="authLoginUser" class="form-control" placeholder="es. mario.rossi o info@azienda.it" style="width: 100%;" onkeydown="if(event.key==='Enter') submitAuthLogin()">
-        </div>
-        <div style="margin-bottom: 18px;">
-          <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Password</label>
-          <input type="password" id="authLoginPass" class="form-control" placeholder="••••••••" style="width: 100%;" onkeydown="if(event.key==='Enter') submitAuthLogin()">
-        </div>
-        <button class="btn btn-blue" style="width: 100%; font-weight: 700; padding: 10px;" onclick="submitAuthLogin()">Accedi al Portale</button>
-        <p style="text-align: center; margin-top: 14px; font-size: 12.5px; color: #94a3b8;">
-          Non hai ancora un account? <a href="javascript:void(0)" onclick="switchAuthTab('register')" style="color: #38bdf8; font-weight: 600;">Registrati ora</a>
-        </p>
-      </div>
-
-      <!-- Tab Content: Registrati -->
-      <div id="authPanelRegister" style="display: none;">
-        <div id="authRegError" class="auth-error-msg" style="display: none;"></div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Nome Utente *</label>
-          <input type="text" id="authRegUser" class="form-control" placeholder="es. fleet_manager" style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Email (opzionale)</label>
-          <input type="email" id="authRegEmail" class="form-control" placeholder="es. manager@azienda.it" style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Password * (min. 5 caratteri)</label>
-          <input type="password" id="authRegPass" class="form-control" placeholder="••••••••" style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 18px;">
-          <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Conferma Password *</label>
-          <input type="password" id="authRegPassConfirm" class="form-control" placeholder="Ripeti password" style="width: 100%;" onkeydown="if(event.key==='Enter') submitAuthRegister()">
-        </div>
-        <button class="btn btn-green" style="width: 100%; font-weight: 700; padding: 10px;" onclick="submitAuthRegister()">Crea Account & Salva Scenari</button>
-        <p style="text-align: center; margin-top: 14px; font-size: 12.5px; color: #94a3b8;">
-          Hai già un account? <a href="javascript:void(0)" onclick="switchAuthTab('login')" style="color: #38bdf8; font-weight: 600;">Accedi</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal I Miei Scenari & Configurazioni -->
-  <div id="modalScenarios" class="modal-overlay" style="display: none;">
-    <div class="modal-card-lg">
-      <div class="modal-header-custom">
-        <div>
-          <h3 style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-            <span>📁</span> I Miei Scenari & Configurazioni Salvate
-          </h3>
-          <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">
-            Configurazioni personalizzate di mappe, tratte stradali, clienti e veicoli salvate nel tuo account.
-          </p>
-        </div>
-        <button onclick="closeScenariosModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
-      </div>
-
-      <!-- Barra Filtro Scenari -->
-      <div style="padding: 12px 24px; background: rgba(15, 23, 42, 0.5); border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <label style="font-size: 12.5px; color: #cbd5e1; font-weight: 600;">Filtra Modello:</label>
-          <select id="scenarioFilterModel" class="header-select" style="padding: 4px 10px; font-size: 12.5px;" onchange="filterScenariosList(this.value)">
-            <option value="">Tutti i Modelli</option>
-            <option value="carp">CARP (RSU & Spazzamento)</option>
-            <option value="cvrp">CVRP (Merci & Corrieri)</option>
-            <option value="vrptw">VRPTW (Finestre Orarie)</option>
-            <option value="pcarp">PCARP (Raccolta Settimanale)</option>
-            <option value="carptw">CARPTW (Finestre Orarie Strade)</option>
-            <option value="carpif">CARPIF (Scarichi Intermedi)</option>
-            <option value="dcarp">DCARP (Dinamico Real-Time)</option>
-            <option value="ev_vrp">EV-VRP (Elettrico)</option>
-            <option value="vrppd">VRPPD (Ritiri/Consegne)</option>
-            <option value="mdvrp">MDVRP (Multi-Deposito)</option>
-          </select>
-        </div>
-        <button class="btn btn-blue btn-sm" onclick="closeScenariosModal(); openSaveScenarioModal();">
-          ➕ Salva Configurazione Attuale
-        </button>
-      </div>
-
-      <!-- Contenitore Lista Scenari -->
-      <div id="scenariosListContainer" class="modal-body-scrollable">
-        <div style="text-align: center; padding: 40px; color: #94a3b8;">
-          Caricamento scenari...
-        </div>
-      </div>
-
-      <div class="modal-footer-custom">
-        <button class="btn btn-secondary btn-sm" onclick="closeScenariosModal()">Chiudi</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Salva Configurazione Scenario -->
-  <div id="modalSaveScenario" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 500px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-          <span>💾</span> Salva Configurazione
-        </h3>
-        <button onclick="closeSaveScenarioModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
-      </div>
-
-      <div id="saveScenarioActiveWarning" style="display: none; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px;">
-        <div style="font-weight: 700; color: #38bdf8; margin-bottom: 6px;">Scegli la modalità di salvataggio:</div>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 6px;">
-          <input type="radio" name="saveScenarioMode" value="update" checked onchange="toggleSaveScenarioMode('update')">
-          <span>Aggiorna lo scenario attivo: <strong id="saveActiveScenarioLabel">...</strong></span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="radio" name="saveScenarioMode" value="new" onchange="toggleSaveScenarioMode('new')">
-          <span>Salva come Nuovo Scenario</span>
-        </label>
-      </div>
-
-      <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Modello Rilevato</label>
-        <input type="text" id="saveScenarioModelBadge" class="form-control" readonly style="width: 100%; background: rgba(15, 23, 42, 0.6); color: #38bdf8; font-weight: 700;">
-      </div>
-
-      <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Nome Configurazione / Scenario *</label>
-        <input type="text" id="saveScenarioName" class="form-control" placeholder="es. RSU Treviso Centro - Turno Mattina" style="width: 100%;">
-      </div>
-
-      <div style="margin-bottom: 18px;">
-        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Note / Descrizione (opzionale)</label>
-        <textarea id="saveScenarioDesc" class="form-control" rows="2" placeholder="es. Include 12 vie e 2 compattatori 4500kg con scarico a no-transit" style="width: 100%; resize: vertical;"></textarea>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn btn-secondary" onclick="closeSaveScenarioModal()">Annulla</button>
-        <button class="btn btn-blue" id="btnConfirmSaveScenario" onclick="submitSaveScenario()">💾 Salva nel Profilo</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Rinomina / Modifica Note Scenario -->
-  <div id="modalEditScenario" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 460px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-          <span>✏️</span> Modifica Scenario
-        </h3>
-        <button onclick="closeEditScenarioModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
-      </div>
-      <input type="hidden" id="editScenarioId">
-      <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Nome Scenario *</label>
-        <input type="text" id="editScenarioName" class="form-control" style="width: 100%;">
-      </div>
-      <div style="margin-bottom: 18px;">
-        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Note / Descrizione</label>
-        <textarea id="editScenarioDesc" class="form-control" rows="2" style="width: 100%; resize: vertical;"></textarea>
-      </div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn btn-secondary" onclick="closeEditScenarioModal()">Annulla</button>
-        <button class="btn btn-blue" onclick="submitEditScenario()">Salva Modifiche</button>
-      </div>
-    </div>
-  </div>
-
-</body></html>`);
+      w.document.write(`</body></html>`);
       w.document.close();
       setTimeout(() => { w.print(); }, 250);
     }
@@ -4047,29 +3866,42 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
 
   <!-- Modal Salva Configurazione Scenario -->
   <div id="modalSaveScenario" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-card" style="max-width: 520px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3 style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-          <span>💾</span> Salva Configurazione
+          <span>💾</span> Salva Configurazione nel Profilo
         </h3>
         <button onclick="closeSaveScenarioModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
       </div>
 
+      <div id="saveScenarioError" class="auth-error-msg" style="display: none;"></div>
+
       <div id="saveScenarioActiveWarning" style="display: none; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px;">
         <div style="font-weight: 700; color: #38bdf8; margin-bottom: 6px;">Scegli la modalità di salvataggio:</div>
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 6px;">
-          <input type="radio" name="saveScenarioMode" value="update" checked onchange="toggleSaveScenarioMode('update')">
+          <input type="radio" id="saveModeUpdate" name="saveScenarioMode" value="update" onchange="toggleSaveScenarioMode('update')">
           <span>Aggiorna lo scenario attivo: <strong id="saveActiveScenarioLabel">...</strong></span>
         </label>
         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="radio" name="saveScenarioMode" value="new" onchange="toggleSaveScenarioMode('new')">
+          <input type="radio" id="saveModeNew" name="saveScenarioMode" value="new" checked onchange="toggleSaveScenarioMode('new')">
           <span>Salva come Nuovo Scenario</span>
         </label>
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Modello Rilevato</label>
-        <input type="text" id="saveScenarioModelBadge" class="form-control" readonly style="width: 100%; background: rgba(15, 23, 42, 0.6); color: #38bdf8; font-weight: 700;">
+        <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Modello di Ottimizzazione</label>
+        <select id="saveScenarioModelSelect" class="form-control" style="width: 100%; font-weight: 700; color: #38bdf8;" onchange="handleSaveScenarioModelChange(this.value)">
+          <option value="carp">🚛 CARP (Raccolta RSU & Servizi Stradali)</option>
+          <option value="cvrp">📦 CVRP (Consegne Merci & Corrieri)</option>
+          <option value="vrptw">⏱️ VRPTW (Finestre Orarie Clienti)</option>
+          <option value="pcarp">📅 PCARP (Raccolta Settimanale)</option>
+          <option value="carptw">⏱️🛣️ CARPTW (Finestre Orarie Strade & ZTL)</option>
+          <option value="carpif">♻️ CARPIF (Scarichi Intermedi TMB/Discarica)</option>
+          <option value="dcarp">⚡ DCARP (Dinamico Real-Time: Compiti Virtuali)</option>
+          <option value="ev_vrp">🔋 EV-VRP (Flotte Elettriche & Ricariche)</option>
+          <option value="vrppd">📦🔄 VRPPD (Ritiri e Consegne Accoppiati)</option>
+          <option value="mdvrp">🏢 MDVRP (Multi-Deposito)</option>
+        </select>
       </div>
 
       <div style="margin-bottom: 12px;">
@@ -4079,7 +3911,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
 
       <div style="margin-bottom: 18px;">
         <label style="display: block; font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Note / Descrizione (opzionale)</label>
-        <textarea id="saveScenarioDesc" class="form-control" rows="2" placeholder="es. Include 12 vie e 2 compattatori 4500kg con scarico a no-transit" style="width: 100%; resize: vertical;"></textarea>
+        <textarea id="saveScenarioDesc" class="form-control" rows="2" placeholder="es. Include tratte stradali, mezzi assegnati e cantiere" style="width: 100%; resize: vertical;"></textarea>
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px;">

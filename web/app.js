@@ -8349,71 +8349,123 @@ async function handleLogout() {
   showToast('👋 Disconnessione effettuata con successo.');
 }
 
-function getCurrentActiveModelInfo() {
-  const tab = State.activeTab || 'tab-carp';
-  let modelType = 'carp';
-  let modelLabel = 'CARP (Raccolta RSU & Servizi Stradali)';
-  let config = State.carpConfig;
-  let defaultName = 'Scenario Raccolta CARP';
-
-  if (tab === 'tab-cvrp') {
-    modelType = 'cvrp';
-    modelLabel = 'CVRP (Consegne Merci & Corrieri)';
-    config = State.cvrpConfig;
-    defaultName = 'Scenario Consegne CVRP';
-  } else if (tab === 'tab-vrptw') {
-    modelType = 'vrptw';
-    modelLabel = 'VRPTW (Finestre Orarie)';
-    config = State.vrptwConfig;
-    defaultName = 'Scenario VRPTW Finestre Orarie';
-  } else if (tab === 'tab-pcarp') {
-    modelType = 'pcarp';
-    modelLabel = 'PCARP (Raccolta Settimanale)';
-    config = State.pcarpConfig;
-    defaultName = 'Scenario PCARP Settimanale';
-  } else if (tab === 'tab-carptw') {
-    modelType = 'carptw';
-    modelLabel = 'CARPTW (Finestre Orarie Stradali)';
-    config = State.carptwConfig;
-    defaultName = 'Scenario CARPTW Stradale';
-  } else if (tab === 'tab-carpif') {
-    modelType = 'carpif';
-    modelLabel = 'CARPIF (Scarichi Intermedi)';
-    config = State.carpifConfig;
-    defaultName = 'Scenario CARPIF Scarichi Intermedi';
-  } else if (tab === 'tab-dcarp') {
-    modelType = 'dcarp';
-    modelLabel = 'DCARP (Gestione Real-Time Dinamica)';
-    config = State.dcarpConfig;
-    defaultName = 'Scenario DCARP Dinamico';
-  } else if (tab === 'tab-intermediate') {
-    modelType = 'ev_vrp';
-    modelLabel = 'EV-VRP (Flotte Elettriche & Ricariche)';
-    config = State.evConfig;
-    defaultName = 'Scenario EV-VRP Flotta Elettrica';
-  } else if (tab === 'tab-vrppd') {
-    modelType = 'vrppd';
-    modelLabel = 'VRPPD (Ritiri e Consegne)';
-    config = State.vrppdConfig;
-    defaultName = 'Scenario VRPPD Ritiri e Consegne';
-  } else if (tab === 'tab-mdvrp') {
-    modelType = 'mdvrp';
-    modelLabel = 'MDVRP (Multi-Deposito)';
-    config = State.mdvrpConfig;
-    defaultName = 'Scenario MDVRP Multi-Deposito';
+async function getCurrentActiveModelInfo(forcedModel = null) {
+  let modelType = forcedModel;
+  if (!modelType) {
+    const tab = State.activeTab || 'tab-carp';
+    if (tab === 'tab-cvrp') modelType = 'cvrp';
+    else if (tab === 'tab-vrptw') modelType = 'vrptw';
+    else if (tab === 'tab-pcarp') modelType = 'pcarp';
+    else if (tab === 'tab-carptw') modelType = 'carptw';
+    else if (tab === 'tab-carpif') modelType = 'carpif';
+    else if (tab === 'tab-dcarp') modelType = 'dcarp';
+    else if (tab === 'tab-intermediate') modelType = 'ev_vrp';
+    else if (tab === 'tab-vrppd') modelType = 'vrppd';
+    else if (tab === 'tab-mdvrp') modelType = 'mdvrp';
+    else modelType = 'carp';
   }
 
-  // Cerca un nome più specifico dal comune o dal deposito
+  let config = null;
+  let modelLabel = 'CARP (Raccolta RSU & Servizi Stradali)';
+  let defaultName = 'Scenario Raccolta CARP';
+
+  if (modelType === 'cvrp') {
+    modelLabel = 'CVRP (Consegne Merci & Corrieri)';
+    defaultName = 'Scenario Consegne CVRP';
+    if (!State.cvrpConfig) {
+      try { const r = await fetch('/api/cvrp/config'); if (r.ok) State.cvrpConfig = await r.json(); } catch(e){}
+    }
+    config = State.cvrpConfig;
+  } else if (modelType === 'vrptw') {
+    modelLabel = 'VRPTW (Finestre Orarie)';
+    defaultName = 'Scenario VRPTW Finestre Orarie';
+    if (!State.vrptwConfig) {
+      try { const r = await fetch('/api/vrptw/config'); if (r.ok) State.vrptwConfig = await r.json(); } catch(e){}
+    }
+    config = State.vrptwConfig;
+  } else if (modelType === 'pcarp') {
+    modelLabel = 'PCARP (Raccolta Settimanale)';
+    defaultName = 'Scenario PCARP Settimanale';
+    if (!State.pcarpConfig) {
+      try { const r = await fetch('/api/pcarp/config'); if (r.ok) State.pcarpConfig = await r.json(); } catch(e){}
+    }
+    config = State.pcarpConfig;
+  } else if (modelType === 'carptw') {
+    modelLabel = 'CARPTW (Finestre Orarie Stradali)';
+    defaultName = 'Scenario CARPTW Stradale';
+    if (!State.carptwConfig) {
+      try { const r = await fetch('/api/carptw/config'); if (r.ok) State.carptwConfig = await r.json(); } catch(e){}
+    }
+    config = State.carptwConfig;
+  } else if (modelType === 'carpif') {
+    modelLabel = 'CARPIF (Scarichi Intermedi)';
+    defaultName = 'Scenario CARPIF Scarichi Intermedi';
+    if (!State.carpifConfig) {
+      try { const r = await fetch('/api/carpif/config'); if (r.ok) State.carpifConfig = await r.json(); } catch(e){}
+    }
+    config = State.carpifConfig;
+  } else if (modelType === 'dcarp') {
+    modelLabel = 'DCARP (Gestione Real-Time Dinamica)';
+    defaultName = 'Scenario DCARP Dinamico';
+    if (!State.dcarpConfig) {
+      try { const r = await fetch('/api/dcarp/config'); if (r.ok) State.dcarpConfig = await r.json(); } catch(e){}
+    }
+    config = State.dcarpConfig;
+  } else if (modelType === 'ev_vrp') {
+    modelLabel = 'EV-VRP (Flotte Elettriche & Ricariche)';
+    defaultName = 'Scenario EV-VRP Flotta Elettrica';
+    if (!State.evConfig) {
+      try { const r = await fetch('/api/ev_vrp/config'); if (r.ok) State.evConfig = await r.json(); } catch(e){}
+    }
+    config = State.evConfig;
+  } else if (modelType === 'vrppd') {
+    modelLabel = 'VRPPD (Ritiri e Consegne)';
+    defaultName = 'Scenario VRPPD Ritiri e Consegne';
+    if (!State.vrppdConfig) {
+      try { const r = await fetch('/api/vrppd/config'); if (r.ok) State.vrppdConfig = await r.json(); } catch(e){}
+    }
+    config = State.vrppdConfig;
+  } else if (modelType === 'mdvrp') {
+    modelLabel = 'MDVRP (Multi-Deposito)';
+    defaultName = 'Scenario MDVRP Multi-Deposito';
+    if (!State.mdvrpConfig) {
+      try { const r = await fetch('/api/mdvrp/config'); if (r.ok) State.mdvrpConfig = await r.json(); } catch(e){}
+    }
+    config = State.mdvrpConfig;
+  } else {
+    modelType = 'carp';
+    modelLabel = 'CARP (Raccolta RSU & Servizi Stradali)';
+    defaultName = 'Scenario Raccolta CARP';
+    if (!State.carpConfig) {
+      try { const r = await fetch('/api/config'); if (r.ok) State.carpConfig = await r.json(); } catch(e){}
+    }
+    config = State.carpConfig;
+  }
+
+  // Personalizza defaultName se presente un comune o deposito
   if (config) {
     if (config.place_name) defaultName += ' - ' + config.place_name;
     else if (config.depot_info && config.depot_info.address) defaultName += ' - ' + config.depot_info.address.split(',')[0];
     else if (config.depot && config.depot.name) defaultName += ' - ' + config.depot.name;
   }
 
+  // Se ancora nullo, usa un fallback vuoto valido
+  if (!config) {
+    config = { model_type: modelType, created_at: new Date().toISOString() };
+  }
+
   return { modelType, modelLabel, config, defaultName };
 }
 
-function openSaveScenarioModal() {
+async function handleSaveScenarioModelChange(newModel) {
+  const info = await getCurrentActiveModelInfo(newModel);
+  const nameInp = document.getElementById('saveScenarioName');
+  if (nameInp && (!nameInp.value || nameInp.value.startsWith('Scenario '))) {
+    nameInp.value = info.defaultName;
+  }
+}
+
+async function openSaveScenarioModal() {
   if (!State.currentUser) {
     showToast('🔑 Accedi o registrati per salvare le tue configurazioni personali.');
     openAuthModal('login');
@@ -8421,23 +8473,35 @@ function openSaveScenarioModal() {
   }
 
   const modal = document.getElementById('modalSaveScenario');
-  const info = getCurrentActiveModelInfo();
+  const info = await getCurrentActiveModelInfo();
 
-  const modelBadgeInp = document.getElementById('saveScenarioModelBadge');
-  if (modelBadgeInp) modelBadgeInp.value = info.modelLabel;
+  const errBox = document.getElementById('saveScenarioError');
+  if (errBox) errBox.style.display = 'none';
+
+  const modelSelect = document.getElementById('saveScenarioModelSelect');
+  if (modelSelect) modelSelect.value = info.modelType;
 
   const nameInp = document.getElementById('saveScenarioName');
   const descInp = document.getElementById('saveScenarioDesc');
   const activeWarning = document.getElementById('saveScenarioActiveWarning');
   const activeLabel = document.getElementById('saveActiveScenarioLabel');
+  const radioUpdate = document.getElementById('saveModeUpdate');
+  const radioNew = document.getElementById('saveModeNew');
+  const btn = document.getElementById('btnConfirmSaveScenario');
 
   if (State.activeScenarioId && State.activeScenarioName) {
     if (activeWarning) activeWarning.style.display = 'block';
     if (activeLabel) activeLabel.innerText = State.activeScenarioName;
+    if (radioUpdate) radioUpdate.checked = true;
+    if (radioNew) radioNew.checked = false;
     if (nameInp) nameInp.value = State.activeScenarioName;
+    if (btn) btn.innerText = '💾 Aggiorna Scenario Esistente';
   } else {
     if (activeWarning) activeWarning.style.display = 'none';
+    if (radioNew) radioNew.checked = true;
+    if (radioUpdate) radioUpdate.checked = false;
     if (nameInp) nameInp.value = info.defaultName;
+    if (btn) btn.innerText = '💾 Salva nel Profilo';
   }
   if (descInp) descInp.value = '';
 
@@ -8456,33 +8520,45 @@ function toggleSaveScenarioMode(mode) {
     if (nameInp) nameInp.value = State.activeScenarioName;
     if (btn) btn.innerText = '💾 Aggiorna Scenario Esistente';
   } else {
-    const info = getCurrentActiveModelInfo();
-    if (nameInp) nameInp.value = (State.activeScenarioName ? State.activeScenarioName + ' (Copia)' : info.defaultName);
-    if (btn) btn.innerText = '➕ Salva come Nuovo Scenario';
+    const modelSelect = document.getElementById('saveScenarioModelSelect');
+    getCurrentActiveModelInfo(modelSelect ? modelSelect.value : null).then(info => {
+      if (nameInp) nameInp.value = (State.activeScenarioName ? State.activeScenarioName + ' (Copia)' : info.defaultName);
+      if (btn) btn.innerText = '➕ Salva come Nuovo Scenario';
+    });
   }
 }
 
 async function submitSaveScenario() {
-  const info = getCurrentActiveModelInfo();
-  if (!info.config) {
-    showToast('⚠️ Nessuna configurazione attiva trovata per questo modello.');
-    return;
-  }
+  const btn = document.getElementById('btnConfirmSaveScenario');
+  const errBox = document.getElementById('saveScenarioError');
+  if (errBox) errBox.style.display = 'none';
+
+  const modelSelect = document.getElementById('saveScenarioModelSelect');
+  const chosenModel = modelSelect ? modelSelect.value : null;
+
+  const info = await getCurrentActiveModelInfo(chosenModel);
 
   const nameInp = document.getElementById('saveScenarioName');
   const descInp = document.getElementById('saveScenarioDesc');
-  const modeRadios = document.getElementsByName('saveScenarioMode');
-  let mode = 'new';
-  for (const r of modeRadios) {
-    if (r.checked) mode = r.value;
-  }
+  const radioUpdate = document.getElementById('saveModeUpdate');
+  let mode = (radioUpdate && radioUpdate.checked && State.activeScenarioId) ? 'update' : 'new';
 
   const name = nameInp ? nameInp.value.trim() : '';
   const desc = descInp ? descInp.value.trim() : '';
 
   if (!name) {
-    showToast('Inserisci un nome per la configurazione.');
+    if (errBox) {
+      errBox.innerText = 'Inserisci un nome per la configurazione.';
+      errBox.style.display = 'block';
+    } else {
+      showToast('Inserisci un nome per la configurazione.');
+    }
     return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Salvataggio in corso...';
   }
 
   try {
@@ -8499,8 +8575,7 @@ async function submitSaveScenario() {
       });
       const data = await res.json();
       if (!data.success) {
-        showToast("Errore durante l'aggiornamento: " + (data.error || "sconosciuto"));
-        return;
+        throw new Error(data.error || 'Errore sconosciuto durante l\'aggiornamento.');
       }
       State.activeScenarioName = name;
       showToast(`✅ Scenario "${name}" aggiornato con successo!`);
@@ -8518,8 +8593,7 @@ async function submitSaveScenario() {
       });
       const data = await res.json();
       if (!data.success) {
-        showToast('Errore salvataggio: ' + (data.error || 'sconosciuto'));
-        return;
+        throw new Error(data.error || 'Errore salvataggio scenario.');
       }
       State.activeScenarioId = data.id;
       State.activeScenarioName = name;
@@ -8530,7 +8604,17 @@ async function submitSaveScenario() {
     await fetchUserScenarios();
     updateAuthUI();
   } catch (err) {
-    showToast('Errore di comunicazione col server: ' + err.message);
+    console.error('[SCENARIO SAVE ERROR]', err);
+    if (errBox) {
+      errBox.innerText = 'Errore salvataggio: ' + err.message;
+      errBox.style.display = 'block';
+    }
+    showToast('⚠️ Errore salvataggio: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = (mode === 'update') ? '💾 Aggiorna Scenario Esistente' : '💾 Salva nel Profilo';
+    }
   }
 }
 

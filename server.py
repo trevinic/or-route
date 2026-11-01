@@ -316,8 +316,9 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             headers = {
                 "User-Agent": "OR-Route-Hybrid-Gateway/1.0"
             }
-            if "Content-Type" in self.headers:
-                headers["Content-Type"] = self.headers["Content-Type"]
+            for h in ("Content-Type", "Authorization", "X-Auth-Token", "X-Session-Token"):
+                if h in self.headers:
+                    headers[h] = self.headers[h]
             if body_bytes is not None:
                 headers["Content-Length"] = str(len(body_bytes))
 
