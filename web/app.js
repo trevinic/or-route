@@ -3036,15 +3036,9 @@ function renderCarpTables() {
     }
   }
 
-  // Mappa Iframe Folium: se vuota, mostra messaggio, altrimenti carica la mappa esistente
-  const iframe = document.getElementById('carpMapIframe');
-  if (iframe) {
-    if (streets.length === 0) {
-      iframe.srcdoc = `<!DOCTYPE html><html><body style="background:#080d18;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;"><div><span style="font-size:36px;">🗺️</span><br><br><b style="color:#e2e8f0;font-size:14px;">Mappa GIS CARP Vuota</b><br><span style="color:#64748b;font-size:12px;">Nessuna tratta stradale presente.<br>Clicca su '🌍 Importa da OpenStreetMap' per scaricare la rete viaria della tua zona.</span></div></body></html>`;
-    } else if (iframe.src === 'about:blank' || !iframe.src || iframe.src.endsWith('about:blank')) {
-      iframe.removeAttribute('srcdoc');
-      iframe.src = '/output/percorso_raccolta.html?t=' + Date.now();
-    }
+  // Renderizza la Mappa Stradale Interattiva CARP (Leaflet)
+  if (typeof renderCarpLeafletMap === 'function') {
+    renderCarpLeafletMap(State.carpConfig, State.carpResult);
   }
 
   // 2. Tabella Veicoli / Compattatori
@@ -3408,11 +3402,9 @@ async function solveCarp() {
     // Render report veicoli (Tabella Comparativa Flotta del Layout 2)
     renderCarpVehicleReport(data);
 
-    // Ricarica Iframe Mappa Folium
-    const iframe = document.getElementById('carpMapIframe');
-    if (iframe) {
-      iframe.removeAttribute('srcdoc');
-      iframe.src = '/output/percorso_raccolta.html?t=' + Date.now();
+    // Aggiorna Mappa Stradale Interattiva con Frecce Direzionali e Tappe
+    if (typeof renderCarpLeafletMap === 'function') {
+      renderCarpLeafletMap(State.carpConfig, data);
     }
     showToast('CARP risolto: mappa GIS e report mezzi aggiornati!');
   } catch (e) {
@@ -3629,18 +3621,19 @@ function renderCarpVehicleReport(data) {
     let movesHtml = '';
     if (vInfo.used) {
       movements.forEach((m, mIdx) => {
-        const sName = streetNameMap[`${m.u}-${m.v}`] || `Tratta ${m.u} &rarr; ${m.v}`;
+        const sName = streetNameMap[`${m.u}-${m.v}`] || `Tratta stradale`;
+        const dirInfo = (typeof calculateMoveDirection === 'function') ? calculateMoveDirection(m.u, m.v) : { cardinal: 'Avanti ➔' };
         if (m.type === 'SERVIZIO') {
           movesHtml += `
-            <div style="font-size: 11.5px; padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
-              <span><b style="color: #34d399;">${mIdx + 1}. [SERVIZIO]</b> ${sName} <span class="code-tag" style="font-size:10px;">${m.u} &rarr; ${m.v}</span></span>
-              <span style="color: var(--text-secondary);"><b>${m.demand_kg} kg</b> | Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
+            <div style="font-size: 11.5px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
+              <span><b style="color: #34d399;">Tappa ${mIdx + 1}. [RACCOLTA]</b> <b>${sName}</b> &bull; <span style="color:#38bdf8; font-weight:600;">Direzione: ${dirInfo.cardinal}</span></span>
+              <span style="color: var(--text-secondary);"><b style="color:#34d399;">${m.demand_kg} kg</b> | Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
             </div>
           `;
         } else {
           movesHtml += `
-            <div style="font-size: 11.5px; padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted);">
-              <span><b style="color: #fbbf24;">${mIdx + 1}. [TRANSITO]</b> ${sName} <span class="code-tag" style="font-size:10px;">${m.u} &rarr; ${m.v}</span> ${m.times > 1 ? `(${m.times}x a vuoto)` : ''}</span>
+            <div style="font-size: 11.5px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted);">
+              <span><b style="color: #fbbf24;">Tappa ${mIdx + 1}. [TRANSITO]</b> <b>${sName}</b> &bull; <span style="color:#cbd5e1;">Direzione: ${dirInfo.cardinal}</span> ${m.times > 1 ? `(${m.times}x collegamento)` : '(collegamento)'}</span>
               <span>Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
             </div>
           `;
@@ -3697,9 +3690,14 @@ function renderCarpVehicleReport(data) {
         </td>
         <td style="text-align: center;">
           ${vInfo.used ? `
-            <button type="button" class="btn btn-secondary btn-sm" data-count="${serviceMoves.length}" style="font-size: 11px; padding: 4px 9px;" onclick="toggleCarpVehicleMovesRow('${detailRowId}', this)">
-              🔍 Vedi ${serviceMoves.length} Vie
-            </button>
+            <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+              <button type="button" class="btn btn-primary btn-sm" style="font-size: 11px; padding: 4px 8px; background: rgba(56,189,248,0.2); border-color:#38bdf8; color:#38bdf8; font-weight:700;" onclick="openCarpDriverSheet('${vName}')" title="Apri Foglio di Viaggio Autista con sequenza vie e direzioni">
+                📋 Foglio Autista
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" data-count="${serviceMoves.length}" style="font-size: 11px; padding: 4px 7px;" onclick="toggleCarpVehicleMovesRow('${detailRowId}', this)">
+                🔍 Dettaglio
+              </button>
+            </div>
           ` : '<span style="color: var(--text-muted);">—</span>'}
         </td>
       </tr>
@@ -7425,6 +7423,7 @@ function renderDcarpLeafletMap(cfg, res) {
 // AVVIO DOMContentLoaded
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
+  if (typeof initAuth === 'function') initAuth();
   const hash = (window.location.hash || '').replace('#', '');
   if (hash && document.getElementById(hash) && hash !== 'tab-selector' && hash !== 'tab-faq') {
     switchMainTab(hash);
@@ -7443,3 +7442,1503 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
+
+// ==========================================
+// MODULO CARP INTERATTIVO: MAPPA, MODIFICA VIE, FRECCE & FOGLIO AUTISTA
+// ==========================================
+
+State.carpMapDeleteMode = false;
+State.carpMapAddMode = false;
+State.carpMapAddPoints = [];
+State.carpMapTempLayers = [];
+State._lastDriverSheetText = '';
+
+function calculateMoveDirection(uId, vId) {
+  if (!State.carpConfig || !State.carpConfig.nodes) return { cardinal: 'Avanti ➔', degrees: 0 };
+  const u = State.carpConfig.nodes.find(n => n.id === uId);
+  const v = State.carpConfig.nodes.find(n => n.id === vId);
+  if (!u || !v || u.lat == null || v.lat == null) return { cardinal: 'Avanti ➔', degrees: 0 };
+
+  const dLat = v.lat - u.lat;
+  const dLon = v.lon - u.lon;
+  const angleDeg = (Math.atan2(dLat, dLon) * 180 / Math.PI + 360) % 360;
+  const cardinals = ["Est ➡", "Nord-Est ↗", "Nord ⬆", "Nord-Ovest ↖", "Ovest ⬅", "Sud-Ovest ↙", "Sud ⬇", "Sud-Est ↘"];
+  const cardinal = cardinals[Math.round(((angleDeg + 22.5) % 360) / 45) % 8];
+  return { cardinal, degrees: Math.round(angleDeg) };
+}
+
+function renderCarpLeafletMap(cfg, res) {
+  const mapDiv = document.getElementById('carpMap');
+  if (!mapDiv || typeof L === 'undefined') return;
+
+  if (!State.leafletMaps) State.leafletMaps = {};
+  let map = State.leafletMaps['carpMap'];
+
+  if (!map) {
+    map = L.map('carpMap', { zoomControl: true }).setView([45.886, 12.297], 13);
+    State.leafletMaps['carpMap'] = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap | OR-Route'
+    }).addTo(map);
+
+    // Click handler for map drawing
+    map.on('click', function(e) {
+      if (State.carpMapAddMode) {
+        handleMapClickForAddStreet(e);
+      }
+    });
+  }
+
+  // Clear existing feature layer group if present
+  if (map._carpLayers) {
+    try { map.removeLayer(map._carpLayers); } catch (_) {}
+  }
+  map._carpLayers = L.layerGroup().addTo(map);
+  const layerGroup = map._carpLayers;
+
+  if (!cfg || !cfg.nodes || cfg.nodes.length === 0) return;
+
+  const nodeMap = {};
+  const latLngs = [];
+  cfg.nodes.forEach(n => {
+    if (n.lat != null && n.lon != null) {
+      nodeMap[n.id] = [parseFloat(n.lat), parseFloat(n.lon)];
+      latLngs.push([parseFloat(n.lat), parseFloat(n.lon)]);
+    }
+  });
+
+  const depInfo = cfg.depot_info || {};
+  const exactDepotLat = depInfo.exact_lat ?? (cfg.nodes[0] ? cfg.nodes[0].lat : null);
+  const exactDepotLon = depInfo.exact_lon ?? (cfg.nodes[0] ? cfg.nodes[0].lon : null);
+  const corridorCoords = depInfo.road_corridor_coords || [];
+
+  if (exactDepotLat != null && exactDepotLon != null) {
+    latLngs.push([exactDepotLat, exactDepotLon]);
+    const depotIcon = L.divIcon({
+      className: 'custom-depot-marker',
+      html: '<div style="background: #dc2626; color: #fff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">🏭</div>',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+    L.marker([exactDepotLat, exactDepotLon], { icon: depotIcon })
+      .addTo(layerGroup)
+      .bindPopup(`<b>📍 Cantiere Deposito (Punto di Partenza Flotta)</b><br>${depInfo.address || 'Sede Operativa'}<br><small style="color:#94a3b8;">GPS: ${exactDepotLat.toFixed(5)}, ${exactDepotLon.toFixed(5)}</small>`);
+  }
+
+  // 1. Tratto stradale reale Cantiere -> Comune (senza linea retta!)
+  if (corridorCoords && corridorCoords.length >= 2) {
+    const corridorPoly = L.polyline(corridorCoords, {
+      color: '#dc2626',
+      weight: 4.5,
+      opacity: 0.9,
+      lineCap: 'round'
+    }).addTo(layerGroup);
+    corridorPoly.bindTooltip('🛣️ Tratto Stradale Effettivo: Cantiere Deposito ➔ Rete Comunale', { sticky: true });
+    corridorCoords.forEach(pt => latLngs.push(pt));
+
+    if (typeof L.polylineDecorator !== 'undefined') {
+      try {
+        L.polylineDecorator(corridorPoly, {
+          patterns: [
+            { offset: '20%', repeat: '80px', symbol: L.Symbol.arrowHead({ pixelSize: 9, polygon: false, pathOptions: { stroke: true, weight: 2.5, color: '#dc2626' } }) }
+          ]
+        }).addTo(layerGroup);
+      } catch (_) {}
+    }
+  }
+
+  // Street Name lookup & node connectivity
+  const streetNameMap = {};
+  (cfg.streets || []).forEach(s => {
+    streetNameMap[`${s.u}-${s.v}`] = s;
+    streetNameMap[`${s.v}-${s.u}`] = s;
+  });
+
+  // 2. Disegna tutte le vie della rete (sfondo e click per modifica/eliminazione)
+  (cfg.streets || []).forEach(s => {
+    if (s.id === 'R0' && corridorCoords.length >= 2) return; // già disegnato con tracciato reale
+
+    const p1 = nodeMap[s.u];
+    const p2 = nodeMap[s.v];
+    if (!p1 || !p2) return;
+
+    let pts = [p1, p2];
+    if (s.geometry && Array.isArray(s.geometry) && s.geometry.length >= 2) {
+      pts = s.geometry;
+    }
+
+    const hasDemand = (parseFloat(s.demand_kg) || 0) > 0;
+    const baseColor = hasDemand ? '#38bdf8' : '#64748b';
+    const baseWeight = hasDemand ? 3.5 : 2.5;
+
+    const poly = L.polyline(pts, {
+      color: baseColor,
+      weight: baseWeight,
+      opacity: 0.7,
+      lineCap: 'round'
+    }).addTo(layerGroup);
+
+    const lm = s.length_m || (parseFloat(s.transit_cost || 1) * 100);
+    poly.bindTooltip(`<b>${s.name}</b> (${lm.toFixed(0)}m)<br>Rifiuti: <b>${s.demand_kg || 0} kg</b>`, { sticky: true });
+
+    // Click handler sulla tratta: modifica o eliminazione diretta
+    poly.on('click', function(e) {
+      if (State.carpMapDeleteMode) {
+        L.DomEvent.stopPropagation(e);
+        deleteStreetFromMap(s.id);
+        return;
+      }
+
+      // Popup di modifica rapida della via
+      const popupHtml = `
+        <div style="font-family: Outfit, sans-serif; min-width: 230px; padding: 2px;">
+          <div style="font-weight: 700; color: #38bdf8; font-size: 13.5px; margin-bottom: 4px;">🛣️ ${s.name}</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">${s.description || 'Tratta comunale'} &bull; ${lm.toFixed(0)} m</div>
+          <div style="margin-bottom: 6px;">
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Nome Via:</label>
+            <input type="text" id="mapPopupName_${s.id}" class="cell-inp" style="width: 100%; font-size: 12px; padding: 4px;" value="${s.name}">
+          </div>
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Rifiuti da raccogliere (kg):</label>
+            <input type="number" id="mapPopupDemand_${s.id}" class="cell-inp" style="width: 100%; font-size: 12px; padding: 4px;" value="${s.demand_kg || 0}" step="20">
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 10px;">
+            <button class="btn btn-primary btn-sm" style="flex: 1; font-size: 11px; padding: 4px;" onclick="saveStreetFromMapPopup('${s.id}')">💾 Salva</button>
+            <button class="btn btn-danger btn-sm" style="font-size: 11px; padding: 4px; background: #dc2626; color: white;" onclick="deleteStreetFromMap('${s.id}')">🗑️ Togli Via</button>
+          </div>
+        </div>
+      `;
+      poly.bindPopup(popupHtml).openPopup(e.latlng);
+    });
+  });
+
+  // 3. Disegna le soluzioni dei veicoli con FRECCE DIREZIONALI e BADGE NUMERATI
+  if (res && res.vehicles) {
+    const vColors = ['#2563eb', '#16a34a', '#dc2626', '#9333ea', '#ea580c', '#0891b2', '#d97706', '#4f46e5', '#059669', '#be123c'];
+    let vIdx = 0;
+
+    Object.entries(res.vehicles).forEach(([vName, vInfo]) => {
+      if (!vInfo.used) return;
+      const vColor = vColors[vIdx % vColors.length];
+      vIdx++;
+
+      const movements = vInfo.movements || [];
+      let stepIdx = 1;
+
+      movements.forEach((m) => {
+        const p1 = nodeMap[m.u];
+        const p2 = nodeMap[m.v];
+        if (!p1 || !p2) return;
+
+        let locs = [p1, p2];
+        const st = streetNameMap[`${m.u}-${m.v}`];
+
+        // Se è raccordo dal cantiere con percorso OSRM reale
+        if (m.u === 0 && corridorCoords.length >= 2) {
+          locs = corridorCoords;
+        } else if (m.v === 0 && corridorCoords.length >= 2) {
+          locs = corridorCoords.slice().reverse();
+        } else if (st && st.geometry && Array.isArray(st.geometry) && st.geometry.length >= 2) {
+          // Orienta la geometria nella direzione u -> v
+          const dStart = Math.hypot(st.geometry[0][0] - p1[0], st.geometry[0][1] - p1[1]);
+          const dEnd = Math.hypot(st.geometry[st.geometry.length - 1][0] - p1[0], st.geometry[st.geometry.length - 1][1] - p1[1]);
+          locs = dStart <= dEnd ? st.geometry : st.geometry.slice().reverse();
+        }
+
+        const dirInfo = calculateMoveDirection(m.u, m.v);
+        const sName = st ? st.name : `Tratta ${m.u} ➔ ${m.v}`;
+        const isService = (m.type === 'SERVIZIO');
+
+        const movePoly = L.polyline(locs, {
+          color: isService ? vColor : '#f97316',
+          weight: isService ? 6 : 3.5,
+          opacity: isService ? 0.95 : 0.8,
+          dashArray: isService ? null : '7, 6',
+          lineCap: 'round'
+        }).addTo(layerGroup);
+
+        const popupText = `
+          <b>🚛 ${vName} &mdash; TAPPA #${stepIdx}</b><br>
+          Via: <b>${sName}</b><br>
+          Senso di marcia: <b style="color:#38bdf8;">${dirInfo.cardinal}</b><br>
+          Azione: <b>${isService ? '🟢 RACCOLTA ATTIVA (' + m.demand_kg + ' kg)' : '🟡 TRANSITO DI COLLEGAMENTO'}</b><br>
+          Costo tratta: ${parseFloat(m.cost).toFixed(2)} €
+        `;
+        movePoly.bindPopup(popupText);
+        movePoly.bindTooltip(`Tappa #${stepIdx}: ${vName} &bull; ${sName} (${dirInfo.cardinal}) | ${isService ? m.demand_kg + ' kg' : 'Transito'}`, { sticky: true });
+
+        // Aggiungi frecce direzionali lungo la tratta del compattatore
+        if (typeof L.polylineDecorator !== 'undefined') {
+          try {
+            L.polylineDecorator(movePoly, {
+              patterns: [
+                {
+                  offset: '35%',
+                  repeat: '70px',
+                  symbol: L.Symbol.arrowHead({
+                    pixelSize: isService ? 11 : 9,
+                    polygon: false,
+                    pathOptions: { stroke: true, weight: 2.5, color: isService ? vColor : '#f97316' }
+                  })
+                }
+              ]
+            }).addTo(layerGroup);
+          } catch (_) {}
+        }
+
+        // Badge numerato progressivo al punto centrale della via di raccolta
+        if (isService && locs.length >= 2) {
+          const midIdx = Math.floor(locs.length / 2);
+          const midPt = locs[midIdx];
+          const badgeIcon = L.divIcon({
+            className: 'custom-step-marker',
+            html: `<div style="background:${vColor}; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.4); cursor:pointer;" title="Tappa #${stepIdx}: ${sName}">${stepIdx}</div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          });
+          L.marker(midPt, { icon: badgeIcon }).addTo(layerGroup).bindPopup(popupText);
+        }
+
+        stepIdx++;
+      });
+    });
+  }
+
+  // Centratura mappa su tutta l'estensione geografica
+  if (latLngs.length > 0) {
+    try {
+      const bounds = L.latLngBounds(latLngs);
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+    } catch (_) {}
+  }
+
+  setTimeout(() => { map.invalidateSize(); }, 150);
+}
+
+// ------------------------------------------
+// AZIONI MODIFICA / AGGIUNGI / ELIMINA VIE DA MAPPA
+// ------------------------------------------
+
+function toggleMapAddStreetMode() {
+  State.carpMapAddMode = !State.carpMapAddMode;
+  State.carpMapDeleteMode = false;
+  State.carpMapAddPoints = [];
+
+  const bar = document.getElementById('carpMapActionBar');
+  const msg = document.getElementById('carpMapActionMsg');
+  const badge = document.getElementById('carpMapModeBadge');
+  const btnAdd = document.getElementById('btnMapAddStreet');
+  const btnDel = document.getElementById('btnMapDeleteMode');
+
+  if (btnDel) btnDel.classList.remove('btn-primary');
+
+  if (State.carpMapAddMode) {
+    if (btnAdd) btnAdd.classList.add('btn-primary');
+    if (badge) { badge.innerText = 'Modalità: Clicca 2 punti per creare la via'; badge.style.color = '#fbbf24'; }
+    if (bar && msg) {
+      bar.style.display = 'flex';
+      msg.innerHTML = '📍 <b>Passo 1/2:</b> Clicca sulla mappa il punto di <b>INIZIO</b> della nuova via...';
+    }
+    showToast('Modalità disegno attiva: clicca il punto di inizio sulla mappa.');
+  } else {
+    cancelMapMode();
+  }
+}
+
+function handleMapClickForAddStreet(e) {
+  if (!State.carpMapAddMode) return;
+  const lat = e.latlng.lat;
+  const lon = e.latlng.lng;
+  State.carpMapAddPoints.push([lat, lon]);
+
+  const map = State.leafletMaps['carpMap'];
+  const msg = document.getElementById('carpMapActionMsg');
+
+  if (State.carpMapAddPoints.length === 1) {
+    if (map) {
+      const tempMarker = L.circleMarker([lat, lon], { radius: 6, color: '#10b981', fillOpacity: 0.9 }).addTo(map);
+      State.carpMapTempLayers.push(tempMarker);
+    }
+    if (msg) {
+      msg.innerHTML = '📍 <b>Passo 2/2:</b> Clicca sulla mappa il punto di <b>FINE</b> della via...';
+    }
+  } else if (State.carpMapAddPoints.length >= 2) {
+    const pt1 = State.carpMapAddPoints[0];
+    const pt2 = State.carpMapAddPoints[1];
+
+    if (map) {
+      const tempLine = L.polyline([pt1, pt2], { color: '#10b981', weight: 4, dashArray: '6, 6' }).addTo(map);
+      State.carpMapTempLayers.push(tempLine);
+    }
+
+    // Apri modal per impostare nome e kg
+    const modal = document.getElementById('modalAddStreetFromMap');
+    const nameInp = document.getElementById('inpNewStreetName');
+    const demandInp = document.getElementById('inpNewStreetDemand');
+    const nextNum = ((State.carpConfig && State.carpConfig.streets) ? State.carpConfig.streets.length : 0) + 1;
+
+    if (nameInp) nameInp.value = `Nuova Via ${nextNum}`;
+    if (demandInp) demandInp.value = '1200';
+    if (modal) modal.style.display = 'flex';
+  }
+}
+
+function confirmAddStreetFromMap() {
+  if (State.carpMapAddPoints.length < 2) return;
+  const pt1 = State.carpMapAddPoints[0];
+  const pt2 = State.carpMapAddPoints[1];
+
+  const nameInp = document.getElementById('inpNewStreetName');
+  const demandInp = document.getElementById('inpNewStreetDemand');
+  const streetName = (nameInp && nameInp.value.trim()) ? nameInp.value.trim() : 'Nuova Via';
+  const demandKg = parseFloat(demandInp ? demandInp.value : 1000) || 0;
+
+  if (!State.carpConfig) State.carpConfig = { nodes: [], streets: [], vehicles: [] };
+  if (!State.carpConfig.nodes) State.carpConfig.nodes = [];
+  if (!State.carpConfig.streets) State.carpConfig.streets = [];
+
+  // Calcola id nodi
+  const maxNodeId = State.carpConfig.nodes.reduce((max, n) => Math.max(max, parseInt(n.id) || 0), 0);
+  const uId = maxNodeId + 1;
+  const vId = maxNodeId + 2;
+
+  State.carpConfig.nodes.push({ id: uId, name: `Incrocio_${uId}`, lat: pt1[0], lon: pt1[1] });
+  State.carpConfig.nodes.push({ id: vId, name: `Incrocio_${vId}`, lat: pt2[0], lon: pt2[1] });
+
+  // Distanza metrica euclidea approssimata
+  const dLat = (pt2[0] - pt1[0]) * 111320;
+  const dLon = (pt2[1] - pt1[1]) * 111320 * Math.cos(pt1[0] * Math.PI / 180);
+  const lengthM = Math.round(Math.hypot(dLat, dLon)) || 150;
+  const transitCost = Math.round(Math.max(lengthM / 100.0, 0.5) * 100) / 100;
+  const serviceCost = Math.round(transitCost * 1.8 * 100) / 100;
+
+  const newStreetId = 'S_' + Date.now().toString().slice(-4);
+  State.carpConfig.streets.push({
+    id: newStreetId,
+    name: streetName,
+    u: uId,
+    v: vId,
+    length_m: lengthM,
+    transit_cost: transitCost,
+    service_cost: serviceCost,
+    demand_kg: demandKg,
+    description: `Tratta disegnata da mappa (${lengthM}m)`,
+    geometry: [pt1, pt2]
+  });
+
+  closeAddStreetModal();
+  renderCarpTables();
+  renderCarpLeafletMap(State.carpConfig, State.carpResult);
+
+  // Auto-save
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(State.carpConfig)
+  }).catch(() => {});
+
+  showToast(`✅ Via '${streetName}' (${demandKg} kg) aggiunta alla rete stradale!`);
+}
+
+function toggleMapDeleteStreetMode() {
+  State.carpMapDeleteMode = !State.carpMapDeleteMode;
+  State.carpMapAddMode = false;
+  cancelMapMode(false);
+
+  const badge = document.getElementById('carpMapModeBadge');
+  const btnDel = document.getElementById('btnMapDeleteMode');
+  const btnAdd = document.getElementById('btnMapAddStreet');
+  const bar = document.getElementById('carpMapActionBar');
+  const msg = document.getElementById('carpMapActionMsg');
+
+  if (btnAdd) btnAdd.classList.remove('btn-primary');
+
+  if (State.carpMapDeleteMode) {
+    if (btnDel) btnDel.classList.add('btn-primary');
+    if (badge) { badge.innerText = 'Modalità: Clicca una via per RIMUOVERLA'; badge.style.color = '#f87171'; }
+    if (bar && msg) {
+      bar.style.display = 'flex';
+      bar.style.background = 'rgba(239, 68, 68, 0.15)';
+      bar.style.borderColor = '#ef4444';
+      msg.innerHTML = '🗑️ <b>Modalità Eliminazione:</b> Clicca direttamente su qualsiasi tratta stradale per toglierla dal piano...';
+    }
+    showToast('Modalità rimozione attiva: clicca sulle vie da togliere.');
+  } else {
+    cancelMapMode();
+  }
+}
+
+function cancelMapMode(resetBadge = true) {
+  State.carpMapAddMode = false;
+  State.carpMapDeleteMode = false;
+  State.carpMapAddPoints = [];
+
+  const map = State.leafletMaps && State.leafletMaps['carpMap'];
+  if (map && State.carpMapTempLayers) {
+    State.carpMapTempLayers.forEach(l => { try { map.removeLayer(l); } catch (_) {} });
+    State.carpMapTempLayers = [];
+  }
+
+  const bar = document.getElementById('carpMapActionBar');
+  const badge = document.getElementById('carpMapModeBadge');
+  const btnAdd = document.getElementById('btnMapAddStreet');
+  const btnDel = document.getElementById('btnMapDeleteMode');
+
+  if (bar) bar.style.display = 'none';
+  if (btnAdd) btnAdd.classList.remove('btn-primary');
+  if (btnDel) btnDel.classList.remove('btn-primary');
+  if (resetBadge && badge) {
+    badge.innerText = 'Clicca una via per modificarla';
+    badge.style.color = '#34d399';
+  }
+}
+
+function deleteStreetFromMap(streetId) {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  const idx = State.carpConfig.streets.findIndex(s => s.id === streetId);
+  if (idx === -1) return;
+
+  const stName = State.carpConfig.streets[idx].name;
+  State.carpConfig.streets.splice(idx, 1);
+
+  renderCarpTables();
+  renderCarpLeafletMap(State.carpConfig, State.carpResult);
+
+  // Auto-save
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(State.carpConfig)
+  }).catch(() => {});
+
+  showToast(`🗑️ Via '${stName}' rimossa dalla rete stradale.`);
+}
+
+function saveStreetFromMapPopup(streetId) {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  const st = State.carpConfig.streets.find(s => s.id === streetId);
+  if (!st) return;
+
+  const nameInp = document.getElementById(`mapPopupName_${streetId}`);
+  const demandInp = document.getElementById(`mapPopupDemand_${streetId}`);
+
+  if (nameInp && nameInp.value.trim()) st.name = nameInp.value.trim();
+  if (demandInp) st.demand_kg = Math.max(0, parseFloat(demandInp.value) || 0);
+  st.manual_override = true;
+
+  renderCarpTables();
+  renderCarpLeafletMap(State.carpConfig, State.carpResult);
+
+  // Auto-save
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(State.carpConfig)
+  }).catch(() => {});
+
+  showToast(`💾 Modifiche per '${st.name}' salvate con successo!`);
+}
+
+// ------------------------------------------
+// FOGLIO DI VIAGGIO SEMPLICE & CHIARO PER L'AUTISTA
+// ------------------------------------------
+
+function openCarpDriverSheet(vName) {
+  if (!State.carpResult || !State.carpResult.vehicles || !State.carpResult.vehicles[vName]) {
+    showToast('Nessun percorso calcolato per questo mezzo. Premi prima "Risolvi".');
+    return;
+  }
+
+  const vInfo = State.carpResult.vehicles[vName];
+  const movements = vInfo.movements || [];
+  const cfg = State.carpConfig || {};
+  const depInfo = cfg.depot_info || {};
+  const depName = depInfo.address || (cfg.nodes && cfg.nodes[0] ? cfg.nodes[0].name : 'Cantiere Deposito');
+  const collected = parseFloat(vInfo.total_collected) || 0;
+  const capacity = parseFloat(vInfo.capacity) || 4500;
+  const satPct = capacity > 0 ? ((collected / capacity) * 100).toFixed(1) : '0';
+  const durMin = vInfo.shift_duration_min || 0;
+  const durFormatted = `${Math.floor(durMin / 60)}h ${String(Math.round(durMin % 60)).padStart(2, '0')}m`;
+
+  const streetNameMap = {};
+  (cfg.streets || []).forEach(s => {
+    streetNameMap[`${s.u}-${s.v}`] = s;
+    streetNameMap[`${s.v}-${s.u}`] = s;
+  });
+
+  const modal = document.getElementById('modalDriverSheet');
+  const title = document.getElementById('driverSheetTitle');
+  const content = document.getElementById('driverSheetContent');
+
+  if (title) {
+    title.innerHTML = `<span>📋</span> Foglio di Viaggio per l'Autista &mdash; <b>${vName}</b>`;
+  }
+
+  let rowsHtml = '';
+  let plainText = `====================================================\n`;
+  plainText += `🚛 FOGLIO DI VIAGGIO RACCOLTA RSU - ${vName}\n`;
+  plainText += `Base di Partenza e Rientro: ${depName}\n`;
+  plainText += `Carico Totale Previsto: ${collected.toLocaleString()} kg / ${capacity.toLocaleString()} kg (${satPct}%)\n`;
+  plainText += `Durata Stimata Turno: ${durFormatted}\n`;
+  plainText += `====================================================\n\n`;
+  plainText += `SEQUENZA ORDINATA DEL TRAGITTO DI RACCOLTA:\n\n`;
+
+  let stepNum = 1;
+  movements.forEach((m) => {
+    const st = streetNameMap[`${m.u}-${m.v}`];
+    let sName = st ? st.name : `Tratta di collegamento`;
+    const isService = (m.type === 'SERVIZIO');
+    const dirInfo = calculateMoveDirection(m.u, m.v);
+    const dKg = parseFloat(m.demand_kg) || 0;
+
+    let actionBadge = '';
+    let actionDesc = '';
+    if (m.u === 0) {
+      sName = `Raccordo Cantiere ➔ Inizio Rete Stradale`;
+      actionBadge = `<span class="badge-tra" style="background:rgba(245,158,11,0.2); color:#fbbf24; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 PARTENZA CANTIERE</span>`;
+      actionDesc = `Immissione su viabilità comunale in direzione prima via di raccolta`;
+    } else if (m.v === 0) {
+      sName = `Raccordo Rientro ➔ Cantiere Deposito`;
+      actionBadge = `<span class="badge-tra" style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; font-weight:700;">🏠 RIENTRO DEPOSITO</span>`;
+      actionDesc = `Rientro alla sede operativa per pesatura e scarico rifiuti`;
+    } else if (isService) {
+      actionBadge = `<span class="badge-rec" style="background:rgba(16,185,129,0.2); color:#34d399; padding:2px 6px; border-radius:4px; font-weight:700;">🟢 RACCOLTA ATTIVA</span>`;
+      actionDesc = `Svuotamento cassonetti / raccolta porta a porta lungo tutta la via`;
+    } else {
+      actionBadge = `<span class="badge-tra" style="background:rgba(148,163,184,0.15); color:#94a3b8; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 TRANSITO DI COLLEGAMENTO</span>`;
+      actionDesc = `Tratto di transito veloce (nessun cassonetto da svuotare)`;
+    }
+
+    rowsHtml += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <td style="font-weight: 800; font-size: 14px; color: #38bdf8; text-align: center; width: 45px;">
+          ${stepNum}
+        </td>
+        <td>
+          <b style="font-size: 13.5px; color: #f1f5f9;">${sName}</b>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${actionDesc}</div>
+        </td>
+        <td style="min-width: 120px;">
+          <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">${dirInfo.cardinal}</span>
+        </td>
+        <td>
+          ${actionBadge}
+        </td>
+        <td style="text-align: right; font-weight: 700; font-size: 13px; color: ${isService ? '#34d399' : '#94a3b8'};">
+          ${isService ? dKg.toLocaleString() + ' kg' : '—'}
+        </td>
+      </tr>
+    `;
+
+    plainText += `${stepNum}. ${sName}\n`;
+    plainText += `   Senso di marcia: ${dirInfo.cardinal}\n`;
+    plainText += `   Azione: ${isService ? 'RACCOLTA (' + dKg + ' kg)' : 'Transito di collegamento'}\n\n`;
+
+    stepNum++;
+  });
+
+  plainText += `Totale Rifiuti Raccolti a Bordo: ${collected.toLocaleString()} kg\n`;
+  State._lastDriverSheetText = plainText;
+
+  if (content) {
+    content.innerHTML = `
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12.5px;">
+        <div>Base di Partenza: <b style="color:#e2e8f0;">${depName}</b></div>
+        <div>Carico Totale: <b style="color:#34d399;">${collected.toLocaleString()} kg</b> <small>(${satPct}% capienza)</small></div>
+        <div>Durata Stimata: <b style="color:#fbbf24;">${durFormatted}</b></div>
+        <div>Tappe Totali: <b style="color:#38bdf8;">${movements.length} tratte</b></div>
+      </div>
+
+      <div style="margin-bottom: 10px; font-size: 12px; color: #94a3b8; background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 6px 10px; border-radius: 4px;">
+        ℹ️ <b>Istruzioni per l'Autista:</b> Segui rigorosamente la sequenza numerata delle vie e la direzione indicata. La sequenza è ottimizzata matematicamente per minimizzare il tempo a vuoto e le manovre.
+      </div>
+
+      <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 8px;">
+        <table class="opt-table" style="font-size: 12px; width: 100%;">
+          <thead>
+            <tr style="background: rgba(56, 189, 248, 0.12);">
+              <th style="text-align: center;">Tappa</th>
+              <th>Via / Tratta Stradale</th>
+              <th>Direzione di Marcia</th>
+              <th>Tipo Operazione</th>
+              <th style="text-align: right;">Rifiuti Previsti</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  if (modal) modal.style.display = 'flex';
+}
+
+
+
+// ==========================================
+// AUTENTICAZIONE UTENTI & GESTIONE SCENARI (SQLITE)
+// ==========================================
+
+State.currentUser = null;
+State.authToken = localStorage.getItem('or_route_token') || null;
+State.activeScenarioId = null;
+State.activeScenarioName = null;
+State.userScenarios = [];
+
+async function authFetch(url, options = {}) {
+  const opts = { ...options };
+  opts.headers = opts.headers ? { ...opts.headers } : {};
+  if (State.authToken) {
+    opts.headers['Authorization'] = `Bearer ${State.authToken}`;
+  }
+  return fetch(url, opts);
+}
+
+async function initAuth() {
+  if (!State.authToken) {
+    updateAuthUI();
+    return;
+  }
+  try {
+    const res = await authFetch('/api/auth/me');
+    const data = await res.json();
+    if (data.success && data.user) {
+      State.currentUser = data.user;
+      await fetchUserScenarios();
+    } else {
+      State.currentUser = null;
+      State.authToken = null;
+      localStorage.removeItem('or_route_token');
+    }
+  } catch (err) {
+    console.warn('[AUTH] Verifica sessione fallita:', err);
+  } finally {
+    updateAuthUI();
+  }
+}
+
+async function fetchUserScenarios() {
+  if (!State.currentUser) return;
+  try {
+    const res = await authFetch('/api/scenarios');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.scenarios)) {
+      State.userScenarios = data.scenarios;
+    }
+  } catch (err) {
+    console.warn('[AUTH] Errore fetch scenari:', err);
+  }
+}
+
+function updateAuthUI() {
+  const container = document.getElementById('headerAuthContainer');
+  const banner = document.getElementById('headerActiveScenarioIndicator');
+  const bannerName = document.getElementById('headerActiveScenarioName');
+
+  if (banner) {
+    if (State.activeScenarioId && State.activeScenarioName) {
+      banner.style.display = 'flex';
+      if (bannerName) bannerName.innerText = State.activeScenarioName;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  if (!container) return;
+
+  if (State.currentUser) {
+    const count = State.userScenarios ? State.userScenarios.length : 0;
+    container.innerHTML = `
+      <div class="user-badge" title="Accesso effettuato con l'account ${State.currentUser.username}">
+        <span style="color: #38bdf8; font-size: 14px;">👤</span>
+        <strong style="color: #38bdf8;">${State.currentUser.username}</strong>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="openScenariosModal()" title="Visualizza, carica o elimina le configurazioni salvate">
+        📁 I Miei Scenari (<span id="userScenarioCount">${count}</span>)
+      </button>
+      <button class="btn btn-green btn-sm" onclick="openSaveScenarioModal()" title="Salva la configurazione attuale o aggiorna lo scenario aperto">
+        💾 Salva Scenario
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="handleLogout()" title="Disconnetti account" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4); padding: 5px 10px;">
+        🚪 Esci
+      </button>
+    `;
+  } else {
+    container.innerHTML = `
+      <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
+        👤 Accedi / Registrati
+      </button>
+    `;
+  }
+}
+
+function openAuthModal(tab = 'login') {
+  const modal = document.getElementById('modalAuth');
+  if (modal) modal.style.display = 'flex';
+  switchAuthTab(tab);
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('modalAuth');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchAuthTab(tab) {
+  const tabLogin = document.getElementById('authTabBtnLogin');
+  const tabReg = document.getElementById('authTabBtnRegister');
+  const panelLogin = document.getElementById('authPanelLogin');
+  const panelReg = document.getElementById('authPanelRegister');
+  const errLogin = document.getElementById('authLoginError');
+  const errReg = document.getElementById('authRegError');
+
+  if (errLogin) errLogin.style.display = 'none';
+  if (errReg) errReg.style.display = 'none';
+
+  if (tab === 'register') {
+    if (tabLogin) tabLogin.classList.remove('active');
+    if (tabReg) tabReg.classList.add('active');
+    if (panelLogin) panelLogin.style.display = 'none';
+    if (panelReg) panelReg.style.display = 'block';
+  } else {
+    if (tabLogin) tabLogin.classList.add('active');
+    if (tabReg) tabReg.classList.remove('active');
+    if (panelLogin) panelLogin.style.display = 'block';
+    if (panelReg) panelReg.style.display = 'none';
+  }
+}
+
+async function submitAuthLogin() {
+  const userInp = document.getElementById('authLoginUser');
+  const passInp = document.getElementById('authLoginPass');
+  const errBox = document.getElementById('authLoginError');
+
+  const username = userInp ? userInp.value.trim() : '';
+  const password = passInp ? passInp.value.trim() : '';
+
+  if (!username || !password) {
+    if (errBox) {
+      errBox.innerText = 'Inserisci nome utente e password.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      if (errBox) {
+        errBox.innerText = data.error || 'Credenziali non valide.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+
+    State.authToken = data.token;
+    State.currentUser = data.user;
+    localStorage.setItem('or_route_token', data.token);
+
+    closeAuthModal();
+    if (userInp) userInp.value = '';
+    if (passInp) passInp.value = '';
+
+    await fetchUserScenarios();
+    updateAuthUI();
+    showToast(`✅ Benvenuto, ${data.user.username}! Ora puoi salvare e gestire i tuoi scenari.`);
+  } catch (err) {
+    if (errBox) {
+      errBox.innerText = 'Errore di connessione al server.';
+      errBox.style.display = 'block';
+    }
+  }
+}
+
+async function submitAuthRegister() {
+  const userInp = document.getElementById('authRegUser');
+  const emailInp = document.getElementById('authRegEmail');
+  const passInp = document.getElementById('authRegPass');
+  const passConfInp = document.getElementById('authRegPassConfirm');
+  const errBox = document.getElementById('authRegError');
+
+  const username = userInp ? userInp.value.trim() : '';
+  const email = emailInp ? emailInp.value.trim() : '';
+  const password = passInp ? passInp.value.trim() : '';
+  const passConfirm = passConfInp ? passConfInp.value.trim() : '';
+
+  if (username.length < 3) {
+    if (errBox) {
+      errBox.innerText = 'Il nome utente deve contenere almeno 3 caratteri.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  if (password.length < 5) {
+    if (errBox) {
+      errBox.innerText = 'La password deve contenere almeno 5 caratteri.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  if (password !== passConfirm) {
+    if (errBox) {
+      errBox.innerText = 'Le password non coincidono.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, email })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      if (errBox) {
+        errBox.innerText = data.error || 'Errore registrazione.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+
+    State.authToken = data.token;
+    State.currentUser = data.user;
+    localStorage.setItem('or_route_token', data.token);
+
+    closeAuthModal();
+    if (userInp) userInp.value = '';
+    if (emailInp) emailInp.value = '';
+    if (passInp) passInp.value = '';
+    if (passConfInp) passConfInp.value = '';
+
+    await fetchUserScenarios();
+    updateAuthUI();
+    showToast(`🎉 Registrazione completata! Benvenuto, ${data.user.username}!`);
+  } catch (err) {
+    if (errBox) {
+      errBox.innerText = 'Errore di connessione al server.';
+      errBox.style.display = 'block';
+    }
+  }
+}
+
+async function handleLogout() {
+  try {
+    await authFetch('/api/auth/logout', { method: 'POST' });
+  } catch (e) {}
+
+  State.authToken = null;
+  State.currentUser = null;
+  State.activeScenarioId = null;
+  State.activeScenarioName = null;
+  State.userScenarios = [];
+  localStorage.removeItem('or_route_token');
+
+  updateAuthUI();
+  showToast('👋 Disconnessione effettuata con successo.');
+}
+
+function getCurrentActiveModelInfo() {
+  const tab = State.activeTab || 'tab-carp';
+  let modelType = 'carp';
+  let modelLabel = 'CARP (Raccolta RSU & Servizi Stradali)';
+  let config = State.carpConfig;
+  let defaultName = 'Scenario Raccolta CARP';
+
+  if (tab === 'tab-cvrp') {
+    modelType = 'cvrp';
+    modelLabel = 'CVRP (Consegne Merci & Corrieri)';
+    config = State.cvrpConfig;
+    defaultName = 'Scenario Consegne CVRP';
+  } else if (tab === 'tab-vrptw') {
+    modelType = 'vrptw';
+    modelLabel = 'VRPTW (Finestre Orarie)';
+    config = State.vrptwConfig;
+    defaultName = 'Scenario VRPTW Finestre Orarie';
+  } else if (tab === 'tab-pcarp') {
+    modelType = 'pcarp';
+    modelLabel = 'PCARP (Raccolta Settimanale)';
+    config = State.pcarpConfig;
+    defaultName = 'Scenario PCARP Settimanale';
+  } else if (tab === 'tab-carptw') {
+    modelType = 'carptw';
+    modelLabel = 'CARPTW (Finestre Orarie Stradali)';
+    config = State.carptwConfig;
+    defaultName = 'Scenario CARPTW Stradale';
+  } else if (tab === 'tab-carpif') {
+    modelType = 'carpif';
+    modelLabel = 'CARPIF (Scarichi Intermedi)';
+    config = State.carpifConfig;
+    defaultName = 'Scenario CARPIF Scarichi Intermedi';
+  } else if (tab === 'tab-dcarp') {
+    modelType = 'dcarp';
+    modelLabel = 'DCARP (Gestione Real-Time Dinamica)';
+    config = State.dcarpConfig;
+    defaultName = 'Scenario DCARP Dinamico';
+  } else if (tab === 'tab-intermediate') {
+    modelType = 'ev_vrp';
+    modelLabel = 'EV-VRP (Flotte Elettriche & Ricariche)';
+    config = State.evConfig;
+    defaultName = 'Scenario EV-VRP Flotta Elettrica';
+  } else if (tab === 'tab-vrppd') {
+    modelType = 'vrppd';
+    modelLabel = 'VRPPD (Ritiri e Consegne)';
+    config = State.vrppdConfig;
+    defaultName = 'Scenario VRPPD Ritiri e Consegne';
+  } else if (tab === 'tab-mdvrp') {
+    modelType = 'mdvrp';
+    modelLabel = 'MDVRP (Multi-Deposito)';
+    config = State.mdvrpConfig;
+    defaultName = 'Scenario MDVRP Multi-Deposito';
+  }
+
+  // Cerca un nome più specifico dal comune o dal deposito
+  if (config) {
+    if (config.place_name) defaultName += ' - ' + config.place_name;
+    else if (config.depot_info && config.depot_info.address) defaultName += ' - ' + config.depot_info.address.split(',')[0];
+    else if (config.depot && config.depot.name) defaultName += ' - ' + config.depot.name;
+  }
+
+  return { modelType, modelLabel, config, defaultName };
+}
+
+function openSaveScenarioModal() {
+  if (!State.currentUser) {
+    showToast('🔑 Accedi o registrati per salvare le tue configurazioni personali.');
+    openAuthModal('login');
+    return;
+  }
+
+  const modal = document.getElementById('modalSaveScenario');
+  const info = getCurrentActiveModelInfo();
+
+  const modelBadgeInp = document.getElementById('saveScenarioModelBadge');
+  if (modelBadgeInp) modelBadgeInp.value = info.modelLabel;
+
+  const nameInp = document.getElementById('saveScenarioName');
+  const descInp = document.getElementById('saveScenarioDesc');
+  const activeWarning = document.getElementById('saveScenarioActiveWarning');
+  const activeLabel = document.getElementById('saveActiveScenarioLabel');
+
+  if (State.activeScenarioId && State.activeScenarioName) {
+    if (activeWarning) activeWarning.style.display = 'block';
+    if (activeLabel) activeLabel.innerText = State.activeScenarioName;
+    if (nameInp) nameInp.value = State.activeScenarioName;
+  } else {
+    if (activeWarning) activeWarning.style.display = 'none';
+    if (nameInp) nameInp.value = info.defaultName;
+  }
+  if (descInp) descInp.value = '';
+
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeSaveScenarioModal() {
+  const modal = document.getElementById('modalSaveScenario');
+  if (modal) modal.style.display = 'none';
+}
+
+function toggleSaveScenarioMode(mode) {
+  const nameInp = document.getElementById('saveScenarioName');
+  const btn = document.getElementById('btnConfirmSaveScenario');
+  if (mode === 'update' && State.activeScenarioName) {
+    if (nameInp) nameInp.value = State.activeScenarioName;
+    if (btn) btn.innerText = '💾 Aggiorna Scenario Esistente';
+  } else {
+    const info = getCurrentActiveModelInfo();
+    if (nameInp) nameInp.value = (State.activeScenarioName ? State.activeScenarioName + ' (Copia)' : info.defaultName);
+    if (btn) btn.innerText = '➕ Salva come Nuovo Scenario';
+  }
+}
+
+async function submitSaveScenario() {
+  const info = getCurrentActiveModelInfo();
+  if (!info.config) {
+    showToast('⚠️ Nessuna configurazione attiva trovata per questo modello.');
+    return;
+  }
+
+  const nameInp = document.getElementById('saveScenarioName');
+  const descInp = document.getElementById('saveScenarioDesc');
+  const modeRadios = document.getElementsByName('saveScenarioMode');
+  let mode = 'new';
+  for (const r of modeRadios) {
+    if (r.checked) mode = r.value;
+  }
+
+  const name = nameInp ? nameInp.value.trim() : '';
+  const desc = descInp ? descInp.value.trim() : '';
+
+  if (!name) {
+    showToast('Inserisci un nome per la configurazione.');
+    return;
+  }
+
+  try {
+    if (mode === 'update' && State.activeScenarioId) {
+      // Aggiornamento scenario esistente
+      const res = await authFetch(`/api/scenarios/${State.activeScenarioId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          description: desc,
+          config: info.config
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast("Errore durante l'aggiornamento: " + (data.error || "sconosciuto"));
+        return;
+      }
+      State.activeScenarioName = name;
+      showToast(`✅ Scenario "${name}" aggiornato con successo!`);
+    } else {
+      // Creazione nuovo scenario
+      const res = await authFetch('/api/scenarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          model_type: info.modelType,
+          description: desc,
+          config: info.config
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast('Errore salvataggio: ' + (data.error || 'sconosciuto'));
+        return;
+      }
+      State.activeScenarioId = data.id;
+      State.activeScenarioName = name;
+      showToast(`✅ Nuovo scenario "${name}" salvato nel tuo profilo!`);
+    }
+
+    closeSaveScenarioModal();
+    await fetchUserScenarios();
+    updateAuthUI();
+  } catch (err) {
+    showToast('Errore di comunicazione col server: ' + err.message);
+  }
+}
+
+async function quickSaveActiveScenario() {
+  if (!State.activeScenarioId) {
+    openSaveScenarioModal();
+    return;
+  }
+  const info = getCurrentActiveModelInfo();
+  if (!info.config) return;
+
+  try {
+    const res = await authFetch(`/api/scenarios/${State.activeScenarioId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: State.activeScenarioName,
+        config: info.config
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`💾 Scenario "${State.activeScenarioName}" salvato con le modifiche correnti!`);
+      await fetchUserScenarios();
+      updateAuthUI();
+    } else {
+      showToast('Errore salvataggio rapido: ' + data.error);
+    }
+  } catch (err) {
+    showToast('Errore di connessione: ' + err.message);
+  }
+}
+
+async function openScenariosModal(filterModel = '') {
+  if (!State.currentUser) {
+    showToast('🔑 Accedi per visualizzare i tuoi scenari personali.');
+    openAuthModal('login');
+    return;
+  }
+
+  const modal = document.getElementById('modalScenarios');
+  if (modal) modal.style.display = 'flex';
+
+  await fetchUserScenarios();
+  filterScenariosList(filterModel);
+}
+
+function closeScenariosModal() {
+  const modal = document.getElementById('modalScenarios');
+  if (modal) modal.style.display = 'none';
+}
+
+function filterScenariosList(filterModel = '') {
+  const filterSelect = document.getElementById('scenarioFilterModel');
+  if (filterSelect && filterModel !== undefined) {
+    filterSelect.value = filterModel;
+  }
+  const selectedModel = filterSelect ? filterSelect.value.trim().toLowerCase() : '';
+  const container = document.getElementById('scenariosListContainer');
+  if (!container) return;
+
+  let scenarios = State.userScenarios || [];
+  if (selectedModel) {
+    scenarios = scenarios.filter(s => (s.model_type || '').toLowerCase() === selectedModel);
+  }
+
+  if (scenarios.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 48px 20px; color: #94a3b8;">
+        <div style="font-size: 40px; margin-bottom: 12px;">📂</div>
+        <h4 style="color: #cbd5e1; margin-bottom: 6px;">Nessuno scenario salvato${selectedModel ? ' per questo modello' : ''}</h4>
+        <p style="font-size: 13px; max-width: 460px; margin: 0 auto 20px auto;">
+          Puoi salvare la configurazione attuale (mappe, strade, veicoli e depositi) cliccando sul tasto sottostante.
+        </p>
+        <button class="btn btn-blue btn-sm" onclick="closeScenariosModal(); openSaveScenarioModal();">
+          💾 Salva la Configurazione Attuale
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  scenarios.forEach(s => {
+    const m = (s.model_type || 'carp').toLowerCase();
+    let badgeClass = 'scenario-badge-other';
+    let badgeLabel = m.toUpperCase();
+    if (m === 'carp') { badgeClass = 'scenario-badge-carp'; badgeLabel = 'CARP (RSU)'; }
+    else if (m === 'cvrp') { badgeClass = 'scenario-badge-cvrp'; badgeLabel = 'CVRP (Merci)'; }
+    else if (m === 'vrptw') { badgeClass = 'scenario-badge-vrptw'; badgeLabel = 'VRPTW (Finestre)'; }
+    else if (m === 'pcarp') { badgeClass = 'scenario-badge-pcarp'; badgeLabel = 'PCARP (Settimana)'; }
+
+    const isActive = (State.activeScenarioId === s.id);
+    const updatedDate = s.updated_at ? new Date(s.updated_at).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }) : 'Recentemente';
+
+    let detailsText = '';
+    if (s.street_count != null && s.street_count > 0) detailsText += `🛣️ <b>${s.street_count}</b> tratte • `;
+    if (s.customer_count != null && s.customer_count > 0) detailsText += `📍 <b>${s.customer_count}</b> clienti • `;
+    if (s.vehicle_count != null && s.vehicle_count > 0) detailsText += `🚛 <b>${s.vehicle_count}</b> mezzi • `;
+    if (s.total_demand != null && s.total_demand > 0) detailsText += `⚖️ <b>${Math.round(s.total_demand).toLocaleString()} kg</b>`;
+    if (!detailsText && s.place_name) detailsText = `📍 ${s.place_name}`;
+
+    html += `
+      <div class="scenario-card ${isActive ? 'active-scenario' : ''}">
+        <div style="flex: 1; min-width: 200px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+            <span class="scenario-badge ${badgeClass}">${badgeLabel}</span>
+            <strong style="color: #f8fafc; font-size: 15px;">${escapeHtml(s.name)}</strong>
+            ${isActive ? '<span style="font-size: 11px; background: rgba(16,185,129,0.2); color:#34d399; padding: 2px 6px; border-radius: 4px; font-weight:700;">ATTIVO ORA</span>' : ''}
+          </div>
+          ${s.description ? `<div style="font-size: 12.5px; color: #cbd5e1; margin-bottom: 4px;">${escapeHtml(s.description)}</div>` : ''}
+          <div style="font-size: 11.5px; color: #94a3b8; display: flex; gap: 12px; flex-wrap: wrap;">
+            ${detailsText ? `<span>${detailsText}</span>` : ''}
+            <span>🕒 Modificato: ${updatedDate}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-blue btn-sm" onclick="loadScenarioById(${s.id})" title="Carica questa configurazione e attiva il modello corrispondente nella dashboard">
+            📂 Carica
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="overwriteScenarioWithCurrent(${s.id}, '${escapeQuote(s.name)}')" title="Sovrascrivi questo scenario con le modifiche attuali della dashboard">
+            💾 Aggiorna
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openEditScenarioModal(${s.id}, '${escapeQuote(s.name)}', '${escapeQuote(s.description || '')}')" title="Rinomina o modifica note">
+            ✏️
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="deleteScenarioById(${s.id}, '${escapeQuote(s.name)}')" title="Elimina scenario" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escapeQuote(str) {
+  if (!str) return '';
+  return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+async function loadScenarioById(id) {
+  try {
+    const res = await authFetch(`/api/scenarios/${id}`);
+    const data = await res.json();
+    if (!data.success || !data.scenario) {
+      showToast('Errore durante il recupero dello scenario.');
+      return;
+    }
+
+    const s = data.scenario;
+    const model = (s.model_type || 'carp').toLowerCase();
+    const cfg = s.config || {};
+
+    let badgeLabel = model.toUpperCase();
+
+    // Sincronizza stato locale e backend in base al modello
+    if (model === 'carp') {
+      badgeLabel = 'CARP';
+      State.carpConfig = cfg;
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderCarpTables === 'function') renderCarpTables();
+      switchMainTab('tab-carp', null);
+      if (typeof renderCarpLeafletMap === 'function') {
+        renderCarpLeafletMap();
+      }
+    } else if (model === 'cvrp') {
+      badgeLabel = 'CVRP';
+      State.cvrpConfig = cfg;
+      try {
+        await fetch('/api/cvrp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderCvrpTables === 'function') renderCvrpTables();
+      switchMainTab('tab-cvrp', null);
+    } else if (model === 'vrptw') {
+      badgeLabel = 'VRPTW';
+      State.vrptwConfig = cfg;
+      try {
+        await fetch('/api/vrptw/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderVrptwTables === 'function') renderVrptwTables();
+      switchMainTab('tab-vrptw', null);
+    } else if (model === 'pcarp') {
+      badgeLabel = 'PCARP';
+      State.pcarpConfig = cfg;
+      try {
+        await fetch('/api/pcarp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderPcarpTables === 'function') renderPcarpTables();
+      switchMainTab('tab-pcarp', null);
+    } else if (model === 'carptw') {
+      badgeLabel = 'CARPTW';
+      State.carptwConfig = cfg;
+      try {
+        await fetch('/api/carptw/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderCarptwTables === 'function') renderCarptwTables();
+      switchMainTab('tab-carptw', null);
+    } else if (model === 'carpif') {
+      badgeLabel = 'CARPIF';
+      State.carpifConfig = cfg;
+      try {
+        await fetch('/api/carpif/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderCarpifTables === 'function') renderCarpifTables();
+      switchMainTab('tab-carpif', null);
+    } else if (model === 'dcarp') {
+      badgeLabel = 'DCARP';
+      State.dcarpConfig = cfg;
+      try {
+        await fetch('/api/dcarp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderDcarpTables === 'function') renderDcarpTables();
+      switchMainTab('tab-dcarp', null);
+    } else if (model === 'ev_vrp') {
+      badgeLabel = 'EV-VRP';
+      State.evConfig = cfg;
+      try {
+        await fetch('/api/ev_vrp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderEvTables === 'function') renderEvTables();
+      switchMainTab('tab-intermediate', null);
+    } else if (model === 'vrppd') {
+      badgeLabel = 'VRPPD';
+      State.vrppdConfig = cfg;
+      try {
+        await fetch('/api/vrppd/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderVrppdTables === 'function') renderVrppdTables();
+      switchMainTab('tab-vrppd', null);
+    } else if (model === 'mdvrp') {
+      badgeLabel = 'MDVRP';
+      State.mdvrpConfig = cfg;
+      try {
+        await fetch('/api/mdvrp/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+      } catch (e) {}
+      if (typeof renderMdvrpTables === 'function') renderMdvrpTables();
+      switchMainTab('tab-mdvrp', null);
+    }
+
+    State.activeScenarioId = s.id;
+    State.activeScenarioName = s.name;
+
+    closeScenariosModal();
+    updateAuthUI();
+    showToast(`✅ Scenario "${s.name}" (${badgeLabel}) caricato e attivato nella dashboard!`);
+  } catch (err) {
+    showToast('Errore durante il caricamento dello scenario: ' + err.message);
+  }
+}
+
+async function overwriteScenarioWithCurrent(id, name) {
+  if (!confirm(`Sei sicuro di voler sovrascrivere lo scenario "${name}" con i dati attualmente presenti nella dashboard?`)) {
+    return;
+  }
+  const info = getCurrentActiveModelInfo();
+  if (!info.config) return;
+
+  try {
+    const res = await authFetch(`/api/scenarios/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config: info.config
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ Scenario "${name}" sovrascritto con successo con la configurazione attuale!`);
+      State.activeScenarioId = id;
+      State.activeScenarioName = name;
+      await fetchUserScenarios();
+      filterScenariosList();
+      updateAuthUI();
+    } else {
+      showToast('Errore durante la sovrascrittura: ' + (data.error || ''));
+    }
+  } catch (err) {
+    showToast('Errore: ' + err.message);
+  }
+}
+
+function openEditScenarioModal(id, name, desc) {
+  const modal = document.getElementById('modalEditScenario');
+  const idInp = document.getElementById('editScenarioId');
+  const nameInp = document.getElementById('editScenarioName');
+  const descInp = document.getElementById('editScenarioDesc');
+
+  if (idInp) idInp.value = id;
+  if (nameInp) nameInp.value = name;
+  if (descInp) descInp.value = desc || '';
+
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeEditScenarioModal() {
+  const modal = document.getElementById('modalEditScenario');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitEditScenario() {
+  const idInp = document.getElementById('editScenarioId');
+  const nameInp = document.getElementById('editScenarioName');
+  const descInp = document.getElementById('editScenarioDesc');
+
+  const id = idInp ? idInp.value : null;
+  const name = nameInp ? nameInp.value.trim() : '';
+  const desc = descInp ? descInp.value.trim() : '';
+
+  if (!id || !name) {
+    showToast('Inserisci un nome valido per lo scenario.');
+    return;
+  }
+
+  try {
+    const res = await authFetch(`/api/scenarios/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, description: desc })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (State.activeScenarioId == id) {
+        State.activeScenarioName = name;
+      }
+      closeEditScenarioModal();
+      await fetchUserScenarios();
+      filterScenariosList();
+      updateAuthUI();
+      showToast('✅ Scenario aggiornato con successo.');
+    } else {
+      showToast('Errore aggiornamento: ' + data.error);
+    }
+  } catch (err) {
+    showToast('Errore: ' + err.message);
+  }
+}
+
+async function deleteScenarioById(id, name) {
+  if (!confirm(`Sei sicuro di voler eliminare definitivamente lo scenario "${name}"?\nQuesta azione non può essere annullata.`)) {
+    return;
+  }
+
+  try {
+    const res = await authFetch(`/api/scenarios/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      if (State.activeScenarioId == id) {
+        State.activeScenarioId = null;
+        State.activeScenarioName = null;
+      }
+      await fetchUserScenarios();
+      filterScenariosList();
+      updateAuthUI();
+      showToast(`🗑️ Scenario "${name}" eliminato con successo.`);
+    } else {
+      showToast('Errore eliminazione: ' + (data.error || ''));
+    }
+  } catch (err) {
+    showToast('Errore comunicazione server: ' + err.message);
+  }
+}

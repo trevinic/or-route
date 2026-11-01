@@ -72,8 +72,9 @@ def build_graph_from_config(config: Dict[str, Any]) -> nx.DiGraph:
         name = street.get("name", f"Via {u}-{v}")
         st_id = street.get("id", "")
         desc = street.get("description", "")
-        G.add_edge(u, v, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc)
-        G.add_edge(v, u, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc)
+        geom = street.get("geometry")
+        G.add_edge(u, v, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc, geometry=geom)
+        G.add_edge(v, u, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc, geometry=geom)
 
     return G
 
@@ -244,8 +245,10 @@ def genera_mappa_percorso(
             st_len = float(data.get("length", 100.0))
 
         tooltip_txt = f"{st_name} ({st_len:.0f}m) | Rifiuti: {st_demand:.0f} kg"
+        edge_geom = data.get("geometry")
+        locs = edge_geom if (edge_geom and len(edge_geom) >= 2) else [p1, p2]
         folium.PolyLine(
-            locations=[p1, p2],
+            locations=locs,
             color="#64748b",
             weight=2.5,
             opacity=0.55,
@@ -255,6 +258,10 @@ def genera_mappa_percorso(
     road_network_fg.add_to(m)
 
     # 4. Individuazione punto di innesto e posizionamento marker di partenza
+    corridor_coords = []
+    if depot_info and isinstance(depot_info, dict) and depot_info.get("road_corridor_coords"):
+        corridor_coords = depot_info["road_corridor_coords"]
+
     # Se il nodo 0 è presente nel grafo
     node0_lat = G.nodes[depot_node]["y"] if (depot_node in G.nodes and "y" in G.nodes[depot_node]) else center_lat
     node0_lon = G.nodes[depot_node]["x"] if (depot_node in G.nodes and "x" in G.nodes[depot_node]) else center_lon
@@ -289,16 +296,25 @@ def genera_mappa_percorso(
             icon=folium.Icon(color="red", icon="industry", prefix="fa")
         ).add_to(m)
 
-        # Se il deposito dista dall'innesto comunale, disegna linea di raccordo e marker di innesto
+        # Se il deposito dista dall'innesto comunale, disegna il vero tratto stradale (non linea retta!)
         dist_entry = (exact_lat - entry_lat)**2 + (exact_lon - entry_lon)**2
         if dist_entry > 1e-7:
-            folium.PolyLine(
-                locations=[(exact_lat, exact_lon), (entry_lat, entry_lon)],
-                color="#dc2626",
-                weight=3.5,
-                dash_array="6, 6",
-                tooltip="Raccordo Cantiere Deposito &rarr; Rete Viaria Comunale"
-            ).add_to(m)
+            if corridor_coords and len(corridor_coords) >= 2:
+                folium.PolyLine(
+                    locations=corridor_coords,
+                    color="#dc2626",
+                    weight=4.0,
+                    opacity=0.9,
+                    tooltip=f"🛣️ Tratto Stradale Cantiere &rarr; Rete Comunale ({exact_addr or 'Deposito'})"
+                ).add_to(m)
+            else:
+                folium.PolyLine(
+                    locations=[(exact_lat, exact_lon), (entry_lat, entry_lon)],
+                    color="#dc2626",
+                    weight=3.5,
+                    dash_array="6, 6",
+                    tooltip="Raccordo Cantiere Deposito &rarr; Rete Viaria Comunale"
+                ).add_to(m)
 
             folium.Marker(
                 [entry_lat, entry_lon],
@@ -347,6 +363,7 @@ def genera_mappa_percorso(
             show=True
         )
 
+        step_idx = 1
         for move in movements:
             u, v = move["u"], move["v"]
             if u not in G.nodes or v not in G.nodes:
@@ -356,37 +373,73 @@ def genera_mappa_percorso(
             p2 = (G.nodes[v]["y"], G.nodes[v]["x"])
             edge_name = G.edges[u, v].get("name", f"Via {u}-{v}") if G.has_edge(u, v) else f"Via {u}-{v}"
 
+            # Calcolo direzione geografica cardinale del tragitto
+            d_lat = p2[0] - p1[0]
+            d_lon = p2[1] - p1[1]
+            import math
+            angle_deg = math.degrees(math.atan2(d_lat, d_lon)) % 360
+            cardinals = ["Est ➡", "Nord-Est ↗", "Nord ⬆", "Nord-Ovest ↖", "Ovest ⬅", "Sud-Ovest ↙", "Sud ⬇", "Sud-Est ↘"]
+            cardinal_dir = cardinals[int(((angle_deg + 22.5) % 360) / 45)]
+
+            # Determinazione percorso curvilineo reale
+            if u == 0 and v == entry_node and corridor_coords:
+                locs = corridor_coords
+            elif u == entry_node and v == 0 and corridor_coords:
+                locs = corridor_coords[::-1]
+            elif G.has_edge(u, v) and G.edges[u, v].get("geometry"):
+                raw_geom = G.edges[u, v]["geometry"]
+                if len(raw_geom) >= 2:
+                    d_start = (raw_geom[0][0] - p1[0])**2 + (raw_geom[0][1] - p1[1])**2
+                    d_end = (raw_geom[-1][0] - p1[0])**2 + (raw_geom[-1][1] - p1[1])**2
+                    locs = raw_geom if d_start <= d_end else raw_geom[::-1]
+                else:
+                    locs = [p1, p2]
+            else:
+                locs = [p1, p2]
+
             if move["type"] == "SERVIZIO":
                 popup_txt = (
-                    f"<b>🚛 {vehicle_name} &mdash; SERVIZIO RACCOLTA</b><br>"
-                    f"Via: <b>{edge_name}</b> ({u} &rarr; {v})<br>"
-                    f"Rifiuto raccolto: <b>{move['demand_kg']:.0f} kg</b><br>"
+                    f"<b>🚛 {vehicle_name} &mdash; TAPPA #{step_idx} [SERVIZIO RACCOLTA]</b><br>"
+                    f"Via: <b>{edge_name}</b><br>"
+                    f"Senso di marcia: <b>{cardinal_dir}</b><br>"
+                    f"Rifiuto da raccogliere: <b>{move['demand_kg']:.0f} kg</b><br>"
                     f"Costo operativo: {move['cost']:.2f} &euro;"
                 )
-                folium.PolyLine(
-                    locations=[p1, p2],
+                pl = folium.PolyLine(
+                    locations=locs,
                     color=v_color,
                     weight=6,
                     opacity=0.92,
                     popup=popup_txt,
-                    tooltip=f"{vehicle_name}: Raccolta {edge_name} ({u}&rarr;{v}) | {move['demand_kg']:.0f} kg"
+                    tooltip=f"Tappa #{step_idx}: {vehicle_name} &bull; Raccolta {edge_name} ({cardinal_dir}) | {move['demand_kg']:.0f} kg"
                 ).add_to(feature_group)
+                try:
+                    plugins.PolyLineTextPath(pl, "    ➤    ", repeat=True, offset=22, attributes={'fill': v_color, 'font-size': '15px', 'font-weight': 'bold'}).add_to(feature_group)
+                except Exception:
+                    pass
             else:
                 popup_txt = (
-                    f"<b>🚛 {vehicle_name} &mdash; TRANSITO A VUOTO</b><br>"
-                    f"Via: <b>{edge_name}</b> ({u} &rarr; {v})<br>"
-                    f"Ripetizioni: {move.get('times', 1)}x<br>"
+                    f"<b>🚛 {vehicle_name} &mdash; TAPPA #{step_idx} [TRANSITO A VUOTO]</b><br>"
+                    f"Via: <b>{edge_name}</b><br>"
+                    f"Senso di marcia: <b>{cardinal_dir}</b><br>"
+                    f"Tragitto di collegamento (senza raccolta cassonetti)<br>"
                     f"Costo transito: {move['cost']:.2f} &euro;"
                 )
-                folium.PolyLine(
-                    locations=[p1, p2],
+                pl = folium.PolyLine(
+                    locations=locs,
                     color="#f97316",
                     weight=3.5,
                     opacity=0.85,
                     dash_array="8, 6",
                     popup=popup_txt,
-                    tooltip=f"{vehicle_name}: Transito {edge_name} ({u}&rarr;{v})"
+                    tooltip=f"Tappa #{step_idx}: {vehicle_name} &bull; Transito {edge_name} ({cardinal_dir})"
                 ).add_to(feature_group)
+                try:
+                    plugins.PolyLineTextPath(pl, "    ➤    ", repeat=True, offset=22, attributes={'fill': '#f97316', 'font-size': '14px'}).add_to(feature_group)
+                except Exception:
+                    pass
+
+            step_idx += 1
 
         feature_group.add_to(m)
 

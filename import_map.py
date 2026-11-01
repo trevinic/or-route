@@ -28,6 +28,112 @@ def find_nearest_node(G: Any, lat: float, lon: float) -> Any:
         )
 
 
+def fetch_road_corridor_osrm(lat1: float, lon1: float, lat2: float, lon2: float) -> tuple[float, list[list[float]]]:
+    """
+    Interroga il servizio OSRM per calcolare il vero tratto stradale carrabile
+    tra due coordinate GPS (es. dal Cantiere Deposito alla prima via del comune),
+    restituendo la distanza stradale effettiva in metri e le coordinate [lat, lon]
+    di tutte le curve e gli svincoli stradali reali.
+    In caso di indisponibilità di rete, esegue un fallback con interpolazione geodetica.
+    """
+    import urllib.request
+    import json
+
+    d_euc = haversine_distance_m(lat1, lon1, lat2, lon2)
+    if d_euc < 15.0:
+        return d_euc, [[lat1, lon1], [lat2, lon2]]
+
+    url = f"https://router.project-osrm.org/route/v1/driving/{lon1:.6f},{lat1:.6f};{lon2:.6f},{lat2:.6f}?overview=full&geometries=geojson"
+    headers = {
+        "User-Agent": "ORRouteOptimization/2.5 (contact@or-route.org)",
+        "Accept": "application/json"
+    }
+
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=7) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                routes = data.get("routes", [])
+                if routes and len(routes) > 0:
+                    route = routes[0]
+                    dist_m = float(route.get("distance", d_euc))
+                    geom = route.get("geometry", {})
+                    raw_coords = geom.get("coordinates", [])
+                    if raw_coords and len(raw_coords) >= 2:
+                        # GeoJSON coordinates are [lon, lat], convert to [lat, lon]
+                        lat_lon_list = [[round(float(pt[1]), 6), round(float(pt[0]), 6)] for pt in raw_coords]
+                        print(f"[OSM CORRIDOIO] Tratto stradale cantiere trovato con successo: {dist_m/1000.0:.2f} km ({len(lat_lon_list)} punti viari)", flush=True)
+                        return dist_m, lat_lon_list
+    except Exception as err:
+        print(f"[OSM CORRIDOIO] Avviso OSRM ({err}). Attivazione interpolazione geodetica...", flush=True)
+
+    # Fallback con segmenti intermedi
+    steps = max(2, min(25, int(d_euc / 200.0)))
+    lat_lon_list = [
+        [round(lat1 + (lat2 - lat1) * (i / steps), 6), round(lon1 + (lon2 - lon1) * (i / steps), 6)]
+        for i in range(steps + 1)
+    ]
+    return d_euc, lat_lon_list
+
+
+def parse_places_input(place_input: str) -> list[str]:
+    """
+    Estrae una lista di comuni/zone dall'input utente.
+    Supporta:
+    - Più toponimi separati da ';' o nuove linee (es. 'Conegliano, Italy; Susegana, Italy')
+    - Più toponimi separati da virgola o '+'
+    - Normalizza automaticamente aggiungendo ', Italy' per i toponimi senza nazione specificata.
+    """
+    import re
+    if not place_input:
+        return ["Conegliano, Italy"]
+
+    raw = str(place_input).strip()
+
+    if ";" in raw or "\n" in raw:
+        tokens = [p.strip() for p in re.split(r"[;\n]+", raw) if p.strip()]
+    elif "+" in raw:
+        tokens = [p.strip() for p in raw.split("+") if p.strip()]
+    elif re.search(r"\b(e|and|und)\b", raw, re.IGNORECASE) and not re.search(r",\s*Italy", raw, re.IGNORECASE):
+        tokens = [p.strip() for p in re.split(r"\b(?:e|and|und)\b", raw, flags=re.IGNORECASE) if p.strip()]
+    elif "," in raw:
+        parts = [p.strip() for p in raw.split(",") if p.strip()]
+        has_country = any(p.lower() in ("italy", "italia", "france", "germany", "spain", "switzerland", "austria") for p in parts)
+        if has_country:
+            reconstructed = []
+            cur = ""
+            for p in parts:
+                if p.lower() in ("italy", "italia", "france", "germany", "spain", "switzerland", "austria"):
+                    if cur:
+                        reconstructed.append(f"{cur}, {p}")
+                        cur = ""
+                    else:
+                        reconstructed.append(p)
+                else:
+                    if cur:
+                        reconstructed.append(cur)
+                    cur = p
+            if cur:
+                reconstructed.append(cur)
+            tokens = reconstructed if len(reconstructed) > 1 else [raw]
+        else:
+            tokens = parts
+    else:
+        tokens = [raw]
+
+    clean_places = []
+    for t in tokens:
+        t_clean = t.strip()
+        if not t_clean:
+            continue
+        if "," not in t_clean and not any(k in t_clean.lower() for k in ("italy", "italia")):
+            t_clean = f"{t_clean}, Italy"
+        clean_places.append(t_clean)
+
+    return clean_places if clean_places else [raw]
+
+
 OVERPASS_MIRRORS = [
     "https://overpass.kumi.systems/api",
     "https://overpass.private.coffee/api",
@@ -294,8 +400,9 @@ def import_osm_by_place(
     max_streets: int = 0
 ) -> Dict[str, Any]:
     """
-    Scarica la rete stradale reale di un comune, frazione o quartiere.
-    Consente di posizionare il Deposito Centrale tramite coordinate GPS o indirizzo.
+    Scarica la rete stradale reale di uno o più comuni, frazioni o quartieri contemporaneamente.
+    Supporta toponimi multipli separati da ';' o ',' (es. 'Conegliano, Italy; Susegana, Italy').
+    Consente di posizionare il Deposito Centrale tramite coordinate GPS o indirizzo reale.
     Se l'utente inserisce direttamente coordinate nel nome comune, reindirizza in automatico.
     """
     import math
@@ -330,34 +437,58 @@ def import_osm_by_place(
                 depot_lat, depot_lon = float(lat), float(lon)
             except Exception:
                 try:
-                    composed_query = f"{depot_query_clean}, {clean_place}"
+                    composed_query = f"{depot_query_clean}, {clean_place.split(';')[0].split(',')[0]}"
                     print(f"[OSM] Fallback geocodifica con comune: '{composed_query}'...", flush=True)
                     lat, lon = ox.geocode(composed_query)
                     depot_lat, depot_lon = float(lat), float(lon)
                 except Exception as e:
                     print(f"[OSM] Avviso geocodifica deposito fallita: {e}", flush=True)
 
-    # 2. Determina il centro urbano del comune per centrare il settore o il fallback Core API
+    # 2. Supporto Multi-Comune / Multi-Zona
+    places_list = parse_places_input(clean_place)
+    print(f"[OSM] Zone/Comuni rilevati ({len(places_list)}): {places_list}", flush=True)
+
     urban_lat, urban_lon = None, None
-    try:
-        urban_lat, urban_lon = geocode_urban_center(clean_place)
-        print(f"[OSM] Centro urbano identificato per '{clean_place}': ({urban_lat:.5f}, {urban_lon:.5f})", flush=True)
-    except Exception as geo_err:
-        print(f"[OSM] Avviso geocodifica centro urbano per '{clean_place}': {geo_err}", flush=True)
+    urban_centers = []
+    for p in places_list:
+        try:
+            ulat, ulon = geocode_urban_center(p)
+            urban_centers.append((ulat, ulon))
+            print(f"[OSM] Centro urbano identificato per '{p}': ({ulat:.5f}, {ulon:.5f})", flush=True)
+        except Exception as geo_err:
+            print(f"[OSM] Avviso geocodifica per '{p}': {geo_err}", flush=True)
+
+    if urban_centers:
+        urban_lat = sum(c[0] for c in urban_centers) / len(urban_centers)
+        urban_lon = sum(c[1] for c in urban_centers) / len(urban_centers)
 
     ref_lat = urban_lat if urban_lat is not None else depot_lat
     ref_lon = urban_lon if urban_lon is not None else depot_lon
     bbox_fallback = None
-    if ref_lat is not None and ref_lon is not None:
-        dist_m = 750
+    if urban_centers:
+        min_u_lat = min(c[0] for c in urban_centers)
+        max_u_lat = max(c[0] for c in urban_centers)
+        min_u_lon = min(c[1] for c in urban_centers)
+        max_u_lon = max(c[1] for c in urban_centers)
+        dist_m = 1200
+        lat_d = dist_m / 111320.0
+        lon_d = dist_m / (111320.0 * max(0.2, math.cos(math.radians(ref_lat or 45.8))))
+        bbox_fallback = (min_u_lon - lon_d, min_u_lat - lat_d, max_u_lon + lon_d, max_u_lat + lat_d)
+    elif ref_lat is not None and ref_lon is not None:
+        dist_m = 800
         lat_d = dist_m / 111320.0
         lon_d = dist_m / (111320.0 * max(0.2, math.cos(math.radians(ref_lat))))
         bbox_fallback = (ref_lon - lon_d, ref_lat - lat_d, ref_lon + lon_d, ref_lat + lat_d)
 
-    def _fetch():
-        return ox.graph_from_place(clean_place, network_type="drive", simplify=True)
+    place_query = places_list if len(places_list) > 1 else places_list[0]
+    place_display_name = " + ".join([p.split(",")[0].strip() for p in places_list])
 
-    G = download_osm_with_fallbacks(_fetch, f"comune/area '{clean_place}'", bbox_fallback=bbox_fallback)
+    def _fetch():
+        if isinstance(place_query, list):
+            return ox.graph_from_place(place_query, network_type="drive", simplify=True)
+        return ox.graph_from_place(place_query, network_type="drive", simplify=True)
+
+    G = download_osm_with_fallbacks(_fetch, f"comuni/aree '{place_display_name}'", bbox_fallback=bbox_fallback)
 
     # 3. Posizionamento deposito: usa coordinate utente, oppure centro urbano / baricentro della rete
     if depot_lat is not None and depot_lon is not None:
@@ -367,7 +498,7 @@ def import_osm_by_place(
         depot_osm_id = find_nearest_node(G, lat=urban_lat, lon=urban_lon)
         depot_lat = float(G.nodes[depot_osm_id].get("y", urban_lat))
         depot_lon = float(G.nodes[depot_osm_id].get("x", urban_lon))
-        print(f"[OSM] Deposito posizionato nel centro urbano di '{clean_place}' ({depot_lat:.5f}, {depot_lon:.5f})...", flush=True)
+        print(f"[OSM] Deposito posizionato nel centro urbano di '{place_display_name}' ({depot_lat:.5f}, {depot_lon:.5f})...", flush=True)
     else:
         lats = [float(G.nodes[n].get("y", 45.886)) for n in G.nodes]
         lons = [float(G.nodes[n].get("x", 12.297)) for n in G.nodes]
@@ -382,10 +513,10 @@ def import_osm_by_place(
         depot_node_id=depot_osm_id,
         exact_depot_lat=depot_lat,
         exact_depot_lon=depot_lon,
-        depot_address=depot_query or f"Centro Operativo {clean_place} ({depot_lat:.5f}, {depot_lon:.5f})",
+        depot_address=depot_query or f"Centro Operativo {place_display_name} ({depot_lat:.5f}, {depot_lon:.5f})",
         max_streets=max_streets,
         demand_per_meter=demand_per_meter,
-        place_name=clean_place
+        place_name=place_display_name
     )
 
 
@@ -578,23 +709,28 @@ def convert_networkx_to_carp_config(
 
     # Strade
     streets_list = []
+    corridor_coords = []
 
-    # Se c'è un cantiere esterno (distanza >= 15m), aggiungiamo l'arco di raccordo viario R0
+    # Se c'è un cantiere esterno (distanza >= 15m), calcoliamo l'effettivo tratto stradale viario R0
     if need_separate_r0_node and depot_node_id in G.nodes:
         entry_lat = float(G.nodes[depot_node_id].get("y", exact_depot_lat))
         entry_lon = float(G.nodes[depot_node_id].get("x", exact_depot_lon))
-        dist_m = haversine_distance_m(float(exact_depot_lat), float(exact_depot_lon), entry_lat, entry_lon)
-        t_cost = round(max(dist_m / 100.0, 0.5), 2)
+        corridor_dist_m, corridor_coords = fetch_road_corridor_osrm(
+            float(exact_depot_lat), float(exact_depot_lon),
+            entry_lat, entry_lon
+        )
+        t_cost = round(max(corridor_dist_m / 100.0, 0.5), 2)
         streets_list.append({
             "id": "R0",
-            "name": "Raccordo Cantiere Deposito",
+            "name": "Raccordo Cantiere Deposito (Tratto Stradale)",
             "u": 0,
             "v": entry_node_new_id,
-            "length_m": round(dist_m, 1),
+            "length_m": round(corridor_dist_m, 1),
             "transit_cost": t_cost,
             "service_cost": t_cost,
             "demand_kg": 0.0,
-            "description": f"Raccordo viario tra deposito e rete comunale ({dist_m / 1000.0:.2f} km)"
+            "description": f"Tratto stradale effettivo tra Cantiere/Deposito e viabilità comunale ({corridor_dist_m / 1000.0:.2f} km)",
+            "geometry": corridor_coords
         })
 
     seen_edges = set()
@@ -611,6 +747,21 @@ def convert_networkx_to_carp_config(
 
         raw_id = _clean_osm_str(data.get("id", ""))
         street_name = _clean_osm_str(data.get("name"), f"Via Comunale ({canonical[0]}-{canonical[1]})")
+
+        # Estrazione geometria curvilinea reale della tratta da OSMnx
+        geom = data.get("geometry")
+        edge_coords = []
+        if geom is not None and hasattr(geom, "coords"):
+            edge_coords = [[round(float(lat), 6), round(float(lon), 6)] for lon, lat in geom.coords]
+        elif "geometry" in data and isinstance(data["geometry"], list) and len(data["geometry"]) >= 2:
+            edge_coords = data["geometry"]
+        else:
+            u_data = G.nodes[u]
+            v_data = G.nodes[v]
+            edge_coords = [
+                [round(float(u_data.get("y", 0.0)), 6), round(float(u_data.get("x", 0.0)), 6)],
+                [round(float(v_data.get("y", 0.0)), 6), round(float(v_data.get("x", 0.0)), 6)]
+            ]
 
         # Se i dati della strada hanno già demand_kg e transit_cost (es. da filtro settore), preservali!
         if "demand_kg" in data and "transit_cost" in data:
@@ -643,7 +794,7 @@ def convert_networkx_to_carp_config(
             transit_cost = round(length_m / 100.0, 2)
             service_cost = round(transit_cost * 1.8, 2)
 
-        if raw_id == "R0" or street_name == "Raccordo Cantiere Deposito":
+        if raw_id == "R0" or street_name.startswith("Raccordo Cantiere"):
             st_id = "R0"
         else:
             st_id = f"S{edge_idx}"
@@ -658,7 +809,8 @@ def convert_networkx_to_carp_config(
             "transit_cost": max(transit_cost, 0.5),
             "service_cost": max(service_cost, 0.9 if demand > 0 else 0.5),
             "demand_kg": float(demand),
-            "description": desc
+            "description": desc,
+            "geometry": edge_coords
         })
 
     total_demand = sum(s["demand_kg"] for s in streets_list)
@@ -681,7 +833,8 @@ def convert_networkx_to_carp_config(
         "depot_info": {
             "exact_lat": exact_depot_lat,
             "exact_lon": exact_depot_lon,
-            "address": depot_address
+            "address": depot_address,
+            "road_corridor_coords": corridor_coords
         },
         "nodes": nodes_list,
         "streets": streets_list,

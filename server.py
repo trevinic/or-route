@@ -29,6 +29,7 @@ import pcarp_model
 import carptw_model
 import carpif_model
 import dcarp_model
+import auth_db
 
 PORT = int(os.environ.get("PORT", 8085))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -254,6 +255,34 @@ def save_dcarp_config(cfg: Dict[str, Any]):
 
 
 class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def get_auth_token(self) -> str:
+        """Estrae il token di sessione da Authorization: Bearer, X-Auth-Token o query string."""
+        auth_header = self.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            return auth_header.split(" ", 1)[1].strip()
+        custom_header = self.headers.get("X-Auth-Token") or self.headers.get("X-Session-Token")
+        if custom_header:
+            return custom_header.strip()
+        parsed = urllib.parse.urlparse(self.path)
+        qs = urllib.parse.parse_qs(parsed.query)
+        if "token" in qs and qs["token"]:
+            return qs["token"][0].strip()
+        return None
+
+    def get_auth_user(self):
+        """Recupera l'utente collegato al token inviato nella richiesta."""
+        token = self.get_auth_token()
+        if not token:
+            return None
+        return auth_db.get_user_by_token(token)
+
+    def send_json(self, status: int, data: dict):
+        """Invia una risposta JSON codificata UTF-8 con header CORS corretti."""
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
     def check_auth(self) -> bool:
         auth_user = os.environ.get("OR_ROUTE_AUTH_USER")
         auth_pass = os.environ.get("OR_ROUTE_AUTH_PASS")
@@ -316,8 +345,8 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-Session-Token")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -331,6 +360,42 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+
+
+        # --------------------- AUTH & SCENARI UTENTE (LOCALE SQLITE) ---------------------
+        if path == "/api/auth/me":
+            user = self.get_auth_user()
+            if user:
+                self.send_json(200, {"success": True, "user": user})
+            else:
+                self.send_json(200, {"success": False, "user": None})
+            return
+
+        elif path == "/api/scenarios":
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per visualizzare le tue configurazioni salvate."})
+                return
+            qs = urllib.parse.parse_qs(parsed.query)
+            m_type = qs.get("model_type", [None])[0]
+            scenarios = auth_db.get_user_scenarios(user["id"], m_type)
+            self.send_json(200, {"success": True, "scenarios": scenarios})
+            return
+
+        elif path.startswith("/api/scenarios/"):
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per visualizzare la configurazione."})
+                return
+            parts = path.strip("/").split("/")
+            if len(parts) == 3 and parts[2].isdigit():
+                scen_id = int(parts[2])
+                scen = auth_db.get_scenario(scen_id, user["id"])
+                if scen:
+                    self.send_json(200, {"success": True, "scenario": scen})
+                else:
+                    self.send_json(404, {"success": False, "error": "Configurazione non trovata o accesso negato."})
+                return
 
         # Inoltro Ibrido: Se su Render, inoltra le richieste API e le mappe alla potente VPS Oracle
         if ORACLE_BACKEND_URL and (path.startswith("/api/") or path.startswith("/output/")):
@@ -563,6 +628,107 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         raw_body = self.rfile.read(length) if length > 0 else b""
         body = raw_body.decode("utf-8") if raw_body else "{}"
+
+
+        # --------------------- AUTH & SCENARI UTENTE (LOCALE SQLITE) ---------------------
+        if path == "/api/auth/register":
+            try:
+                data = json.loads(body)
+                token, user_dict, err = auth_db.register_user(
+                    data.get("username"),
+                    data.get("password"),
+                    data.get("email")
+                )
+                if err:
+                    self.send_json(400, {"success": False, "error": err})
+                else:
+                    self.send_json(200, {"success": True, "token": token, "user": user_dict, "message": "Registrazione completata con successo!"})
+            except Exception as e:
+                self.send_json(500, {"success": False, "error": f"Errore interno registrazione: {e}"})
+            return
+
+        elif path == "/api/auth/login":
+            try:
+                data = json.loads(body)
+                token, user_dict, err = auth_db.login_user(
+                    data.get("username"),
+                    data.get("password")
+                )
+                if err:
+                    self.send_json(401, {"success": False, "error": err})
+                else:
+                    self.send_json(200, {"success": True, "token": token, "user": user_dict, "message": "Accesso effettuato con successo!"})
+            except Exception as e:
+                self.send_json(500, {"success": False, "error": f"Errore interno login: {e}"})
+            return
+
+        elif path == "/api/auth/logout":
+            token = self.get_auth_token()
+            if token:
+                auth_db.logout_token(token)
+            self.send_json(200, {"success": True, "message": "Sessione chiusa con successo."})
+            return
+
+        elif path == "/api/scenarios":
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per salvare le tue configurazioni personali."})
+                return
+            try:
+                data = json.loads(body)
+                name = data.get("name") or "Nuova Configurazione"
+                model_type = data.get("model_type") or "carp"
+                cfg = data.get("config") or {}
+                desc = data.get("description")
+                scen_id = auth_db.create_scenario(user["id"], name, model_type, cfg, desc)
+                self.send_json(200, {
+                    "success": True,
+                    "id": scen_id,
+                    "message": f"Configurazione '{name}' salvata con successo nel tuo profilo!"
+                })
+            except Exception as e:
+                self.send_json(500, {"success": False, "error": f"Errore salvataggio configurazione: {e}"})
+            return
+
+        elif path.startswith("/api/scenarios/") and path.endswith("/update"):
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per aggiornare le configurazioni."})
+                return
+            parts = path.strip("/").split("/")
+            if len(parts) >= 3 and parts[2].isdigit():
+                scen_id = int(parts[2])
+                try:
+                    data = json.loads(body)
+                    ok = auth_db.update_scenario(
+                        scen_id,
+                        user["id"],
+                        name=data.get("name"),
+                        description=data.get("description"),
+                        config=data.get("config")
+                    )
+                    if ok:
+                        self.send_json(200, {"success": True, "message": "Configurazione aggiornata con successo!"})
+                    else:
+                        self.send_json(404, {"success": False, "error": "Configurazione non trovata o non autorizzata."})
+                except Exception as e:
+                    self.send_json(500, {"success": False, "error": str(e)})
+                return
+
+        elif path.startswith("/api/scenarios/") and path.endswith("/delete"):
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per eliminare le configurazioni."})
+                return
+            parts = path.strip("/").split("/")
+            if len(parts) >= 3 and parts[2].isdigit():
+                scen_id = int(parts[2])
+                ok = auth_db.delete_scenario(scen_id, user["id"])
+                if ok:
+                    self.send_json(200, {"success": True, "message": "Configurazione eliminata con successo!"})
+                else:
+                    self.send_json(404, {"success": False, "error": "Configurazione non trovata o non autorizzata."})
+                return
 
         # Inoltro Ibrido: Se su Render, inoltra le richieste di calcolo pesante alla VPS Oracle
         if ORACLE_BACKEND_URL and path.startswith("/api/"):
@@ -1254,6 +1420,59 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         self.send_response(404)
         self.end_headers()
+
+    def do_PUT(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        length = int(self.headers.get("Content-Length", 0))
+        raw_body = self.rfile.read(length) if length > 0 else b""
+        body = raw_body.decode("utf-8") if raw_body else "{}"
+
+        if path.startswith("/api/scenarios/"):
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per aggiornare le configurazioni."})
+                return
+            parts = path.strip("/").split("/")
+            if len(parts) == 3 and parts[2].isdigit():
+                scen_id = int(parts[2])
+                try:
+                    data = json.loads(body)
+                    ok = auth_db.update_scenario(
+                        scen_id,
+                        user["id"],
+                        name=data.get("name"),
+                        description=data.get("description"),
+                        config=data.get("config")
+                    )
+                    if ok:
+                        self.send_json(200, {"success": True, "message": "Configurazione aggiornata con successo!"})
+                    else:
+                        self.send_json(404, {"success": False, "error": "Configurazione non trovata o non autorizzata."})
+                except Exception as e:
+                    self.send_json(500, {"success": False, "error": str(e)})
+                return
+        self.send_json(404, {"error": "Not found"})
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path.startswith("/api/scenarios/"):
+            user = self.get_auth_user()
+            if not user:
+                self.send_json(401, {"success": False, "error": "Accedi per eliminare le configurazioni."})
+                return
+            parts = path.strip("/").split("/")
+            if len(parts) == 3 and parts[2].isdigit():
+                scen_id = int(parts[2])
+                ok = auth_db.delete_scenario(scen_id, user["id"])
+                if ok:
+                    self.send_json(200, {"success": True, "message": "Configurazione eliminata con successo!"})
+                else:
+                    self.send_json(404, {"success": False, "error": "Configurazione non trovata o non autorizzata."})
+                return
+        self.send_json(404, {"error": "Not found"})
 
 
 def find_free_port(start_port=8085, max_attempts=10):
