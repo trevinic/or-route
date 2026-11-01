@@ -995,7 +995,7 @@
           <!-- Riga 2: Mappa GIS (60%) affiancata al Prospetto Merceologico del Comune (40%) -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 16px; margin-bottom: 18px; align-items: stretch;">
             <!-- Mappa Stradale Interattiva OR-Route (Modifica Vie Diretta, Senso di Marcia & Frecce) -->
-            <div class="card" style="padding: 12px; margin-bottom: 0; display: flex; flex-direction: column;">
+            <div id="carpMapCard" class="card" style="padding: 12px; margin-bottom: 0; display: flex; flex-direction: column;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <b style="font-size: 13.5px; color: #38bdf8;">🗺️ Mappa Stradale Interattiva (CARP)</b>
@@ -1011,7 +1011,10 @@
                   <button type="button" class="btn btn-primary btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="solveCarp()" title="Ricalcola gli itinerari ottimi della flotta con le modifiche">
                     ⚡ Risolvi Flotta
                   </button>
-                  <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 11.5px; font-weight: 600; padding: 2px 4px;" title="Apri visualizzazione Folium a schermo intero">Schermo Intero &nearr;</a>
+                  <button type="button" id="btnCarpMapFullscreen" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px; background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8;" onclick="toggleCarpMapFullscreen()" title="Espandi la mappa interattiva a schermo intero mantenendo tutti i controlli (Aggiungi/Togli Vie, Risolvi Flotta)">
+                    ⛶ Schermo Intero
+                  </button>
+                  <a href="/output/percorso_raccolta.html" target="_blank" style="color: var(--text-muted); text-decoration: none; font-size: 11px; padding: 2px 4px;" title="Apri visualizzazione Folium statica in nuova scheda">Report HTML ↗</a>
                 </div>
               </div>
 

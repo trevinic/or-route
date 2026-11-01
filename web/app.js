@@ -7945,6 +7945,51 @@ function saveStreetFromMapPopup(streetId) {
 // FOGLIO DI VIAGGIO SEMPLICE & CHIARO PER L'AUTISTA
 // ------------------------------------------
 
+
+function toggleCarpMapFullscreen() {
+  const card = document.getElementById('carpMapCard');
+  const btn = document.getElementById('btnCarpMapFullscreen');
+  if (!card) return;
+
+  const isFs = card.classList.toggle('carp-map-fullscreen');
+  if (btn) {
+    if (isFs) {
+      btn.innerHTML = '✕ Riduci a Finestra';
+      btn.style.background = 'rgba(239, 68, 68, 0.2)';
+      btn.style.borderColor = '#ef4444';
+      btn.style.color = '#f87171';
+      btn.title = 'Torna alla visualizzazione normale del portale (o premi ESC)';
+    } else {
+      btn.innerHTML = '⛶ Schermo Intero';
+      btn.style.background = 'rgba(56, 189, 248, 0.15)';
+      btn.style.borderColor = '#38bdf8';
+      btn.style.color = '#38bdf8';
+      btn.title = 'Espandi la mappa interattiva a schermo intero mantenendo tutti i controlli (Aggiungi/Togli Vie, Risolvi Flotta)';
+    }
+  }
+
+  // Forza ricalcolo dimensioni viewport Leaflet
+  setTimeout(() => {
+    const map = State.leafletMaps && State.leafletMaps['carpMap'];
+    if (map) map.invalidateSize();
+  }, 100);
+  setTimeout(() => {
+    const map = State.leafletMaps && State.leafletMaps['carpMap'];
+    if (map) map.invalidateSize();
+  }, 350);
+}
+window.toggleCarpMapFullscreen = toggleCarpMapFullscreen;
+
+// Supporto tasto ESC per ridurre schermo intero mappa CARP
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    const card = document.getElementById('carpMapCard');
+    if (card && card.classList.contains('carp-map-fullscreen')) {
+      toggleCarpMapFullscreen();
+    }
+  }
+});
+
 function openCarpDriverSheet(vName) {
   if (!State.carpResult || !State.carpResult.vehicles || !State.carpResult.vehicles[vName]) {
     showToast('Nessun percorso calcolato per questo mezzo. Premi prima "Risolvi".');

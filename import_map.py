@@ -82,7 +82,8 @@ def parse_places_input(place_input: str) -> list[str]:
     Estrae una lista di comuni/zone dall'input utente.
     Supporta:
     - Più toponimi separati da ';' o nuove linee (es. 'Conegliano, Italy; Susegana, Italy')
-    - Più toponimi separati da virgola o '+'
+    - Più toponimi separati da congiunzioni ('e', 'and', '+') come 'Tarzo e Corbanese'
+    - Più toponimi separati da virgola
     - Normalizza automaticamente aggiungendo ', Italy' per i toponimi senza nazione specificata.
     """
     import re
@@ -91,45 +92,26 @@ def parse_places_input(place_input: str) -> list[str]:
 
     raw = str(place_input).strip()
 
-    if ";" in raw or "\n" in raw:
-        tokens = [p.strip() for p in re.split(r"[;\n]+", raw) if p.strip()]
-    elif "+" in raw:
-        tokens = [p.strip() for p in raw.split("+") if p.strip()]
-    elif re.search(r"\b(e|and|und)\b", raw, re.IGNORECASE) and not re.search(r",\s*Italy", raw, re.IGNORECASE):
-        tokens = [p.strip() for p in re.split(r"\b(?:e|and|und)\b", raw, flags=re.IGNORECASE) if p.strip()]
-    elif "," in raw:
-        parts = [p.strip() for p in raw.split(",") if p.strip()]
-        has_country = any(p.lower() in ("italy", "italia", "france", "germany", "spain", "switzerland", "austria") for p in parts)
-        if has_country:
-            reconstructed = []
-            cur = ""
-            for p in parts:
-                if p.lower() in ("italy", "italia", "france", "germany", "spain", "switzerland", "austria"):
-                    if cur:
-                        reconstructed.append(f"{cur}, {p}")
-                        cur = ""
-                    else:
-                        reconstructed.append(p)
-                else:
-                    if cur:
-                        reconstructed.append(cur)
-                    cur = p
-            if cur:
-                reconstructed.append(cur)
-            tokens = reconstructed if len(reconstructed) > 1 else [raw]
-        else:
-            tokens = parts
-    else:
-        tokens = [raw]
+    # Riconoscimento congiunzioni e separatori multipli (;, \n, +, ' e ', ' and ')
+    s = re.sub(r"[\n;+]+", ";", raw)
+    s = re.sub(r"\s+\b(?:e|and|und)\b\s+", ";", s, flags=re.IGNORECASE)
+
+    # Se non c'è punto e virgola, verifica se ci sono virgole che separano comuni
+    if ";" not in s and "," in s:
+        parts = [p.strip() for p in s.split(",") if p.strip()]
+        if len(parts) > 1 and not any(p.lower() in ("italy", "italia", "france", "germany", "spain", "switzerland", "austria") for p in parts):
+            s = ";".join(parts)
+
+    tokens = [t.strip() for t in s.split(";") if t.strip()]
 
     clean_places = []
     for t in tokens:
-        t_clean = t.strip()
+        # Pulisci da virgole finali o doppie indicazioni della nazione
+        t_clean = re.sub(r",\s*(?:Italy|Italia)$", "", t, flags=re.IGNORECASE).strip()
+        t_clean = re.sub(r"^[,\s]+|[,\s]+$", "", t_clean)
         if not t_clean:
             continue
-        if "," not in t_clean and not any(k in t_clean.lower() for k in ("italy", "italia")):
-            t_clean = f"{t_clean}, Italy"
-        clean_places.append(t_clean)
+        clean_places.append(f"{t_clean}, Italy")
 
     return clean_places if clean_places else [raw]
 
@@ -214,14 +196,13 @@ def download_graph_from_osm_core_api_bbox(min_lon: float, min_lat: float, max_lo
     import requests
     import osmnx as ox
 
-    # Se l'area richiesta è troppo ampia (>50.000 nodi), la centriamo riducendo il delta
+    # Bounding box fino a ~18 km di diametro (0.085 lat) per supportare unioni di comuni e multi-zone (es. Tarzo + Corbanese)
     center_lat = (min_lat + max_lat) / 2.0
     center_lon = (min_lon + max_lon) / 2.0
 
-    # Un delta di ~0.0072 lat corrisponde a circa 800 metri dal centro (~1.6 km diametro)
-    max_half_delta_lat = 0.0072
+    max_half_delta_lat = 0.085
     cos_lat = max(0.2, math.cos(math.radians(center_lat)))
-    max_half_delta_lon = 0.0072 / cos_lat
+    max_half_delta_lon = 0.085 / cos_lat
 
     if (max_lat - min_lat) > (max_half_delta_lat * 2):
         min_lat = center_lat - max_half_delta_lat
@@ -242,26 +223,32 @@ def download_graph_from_osm_core_api_bbox(min_lon: float, min_lat: float, max_lo
     if resp.status_code != 200:
         raise RuntimeError(f"OpenStreetMap Core API ha risposto con codice {resp.status_code}: {resp.text[:200]}")
 
-    # Pre-filtraggio XML: manteniamo solo le way stradali carrabili pubbliche e i relativi nodi
+    # Pre-filtraggio XML: manteniamo solo le way stradali carrabili pubbliche con tutti i nodi presenti
     try:
         root = ET.fromstring(resp.content)
-        valid_node_refs = set()
+        present_node_ids = {elem.attrib.get("id") for elem in root.findall("node")}
+
         for elem in list(root):
             if elem.tag == "way":
                 tags = {t.attrib.get("k"): t.attrib.get("v") for t in elem.findall("tag")}
                 hw = tags.get("highway", "")
                 area = tags.get("area", "no")
                 access = tags.get("access", "yes")
-                if hw not in DRIVABLE_HIGHWAYS or area == "yes" or access in ("private", "no"):
+                nds = [nd.attrib.get("ref") for nd in elem.findall("nd")]
+
+                has_all_nodes = all(ref in present_node_ids for ref in nds)
+                if (hw not in DRIVABLE_HIGHWAYS or area == "yes" or access in ("private", "no") or not has_all_nodes or len(nds) < 2):
                     root.remove(elem)
-                else:
-                    for nd in elem.findall("nd"):
-                        valid_node_refs.add(nd.attrib.get("ref"))
             elif elem.tag == "relation":
                 root.remove(elem)
 
+        used_nodes = set()
+        for elem in root.findall("way"):
+            for nd in elem.findall("nd"):
+                used_nodes.add(nd.attrib.get("ref"))
+
         for elem in list(root):
-            if elem.tag == "node" and elem.attrib.get("id") not in valid_node_refs:
+            if elem.tag == "node" and elem.attrib.get("id") not in used_nodes:
                 root.remove(elem)
 
         xml_bytes = ET.tostring(root, encoding="utf-8")
@@ -391,6 +378,68 @@ def import_osm_by_point(
     )
 
 
+
+def download_multizone_osm(urban_centers: list[tuple[float, float]], places_list: list[str]) -> Any:
+    """
+    Scarica la viabilità urbana di più comuni o frazioni contemporaneamente e li connette
+    tramite i reali corridoi stradali OSRM. Evita di superare i limiti di nodi OSM Core
+    e garantisce che ciascun comune/frazione richiesto sia presente nel piano di raccolta.
+    """
+    import math
+    import osmnx as ox
+    import networkx as nx
+
+    graphs = []
+    for idx, (ulat, ulon) in enumerate(urban_centers):
+        p_name = places_list[idx] if idx < len(places_list) else f"Zona {idx+1}"
+        dist_m = 750
+        lat_d = dist_m / 111320.0
+        lon_d = dist_m / (111320.0 * max(0.2, math.cos(math.radians(ulat))))
+        bbox = (ulon - lon_d, ulat - lat_d, ulon + lon_d, ulat + lat_d)
+
+        def _fetch_single():
+            try:
+                return ox.graph_from_place(p_name, network_type="drive", simplify=True)
+            except Exception:
+                return ox.graph_from_bbox(bbox=bbox, network_type="drive", simplify=True)
+
+        G_zone = None
+        try:
+            print(f"[OSM MULTI-ZONA] Download prioritario rapido per '{p_name}' ({ulat:.4f}, {ulon:.4f}) da OSM Core API...", flush=True)
+            G_zone = download_graph_from_osm_core_api_bbox(*bbox, description=f"zona '{p_name}'")
+        except Exception as e_core:
+            print(f"[OSM MULTI-ZONA] Failover su Overpass per '{p_name}' ({e_core})...", flush=True)
+            G_zone = download_osm_with_fallbacks(_fetch_single, f"zona '{p_name}'", bbox_fallback=bbox)
+
+        graphs.append((p_name, (ulat, ulon), G_zone))
+
+    if not graphs:
+        raise RuntimeError("Nessuna viabilità scaricata per le zone indicate.")
+
+    # Componi tutti i grafi delle zone
+    G_combined = nx.MultiDiGraph()
+    for _, _, gz in graphs:
+        G_combined = nx.compose(G_combined, gz)
+
+    # Connetti i centri urbani tramite corridoi stradali reali OSRM
+    for i in range(len(graphs)):
+        for j in range(i + 1, len(graphs)):
+            name_a, (lat_a, lon_a), gz_a = graphs[i]
+            name_b, (lat_b, lon_b), gz_b = graphs[j]
+            na = find_nearest_node(gz_a, lat=lat_a, lon=lon_a)
+            nb = find_nearest_node(gz_b, lat=lat_b, lon=lon_b)
+            corridor_dist_m, corridor_coords = fetch_road_corridor_osrm(
+                float(gz_a.nodes[na].get("y", lat_a)), float(gz_a.nodes[na].get("x", lon_a)),
+                float(gz_b.nodes[nb].get("y", lat_b)), float(gz_b.nodes[nb].get("x", lon_b))
+            )
+            c_name = f"Collegamento {name_a.split(',')[0]} - {name_b.split(',')[0]}"
+            t_cost = round(max(corridor_dist_m / 100.0, 0.5), 2)
+            G_combined.add_edge(na, nb, key=0, length=corridor_dist_m, transit_cost=t_cost, service_cost=t_cost, demand_kg=0.0, name=c_name, highway="secondary", geometry=corridor_coords)
+            G_combined.add_edge(nb, na, key=1, length=corridor_dist_m, transit_cost=t_cost, service_cost=t_cost, demand_kg=0.0, name=c_name, highway="secondary", geometry=corridor_coords[::-1])
+
+    return G_combined
+
+
 def import_osm_by_place(
     place_name: str = "Conegliano, Italy",
     depot_lat: Optional[float] = None,
@@ -470,7 +519,7 @@ def import_osm_by_place(
         max_u_lat = max(c[0] for c in urban_centers)
         min_u_lon = min(c[1] for c in urban_centers)
         max_u_lon = max(c[1] for c in urban_centers)
-        dist_m = 1200
+        dist_m = 1600
         lat_d = dist_m / 111320.0
         lon_d = dist_m / (111320.0 * max(0.2, math.cos(math.radians(ref_lat or 45.8))))
         bbox_fallback = (min_u_lon - lon_d, min_u_lat - lat_d, max_u_lon + lon_d, max_u_lat + lat_d)
@@ -483,12 +532,19 @@ def import_osm_by_place(
     place_query = places_list if len(places_list) > 1 else places_list[0]
     place_display_name = " + ".join([p.split(",")[0].strip() for p in places_list])
 
-    def _fetch():
-        if isinstance(place_query, list):
-            return ox.graph_from_place(place_query, network_type="drive", simplify=True)
-        return ox.graph_from_place(place_query, network_type="drive", simplify=True)
+    if len(places_list) > 1 and len(urban_centers) > 1:
+        G = download_multizone_osm(urban_centers, places_list)
+    else:
+        def _fetch():
+            try:
+                return ox.graph_from_place(place_query, network_type="drive", simplify=True)
+            except (TypeError, ValueError) as e_poly:
+                if bbox_fallback is not None:
+                    print(f"[OSM] Toponimo senza poligono chiuso ({e_poly}), scarico via bbox...", flush=True)
+                    return ox.graph_from_bbox(bbox=bbox_fallback, network_type="drive", simplify=True)
+                raise
 
-    G = download_osm_with_fallbacks(_fetch, f"comuni/aree '{place_display_name}'", bbox_fallback=bbox_fallback)
+        G = download_osm_with_fallbacks(_fetch, f"comuni/aree '{place_display_name}'", bbox_fallback=bbox_fallback)
 
     # 3. Posizionamento deposito: usa coordinate utente, oppure centro urbano / baricentro della rete
     if depot_lat is not None and depot_lon is not None:
@@ -516,8 +572,67 @@ def import_osm_by_place(
         depot_address=depot_query or f"Centro Operativo {place_display_name} ({depot_lat:.5f}, {depot_lon:.5f})",
         max_streets=max_streets,
         demand_per_meter=demand_per_meter,
-        place_name=place_display_name
+        place_name=place_display_name,
+        urban_centers=urban_centers
     )
+
+
+def filter_multizone_sector(G: Any, urban_centers: list, depot_node_id: Any, max_streets: int = 80) -> Any:
+    """
+    Estrae un sotto-settore operativo multi-zona bilanciato tra tutti i comuni/frazioni richiesti,
+    garantendo che ogni zona riceva una quota equa di vie e che la viabilità di raccordo
+    tra i vari centri urbani e il deposito sia interamente preservata e percorribile dai mezzi.
+    """
+    if not urban_centers or max_streets is None or max_streets <= 0:
+        return G
+
+    undir_G = G.to_undirected()
+    if depot_node_id not in undir_G:
+        depot_node_id = list(G.nodes())[0] if G.nodes else 0
+
+    # 1. Identifica il nodo stradale più prossimo a ciascun centro urbano
+    center_nodes = [find_nearest_node(G, lat=c[0], lon=c[1]) for c in urban_centers if c[0] is not None]
+    if not center_nodes:
+        return filter_sector_around_depot(G, depot_node_id, max_streets=max_streets)
+
+    all_key_nodes = [depot_node_id] + [cn for cn in center_nodes if cn != depot_node_id]
+    selected_nodes = set(all_key_nodes)
+
+    # 2. Connetti i centri tra loro e con il deposito tramite i cammini minimi su rete viaria
+    for i in range(len(all_key_nodes)):
+        for j in range(i + 1, len(all_key_nodes)):
+            try:
+                p = nx.shortest_path(undir_G, all_key_nodes[i], all_key_nodes[j], weight="length")
+                selected_nodes.update(p)
+            except Exception:
+                pass
+
+    sub_init = G.subgraph(selected_nodes)
+    init_edges = set((min(u, v), max(u, v)) for u, v in sub_init.edges() if u != v)
+
+    rem_edges = max_streets - len(init_edges)
+    quota_per_center = max(15, rem_edges // len(urban_centers)) if rem_edges > 0 else 15
+
+    # 3. Espandi la raccolta attorno a ciascun centro in modo uniforme
+    for c_node in center_nodes:
+        try:
+            lengths = nx.single_source_dijkstra_path_length(undir_G, c_node, weight="length")
+        except Exception:
+            lengths = {n: 1 for n in undir_G.nodes()}
+
+        sorted_nodes = sorted(lengths.keys(), key=lambda n: lengths[n])
+        added_for_center = 0
+        for n in sorted_nodes:
+            if n not in selected_nodes:
+                selected_nodes.add(n)
+                added_for_center += 1
+                if added_for_center >= quota_per_center:
+                    break
+
+    sub_multi = nx.MultiDiGraph(G.subgraph(selected_nodes))
+    if G.graph.get("from_carp_config"):
+        sub_multi.graph["from_carp_config"] = True
+    return sub_multi
 
 
 def filter_sector_around_depot(G: Any, depot_node_id: Any, max_streets: int = 35) -> Any:
@@ -621,7 +736,8 @@ def convert_networkx_to_carp_config(
     depot_address: Optional[str] = None,
     max_streets: int = 35,
     demand_per_meter: float = 1.5,
-    place_name: Optional[str] = None
+    place_name: Optional[str] = None,
+    urban_centers: Optional[list] = None
 ) -> Dict[str, Any]:
     """
     Converte un grafo NetworkX/OSMnx in una configurazione JSON per il modello CARP.
@@ -639,6 +755,8 @@ def convert_networkx_to_carp_config(
             if is_already_carp_config:
                 sub_g.graph["from_carp_config"] = True
             G = sub_g
+    elif urban_centers and len(urban_centers) > 1:
+        G = filter_multizone_sector(G, urban_centers, depot_node_id, max_streets=max_streets)
     else:
         G = filter_sector_around_depot(G, depot_node_id, max_streets=max_streets)
 
