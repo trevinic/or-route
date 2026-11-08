@@ -117,6 +117,7 @@ function switchMainTab(tabId, btnElement) {
     else drawRouteCanvas('vrptwCanvas', State.vrptwConfig, State.vrptwResult || null);
   } else if (tabId === 'tab-carp') {
     if (!State.carpConfig) loadCarpConfig();
+    else renderCarpTables();
   } else if (tabId === 'tab-intermediate') {
     if (!State.evConfig) loadEvConfig();
     else drawEvCanvas('evCanvas', State.evConfig, State.evResult || null);
@@ -468,6 +469,9 @@ function getWizardConcreteVehicles() {
         category: cat.name || 'Standard',
         capacity: parseFloat(cat.capacity) || 1000,
         capacity_kg: parseFloat(cat.capacity) || 1000,
+        crew_size: parseInt(cat.crewSize) || 1,
+        driver_rate: parseFloat(cat.driverRate) || 22.0,
+        vehicle_daily: parseFloat(cat.vehicleDaily) || 40.0,
         fixed_cost: parseFloat(cat.calculatedFixedCost) || 0,
         cost_per_km: parseFloat(cat.costPerKm) || 1.2
       });
@@ -512,7 +516,11 @@ function syncWizardFleetToModels() {
       State.carpConfig.vehicles = concreteVehicles.map(v => ({
         name: v.name,
         capacity_kg: v.capacity_kg,
+        crew_size: v.crew_size || 1,
+        driver_rate: v.driver_rate !== undefined ? v.driver_rate : 22.0,
+        vehicle_daily: v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0,
         fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km !== undefined ? v.cost_per_km : 1.20,
         description: v.category
       }));
     }
@@ -674,7 +682,11 @@ async function applyWizardParametersToModel() {
       State.carpConfig.vehicles = concreteVehicles.map(v => ({
         name: v.name,
         capacity_kg: v.capacity_kg,
+        crew_size: v.crew_size || 1,
+        driver_rate: v.driver_rate !== undefined ? v.driver_rate : 22.0,
+        vehicle_daily: v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0,
         fixed_cost: v.fixed_cost,
+        cost_per_km: v.cost_per_km !== undefined ? v.cost_per_km : 1.20,
         description: v.category
       }));
       try {
