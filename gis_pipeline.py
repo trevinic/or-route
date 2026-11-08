@@ -73,8 +73,10 @@ def build_graph_from_config(config: Dict[str, Any]) -> nx.DiGraph:
         st_id = street.get("id", "")
         desc = street.get("description", "")
         geom = street.get("geometry")
-        G.add_edge(u, v, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc, geometry=geom)
-        G.add_edge(v, u, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc, geometry=geom)
+        z_type = street.get("zone_type", "res_std" if q > 0 else "transit")
+        day_val = street.get("day", 1)
+        G.add_edge(u, v, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc, geometry=geom, zone_type=z_type, day=day_val)
+        G.add_edge(v, u, id=st_id, length=c_trans, length_m=length_m, transit_cost=c_trans, service_cost=c_serv, demand_kg=q, name=name, description=desc, geometry=geom, zone_type=z_type, day=day_val)
 
     return G
 

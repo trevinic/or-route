@@ -68,13 +68,13 @@ DEFAULT_CONFIG = {
         {"id": 4, "name": "Incrocio 4 (Viale Europa)", "lat": 45.6645, "lon": 12.2490}
     ],
     "streets": [
-        {"id": "R1", "name": "Raccordo Deposito 1", "u": 0, "v": 1, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "description": "Raccordo cantiere nord (transito)"},
-        {"id": "R4", "name": "Raccordo Deposito 4", "u": 0, "v": 4, "transit_cost": 4.0, "service_cost": 4.0, "demand_kg": 0, "description": "Raccordo cantiere sud (transito)"},
-        {"id": "VR", "name": "Via Roma", "u": 1, "v": 2, "transit_cost": 2.5, "service_cost": 4.5, "demand_kg": 1800, "description": "Centro storico: raccolta porta a porta"},
-        {"id": "CG", "name": "Corso Garibaldi", "u": 2, "v": 3, "transit_cost": 3.0, "service_cost": 5.0, "demand_kg": 2200, "description": "Arteria commerciale ad alta densità"},
-        {"id": "VD", "name": "Via Dante", "u": 3, "v": 4, "transit_cost": 2.0, "service_cost": 4.0, "demand_kg": 1500, "description": "Zona residenziale est"},
-        {"id": "VE", "name": "Viale Europa", "u": 1, "v": 4, "transit_cost": 3.5, "service_cost": 6.0, "demand_kg": 2000, "description": "Quartiere residenziale ovest"},
-        {"id": "BT", "name": "Bretella di Transito", "u": 2, "v": 4, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "description": "Bretella di transito veloce"}
+        {"id": "R1", "name": "Raccordo Deposito 1", "u": 0, "v": 1, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "zone_type": "transit", "day": "ALL", "description": "Raccordo cantiere nord (transito)"},
+        {"id": "R4", "name": "Raccordo Deposito 4", "u": 0, "v": 4, "transit_cost": 4.0, "service_cost": 4.0, "demand_kg": 0, "zone_type": "transit", "day": "ALL", "description": "Raccordo cantiere sud (transito)"},
+        {"id": "VR", "name": "Via Roma", "u": 1, "v": 2, "transit_cost": 2.5, "service_cost": 4.5, "demand_kg": 1800, "zone_type": "res_high", "day": 1, "description": "Centro storico: raccolta porta a porta"},
+        {"id": "CG", "name": "Corso Garibaldi", "u": 2, "v": 3, "transit_cost": 3.0, "service_cost": 5.0, "demand_kg": 2200, "zone_type": "commercial", "day": 1, "description": "Arteria commerciale ad alta densità"},
+        {"id": "VD", "name": "Via Dante", "u": 3, "v": 4, "transit_cost": 2.0, "service_cost": 4.0, "demand_kg": 1500, "zone_type": "res_std", "day": 2, "description": "Zona residenziale est"},
+        {"id": "VE", "name": "Viale Europa", "u": 1, "v": 4, "transit_cost": 3.5, "service_cost": 6.0, "demand_kg": 2000, "zone_type": "res_high", "day": 2, "description": "Quartiere residenziale ovest"},
+        {"id": "BT", "name": "Bretella di Transito", "u": 2, "v": 4, "transit_cost": 3.0, "service_cost": 3.0, "demand_kg": 0, "zone_type": "transit", "day": "ALL", "description": "Bretella di transito veloce"}
     ],
     "vehicles": [
         {"name": "Compattatore_1", "capacity_kg": 4500, "fixed_cost": 100.0, "description": "Mezzo pesante 2 assi per centro e assi primari"},
@@ -934,6 +934,68 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
             return
 
+        elif path == "/api/split_sector_days":
+            try:
+                import math
+                cfg = load_config()
+                req_data = json.loads(body) if body else {}
+                num_days = max(1, min(6, int(req_data.get("days", 1))))
+                streets = cfg.get("streets", [])
+                nodes = {n["id"]: n for n in cfg.get("nodes", [])}
+                depot = cfg.get("depot_info", {})
+                d_lat = float(depot.get("exact_lat") or (cfg.get("nodes", [{}])[0].get("lat", 45.46)))
+                d_lon = float(depot.get("exact_lon") or (cfg.get("nodes", [{}])[0].get("lon", 9.19)))
+
+                # Identifica le vie raccoglibili
+                collectible = []
+                for s in streets:
+                    if s.get("id") == "R0" or "raccordo" in (s.get("name") or "").lower():
+                        s["day"] = "ALL"
+                        continue
+                    # Calcola centroide della via
+                    u_n = nodes.get(s.get("u"), {})
+                    v_n = nodes.get(s.get("v"), {})
+                    if s.get("geometry") and len(s["geometry"]) > 0:
+                        c_lat = sum(p[0] for p in s["geometry"]) / len(s["geometry"])
+                        c_lon = sum(p[1] for p in s["geometry"]) / len(s["geometry"])
+                    elif u_n and v_n and "lat" in u_n and "lat" in v_n:
+                        c_lat = (float(u_n["lat"]) + float(v_n["lat"])) / 2.0
+                        c_lon = (float(u_n["lon"]) + float(v_n["lon"])) / 2.0
+                    else:
+                        c_lat, c_lon = d_lat, d_lon
+                    angle = math.atan2(c_lat - d_lat, c_lon - d_lon)
+                    collectible.append((angle, s))
+
+                if num_days <= 1:
+                    for _, s in collectible:
+                        s["day"] = 1
+                else:
+                    collectible.sort(key=lambda x: x[0])
+                    tot_dem = sum(float(s.get("demand_kg", 0)) for _, s in collectible)
+                    target_per_day = max(100.0, tot_dem / num_days)
+                    curr_day = 1
+                    curr_day_dem = 0.0
+                    for _, s in collectible:
+                        s["day"] = curr_day
+                        curr_day_dem += float(s.get("demand_kg", 0))
+                        if curr_day < num_days and curr_day_dem >= target_per_day * 0.95:
+                            curr_day += 1
+                            curr_day_dem = 0.0
+
+                save_config(cfg)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "config": cfg, "days": num_days}).encode("utf-8"))
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+            return
+
         elif path == "/api/solve":
             try:
                 if body.strip() and body != "{}":
@@ -970,8 +1032,8 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "total_collected": v.get("total_collected", 0.0),
                         "movements": v.get("movements", []),
                         "shift_duration_min": v.get("shift_duration_min", 0.0),
-                        "shift_max_min": v.get("shift_max_min", 360.0),
-                        "slack_min": v.get("slack_min", 360.0),
+                        "shift_max_min": v.get("shift_max_min", 300.0),
+                        "slack_min": v.get("slack_min", 300.0),
                         "cpm_status": v.get("cpm_status", "RIPOSO"),
                         "volume_m3": v.get("volume_m3", 0.0),
                         "volume_capacity_m3": v.get("volume_capacity_m3", 18.0),
@@ -979,6 +1041,11 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "binding_constraint": v.get("binding_constraint", "PESO (kg)"),
                         "service_cost_total": v.get("service_cost_total", 0.0),
                         "deadhead_cost_total": v.get("deadhead_cost_total", 0.0),
+                        "distance_km": v.get("distance_km", 0.0),
+                        "workload_qt_per_km": v.get("workload_qt_per_km", 0.0),
+                        "workload_qt_per_km_person": v.get("workload_qt_per_km_person", 0.0),
+                        "crew_size": v.get("crew_size", 1),
+                        "is_compliant_5h": v.get("is_compliant_5h", True),
                     }
 
                 streets = cfg.get("streets", [])

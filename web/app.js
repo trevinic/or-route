@@ -2616,6 +2616,47 @@ function getCarpActiveNetworkStats() {
   };
 }
 
+function syncCarpFractionPresetUI(activeMode) {
+  State.carpFractionPreset = activeMode;
+  const modes = ['min', 'avg', 'max'];
+  modes.forEach(m => {
+    const capitalized = m.charAt(0).toUpperCase() + m.slice(1);
+    const btn = document.getElementById(`btnCarpPreset${capitalized}`);
+    const icon = document.getElementById(`iconCarpPreset${capitalized}`);
+    if (!btn) return;
+    if (m === activeMode) {
+      btn.style.background = 'rgba(56, 189, 248, 0.25)';
+      btn.style.borderColor = '#38bdf8';
+      btn.style.color = '#38bdf8';
+      btn.style.fontWeight = '700';
+      btn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.4)';
+      if (icon) icon.innerText = '✓ ';
+    } else {
+      btn.style.background = '#1b263d';
+      btn.style.borderColor = 'var(--border-color)';
+      btn.style.color = 'var(--text-secondary)';
+      btn.style.fontWeight = '500';
+      btn.style.boxShadow = 'none';
+      if (icon) icon.innerText = '';
+    }
+  });
+}
+
+function setSingleFractionPreset(fracId, mode) {
+  const f = (State.carpFractions || []).find(x => x.id === fracId);
+  if (!f) return;
+  if (mode === 'min') f.rate = f.faqMin;
+  else if (mode === 'max') f.rate = f.faqMax;
+  else f.rate = f.faqAvg;
+  State.carpCustomHistoricalMode = false;
+  if (f.selected) {
+    applyCarpFractionsToStreets(false);
+  } else {
+    renderCarpFractionsConfig();
+    renderCarpMunicipalitySummaryTable();
+  }
+}
+
 function renderCarpFractionsConfig() {
   const tbody = document.getElementById('carpFractionsConfigBody');
   if (tbody && State.carpFractions) {
@@ -2625,6 +2666,9 @@ function renderCarpFractionsConfig() {
       if (f.selected) {
         tr.style.background = 'rgba(56, 189, 248, 0.08)';
       }
+      const isMin = Math.abs(f.rate - f.faqMin) < 0.001;
+      const isAvg = Math.abs(f.rate - f.faqAvg) < 0.001;
+      const isMax = Math.abs(f.rate - f.faqMax) < 0.001;
       tr.innerHTML = `
         <td style="text-align: center;">
           <input type="checkbox" ${f.selected ? 'checked' : ''} onchange="toggleCarpFraction('${f.id}', this.checked)" style="cursor: pointer; accent-color: #38bdf8; width: 15px; height: 15px;">
@@ -2634,7 +2678,12 @@ function renderCarpFractionsConfig() {
           <br><small style="color: var(--text-muted); font-size: 10px;">${f.note}</small>
         </td>
         <td>
-          <span class="code-tag" style="font-size: 10.5px; color: #94a3b8;">${f.faqRange} kg/m</span>
+          <div style="display: flex; gap: 3px; align-items: center; flex-wrap: wrap;">
+            <button type="button" onclick="setSingleFractionPreset('${f.id}', 'min')" title="Minimo FAQ: ${f.faqMin} kg/m" style="font-size: 9.5px; padding: 1px 4px; border-radius: 4px; cursor: pointer; transition: all 0.2s; ${isMin ? 'background: rgba(56,189,248,0.28); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight:700;' : 'background: #0f172a; border: 1px solid #334155; color: #94a3b8;'}">${isMin ? '✓ ' : ''}Min</button>
+            <button type="button" onclick="setSingleFractionPreset('${f.id}', 'avg')" title="Medio FAQ: ${f.faqAvg} kg/m" style="font-size: 9.5px; padding: 1px 4px; border-radius: 4px; cursor: pointer; transition: all 0.2s; ${isAvg ? 'background: rgba(56,189,248,0.28); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight:700;' : 'background: #0f172a; border: 1px solid #334155; color: #94a3b8;'}">${isAvg ? '✓ ' : ''}Med</button>
+            <button type="button" onclick="setSingleFractionPreset('${f.id}', 'max')" title="Massimo FAQ: ${f.faqMax} kg/m" style="font-size: 9.5px; padding: 1px 4px; border-radius: 4px; cursor: pointer; transition: all 0.2s; ${isMax ? 'background: rgba(56,189,248,0.28); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight:700;' : 'background: #0f172a; border: 1px solid #334155; color: #94a3b8;'}">${isMax ? '✓ ' : ''}Max</button>
+          </div>
+          <small style="color: #94a3b8; font-size: 9.5px; display: block; margin-top: 2px;">(${f.faqRange} kg/m)</small>
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 4px;">
@@ -2645,6 +2694,16 @@ function renderCarpFractionsConfig() {
       tbody.appendChild(tr);
     });
   }
+
+  // Sincronizza l'evidenziazione e l'icona sui tre bottoni globali Min, Medio, Max FAQ
+  let detectedMode = null;
+  const selFracs = (State.carpFractions || []).filter(f => f.selected);
+  if (selFracs.length > 0) {
+    if (selFracs.every(f => Math.abs(f.rate - f.faqMin) < 0.001)) detectedMode = 'min';
+    else if (selFracs.every(f => Math.abs(f.rate - f.faqMax) < 0.001)) detectedMode = 'max';
+    else if (selFracs.every(f => Math.abs(f.rate - f.faqAvg) < 0.001)) detectedMode = 'avg';
+  }
+  syncCarpFractionPresetUI(detectedMode || State.carpFractionPreset || 'avg');
 
   const summaryEl = document.getElementById('carpActiveFractionSummary');
   const rate = getActiveCarpFractionRate();
@@ -2697,10 +2756,23 @@ function setCarpFractionPreset(mode) {
     else if (mode === 'max') f.rate = f.faqMax;
     else f.rate = f.faqAvg;
   });
+  State.carpFractionPreset = mode;
   State.carpCustomHistoricalMode = false;
+  syncCarpFractionPresetUI(mode);
   applyCarpFractionsToStreets(true);
   const label = mode === 'min' ? 'Minimo FAQ' : (mode === 'max' ? 'Massimo FAQ' : 'Medio FAQ');
-  showToast(`Applicati coefficienti teorici '${label}' e ricalcolata la rete stradale.`);
+  showToast(`✅ Scelta confermata: applicati valori '${label}' con icona attiva.`);
+}
+
+function getZoneTypeMultiplier(zoneType) {
+  switch (zoneType) {
+    case 'res_high': return 1.40;   // Zona Residenziale con maggiore carico rifiuti (+40%)
+    case 'commercial': return 1.20; // Attività commerciali / misto (+20%)
+    case 'res_std': return 1.00;    // Residenziale ordinario standard
+    case 'other': return 0.70;      // Viabilità secondaria / rurale / periferica (-30%)
+    case 'transit': return 0.0;     // Solo transito veloce (0 kg)
+    default: return 1.00;
+  }
 }
 
 function applyCarpFractionsToStreets(autoResizeFleet = false) {
@@ -2712,15 +2784,26 @@ function applyCarpFractionsToStreets(autoResizeFleet = false) {
   State.carpConfig.streets.forEach(s => {
     if (!isStreetCollectible(s)) {
       s.demand_kg = 0;
+      s.zone_type = 'transit';
       return;
+    }
+    if (!s.zone_type) {
+      const desc = (s.description || '').toLowerCase();
+      const nm = (s.name || '').toLowerCase();
+      if (desc.includes('alto carico') || desc.includes('commerciale') || nm.includes('roma') || nm.includes('garibaldi') || nm.includes('corso') || nm.includes('viale')) {
+        s.zone_type = 'res_high';
+      } else {
+        s.zone_type = 'res_std';
+      }
     }
     if (s.manual_override) {
       return; // Preserva le vie modificate manualmente con dati storici puntuali
     }
     const lengthM = getStreetLengthMeters(s);
     s.length_m = Math.round(lengthM * 10) / 10;
-    if (rate > 0) {
-      const raw = Math.round((lengthM * rate) / 10.0) * 10.0;
+    const mult = getZoneTypeMultiplier(s.zone_type);
+    if (rate > 0 && mult > 0) {
+      const raw = Math.round((lengthM * rate * mult) / 10.0) * 10.0;
       s.demand_kg = Math.max(10, raw);
     } else {
       s.demand_kg = 0;
@@ -2993,20 +3076,33 @@ function renderCarpTables() {
   if (latInp) latInp.value = (depLat !== null && depLat !== undefined && !isNaN(depLat) && depLat !== '') ? depLat : '';
   if (lonInp) lonInp.value = (depLon !== null && depLon !== undefined && !isNaN(depLon) && depLon !== '') ? depLon : '';
 
+  // Renderizza tab multi-giorno
+  renderCarpDaysTabBar();
+
   // 1. Tabella Strade
   const tbody = document.getElementById('carpStreetsBody');
   const countEl = document.getElementById('carpStreetsCount');
   const streets = State.carpConfig.streets || [];
+  const activeDayFilter = State.carpActiveDayFilter || 'ALL';
+
+  const visibleStreets = (activeDayFilter && activeDayFilter !== 'ALL')
+    ? streets.map((s, idx) => ({ s, idx })).filter(item => item.s.day == activeDayFilter || item.s.day === 'ALL' || !isStreetCollectible(item.s))
+    : streets.map((s, idx) => ({ s, idx }));
+
   if (countEl) {
-    countEl.innerText = `${streets.length} tratte viarie`;
+    if (activeDayFilter !== 'ALL') {
+      countEl.innerText = `${visibleStreets.length} / ${streets.length} tratte (Giorno ${activeDayFilter})`;
+    } else {
+      countEl.innerText = `${streets.length} tratte viarie`;
+    }
   }
 
   if (tbody) {
     tbody.innerHTML = '';
     if (streets.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 22px;">Nessuna tratta stradale caricata. Clicca su <b>🌍 Importa da OpenStreetMap</b> per caricare la rete viaria della tua zona.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 22px;">Nessuna tratta stradale caricata. Clicca su <b>🌍 Importa da OpenStreetMap</b> per caricare la rete viaria della tua zona.</td></tr>';
     } else {
-      streets.forEach((s, idx) => {
+      visibleStreets.forEach(({ s, idx }) => {
         const tr = document.createElement('tr');
         tr.className = 'carp-street-row';
         tr.dataset.name = (s.name || '').toLowerCase();
@@ -3015,15 +3111,32 @@ function renderCarpTables() {
         const manualBadge = s.manual_override
           ? `<button type="button" onclick="unlockCarpStreetManual(${idx})" title="Dato storico manuale bloccato. Clicca per sbloccare" style="background:rgba(245,158,11,0.2); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; border-radius:4px; font-size:10px; padding:1px 5px; cursor:pointer; margin-left:4px;">🔒 Manuale</button>`
           : '';
+        const zType = s.zone_type || (isStreetCollectible(s) ? 'res_std' : 'transit');
+        const dayBadge = (s.day === 'ALL')
+          ? '<span class="code-tag" style="font-size:9px; color:#94a3b8;">Tutti i Giorni</span>'
+          : `<span class="code-tag" style="font-size:9.5px; color:#34d399; font-weight:700;">Giorno ${s.day || 1}</span>`;
+
         tr.innerHTML = `
           <td>
-            <b>${s.name}</b> ${manualBadge}
-            <br><small style="color:var(--text-muted);">${s.description || ''} (${lm.toFixed(0)} m)</small>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+              <b>${s.name}</b> ${manualBadge}
+              ${dayBadge}
+            </div>
+            <small style="color:var(--text-muted); font-size:10.5px;">${s.description || ''} (${lm.toFixed(0)} m)</small>
+          </td>
+          <td>
+            <select class="cell-inp" style="font-size: 11px; padding: 2px 4px; width: 100%; ${zType === 'res_high' ? 'border-color: #f97316; color: #f97316; font-weight:700;' : ''}" onchange="updateCarpStreetZoneType(${idx}, this.value)">
+              <option value="res_high" ${zType === 'res_high' ? 'selected' : ''}>🏘️ Residenziale Alto (+40%)</option>
+              <option value="res_std" ${zType === 'res_std' ? 'selected' : ''}>🏡 Residenziale Standard</option>
+              <option value="commercial" ${zType === 'commercial' ? 'selected' : ''}>🏢 Commerciale (+20%)</option>
+              <option value="other" ${zType === 'other' ? 'selected' : ''}>🛣️ Altra Via (-30%)</option>
+              <option value="transit" ${zType === 'transit' ? 'selected' : ''}>🚗 Solo Transito (0 kg)</option>
+            </select>
           </td>
           <td><span class="code-tag">${s.u} &rarr; ${s.v}</span></td>
           <td>
             <input type="number" class="cell-inp" min="0" step="10" value="${s.demand_kg}"
-              style="${s.manual_override ? 'border-color:#fbbf24; color:#fbbf24; font-weight:700;' : ''}"
+              style="${s.manual_override ? 'border-color:#fbbf24; color:#fbbf24; font-weight:700;' : (zType === 'res_high' ? 'color:#f97316; font-weight:700;' : '')}"
               onchange="updateCarpStreetDemand(${idx}, this.value)">
           </td>
           <td>
@@ -3072,12 +3185,218 @@ function renderCarpTables() {
   updateCarpFleetCapacitySummary();
 }
 
+function updateCarpStreetZoneType(idx, val) {
+  if (!State.carpConfig || !State.carpConfig.streets || !State.carpConfig.streets[idx]) return;
+  const s = State.carpConfig.streets[idx];
+  s.zone_type = val;
+  const lengthM = getStreetLengthMeters(s);
+  const rate = getActiveCarpFractionRate();
+  const mult = getZoneTypeMultiplier(val);
+  if (mult === 0 || !isStreetCollectible(s)) {
+    s.demand_kg = 0;
+  } else {
+    s.demand_kg = Math.max(10, Math.round((lengthM * rate * mult) / 10.0) * 10.0);
+  }
+  const factor = (State.carpConfig.settings && State.carpConfig.settings.service_speed_factor)
+    ? parseFloat(State.carpConfig.settings.service_speed_factor) : 1.8;
+  const tCost = parseFloat(s.transit_cost) || Math.max(0.5, Math.round((lengthM / 100.0) * 100) / 100);
+  s.service_cost = s.demand_kg > 0 ? Math.max(0.9, Math.round(tCost * factor * 100) / 100) : tCost;
+
+  renderCarpTables();
+  if (typeof renderCarpLeafletMap === 'function') {
+    renderCarpLeafletMap(State.carpConfig, State.carpResult);
+  }
+  const label = val === 'res_high' ? 'Residenziale Alto Carico (+40%)' : (val === 'commercial' ? 'Commerciale (+20%)' : (val === 'transit' ? 'Solo Transito' : 'Standard'));
+  showToast(`Via '${s.name}' impostata come '${label}': carico ricalcolato a ${s.demand_kg} kg.`);
+}
+
+function batchSetHighResidentialZone() {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  let count = 0;
+  const rate = getActiveCarpFractionRate();
+  const factor = (State.carpConfig.settings && State.carpConfig.settings.service_speed_factor)
+    ? parseFloat(State.carpConfig.settings.service_speed_factor) : 1.8;
+
+  State.carpConfig.streets.forEach(s => {
+    if (isStreetCollectible(s)) {
+      s.zone_type = 'res_high';
+      const lengthM = getStreetLengthMeters(s);
+      s.demand_kg = Math.max(15, Math.round((lengthM * rate * 1.40) / 10.0) * 10.0);
+      const tCost = parseFloat(s.transit_cost) || Math.max(0.5, Math.round((lengthM / 100.0) * 100) / 100);
+      s.service_cost = Math.max(0.9, Math.round(tCost * factor * 100) / 100);
+      count++;
+    }
+  });
+
+  renderCarpTables();
+  if (typeof renderCarpLeafletMap === 'function') {
+    renderCarpLeafletMap(State.carpConfig, State.carpResult);
+  }
+  showToast(`🏘️ Assegnata tipologia 'Residenziale Alto Carico (+40%)' a ${count} vie.`);
+}
+
+function applyCarpDaysSplit(dayCount) {
+  if (!State.carpConfig || !State.carpConfig.streets) return;
+  const numDays = Math.max(1, Math.min(6, parseInt(dayCount) || 1));
+  State.carpDaysCount = numDays;
+
+  const streets = State.carpConfig.streets;
+  const nodes = {};
+  (State.carpConfig.nodes || []).forEach(n => { nodes[n.id] = n; });
+  const dep = State.carpConfig.depot_info || {};
+  const node0 = (State.carpConfig.nodes || [])[0] || {};
+  const dLat = parseFloat(dep.exact_lat ?? node0.lat ?? 45.46);
+  const dLon = parseFloat(dep.exact_lon ?? node0.lon ?? 9.19);
+
+  const collectible = [];
+  streets.forEach(s => {
+    if (!isStreetCollectible(s)) {
+      s.day = 'ALL';
+      return;
+    }
+    let cLat = dLat, cLon = dLon;
+    if (s.geometry && s.geometry.length > 0) {
+      cLat = s.geometry.reduce((a, p) => a + p[0], 0) / s.geometry.length;
+      cLon = s.geometry.reduce((a, p) => a + p[1], 0) / s.geometry.length;
+    } else {
+      const uNode = nodes[s.u];
+      const vNode = nodes[s.v];
+      if (uNode && vNode && uNode.lat != null && vNode.lat != null) {
+        cLat = (parseFloat(uNode.lat) + parseFloat(vNode.lat)) / 2.0;
+        cLon = (parseFloat(uNode.lon) + parseFloat(vNode.lon)) / 2.0;
+      }
+    }
+    const angle = Math.atan2(cLat - dLat, cLon - dLon);
+    collectible.push({ street: s, angle: angle });
+  });
+
+  if (numDays <= 1) {
+    collectible.forEach(item => { item.street.day = 1; });
+    State.carpActiveDayFilter = 'ALL';
+  } else {
+    collectible.sort((a, b) => a.angle - b.angle);
+    const totalDem = collectible.reduce((acc, item) => acc + (parseFloat(item.street.demand_kg) || 0), 0);
+    const targetPerDay = Math.max(100, totalDem / numDays);
+    let currDay = 1;
+    let currDayDem = 0;
+
+    collectible.forEach((item, idx) => {
+      item.street.day = currDay;
+      currDayDem += parseFloat(item.street.demand_kg) || 0;
+      const remainingStreets = collectible.length - (idx + 1);
+      const remainingDays = numDays - currDay;
+      if (currDay < numDays && currDayDem >= targetPerDay * 0.92 && remainingStreets >= remainingDays) {
+        currDay += 1;
+        currDayDem = 0;
+      }
+    });
+    State.carpActiveDayFilter = 'ALL';
+  }
+
+  // Sincronizza il selettore
+  const sel = document.getElementById('carpSplitDaysSelect');
+  if (sel) sel.value = String(numDays);
+
+  renderCarpDaysTabBar();
+  renderCarpTables();
+  if (typeof renderCarpLeafletMap === 'function') {
+    renderCarpLeafletMap(State.carpConfig, State.carpResult);
+  }
+
+  showToast(`📅 Area suddivisa con successo in ${numDays} ${numDays === 1 ? 'giorno unico' : 'giorni/turni omogenei'}.`);
+}
+
+function renderCarpDaysTabBar() {
+  const container = document.getElementById('carpDaysTabBar');
+  const infoEl = document.getElementById('carpDaysSummaryInfo');
+  if (!container) return;
+
+  const numDays = State.carpDaysCount || 1;
+  const activeDay = State.carpActiveDayFilter || 'ALL';
+  const streets = (State.carpConfig && State.carpConfig.streets) || [];
+
+  container.innerHTML = '';
+
+  // Bottone "Tutti i Giorni"
+  const totalStreets = streets.filter(s => isStreetCollectible(s)).length;
+  const totalDem = streets.reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+  const totalQt = (totalDem / 100.0).toFixed(1);
+
+  const btnAll = document.createElement('button');
+  btnAll.type = 'button';
+  btnAll.className = 'btn btn-secondary btn-sm';
+  btnAll.style.fontSize = '10.5px';
+  btnAll.style.padding = '2px 7px';
+  if (activeDay === 'ALL') {
+    btnAll.style.background = 'rgba(56, 189, 248, 0.25)';
+    btnAll.style.borderColor = '#38bdf8';
+    btnAll.style.color = '#38bdf8';
+    btnAll.style.fontWeight = '700';
+  }
+  btnAll.innerHTML = `🌐 Tutti (${totalStreets} vie &bull; ${totalQt} qt)`;
+  btnAll.onclick = () => filterCarpByDay('ALL');
+  container.appendChild(btnAll);
+
+  if (numDays > 1) {
+    for (let d = 1; d <= numDays; d++) {
+      const dayStreets = streets.filter(s => s.day === d && isStreetCollectible(s));
+      const dayDem = dayStreets.reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+      const dayQt = (dayDem / 100.0).toFixed(1);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-secondary btn-sm';
+      btn.style.fontSize = '10.5px';
+      btn.style.padding = '2px 7px';
+      if (activeDay === String(d) || activeDay === d) {
+        btn.style.background = 'rgba(52, 211, 153, 0.25)';
+        btn.style.borderColor = '#34d399';
+        btn.style.color = '#34d399';
+        btn.style.fontWeight = '700';
+      }
+      btn.innerHTML = `Giorno ${d} (${dayStreets.length} vie &bull; ${dayQt} qt)`;
+      btn.onclick = () => filterCarpByDay(d);
+      container.appendChild(btn);
+    }
+  }
+
+  if (infoEl) {
+    if (activeDay === 'ALL') {
+      infoEl.innerHTML = `Panoramica completa: <b>${numDays} ${numDays === 1 ? 'giorno' : 'giorni'}</b> di servizio, totale <b>${totalStreets} tratte</b> con <b>${totalQt} quintali (${totalDem.toLocaleString()} kg)</b>.`;
+    } else {
+      const dNum = parseInt(activeDay);
+      const dayStreets = streets.filter(s => s.day === dNum && isStreetCollectible(s));
+      const dayDem = dayStreets.reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+      const dayQt = (dayDem / 100.0).toFixed(1);
+      infoEl.innerHTML = `Filtro attivo su <b>Giorno ${dNum}</b>: <b>${dayStreets.length} tratte viarie</b> selezionate, carico previsto: <b style="color:#34d399;">${dayQt} quintali (${dayDem.toLocaleString()} kg)</b>.`;
+    }
+  }
+}
+
+function filterCarpByDay(day) {
+  State.carpActiveDayFilter = day;
+  renderCarpDaysTabBar();
+  renderCarpTables();
+  if (typeof renderCarpLeafletMap === 'function') {
+    renderCarpLeafletMap(State.carpConfig, State.carpResult);
+  }
+  const label = day === 'ALL' ? 'Tutti i Giorni' : `Giorno ${day}`;
+  showToast(`Filtro applicato: visualizzazione '${label}'.`);
+}
+
 function updateCarpFleetCapacitySummary() {
   const sumEl = document.getElementById('carpFleetCapacitySummary');
   if (!sumEl || !State.carpConfig) return;
 
-  const totalDemand = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+  const activeFilter = State.carpActiveDayFilter;
+  const streets = State.carpConfig.streets || [];
+  const relevantStreets = (activeFilter && activeFilter !== 'ALL')
+    ? streets.filter(s => s.day == activeFilter || s.day === 'ALL')
+    : streets;
+
+  const totalDemand = relevantStreets.reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
   const totalCapacity = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
+  const dayLabel = (activeFilter && activeFilter !== 'ALL') ? ` (Giorno ${activeFilter})` : '';
 
   if (totalCapacity < totalDemand) {
     const missing = totalDemand - totalCapacity;
@@ -3314,15 +3633,22 @@ async function solveCarp() {
   showToast('Risoluzione CARP (Single-Commodity Flow)...');
 
   try {
-    const totalDemand = (State.carpConfig.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
-    const totalCapacity = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
+    let cfgToSolve = State.carpConfig;
+    if (State.carpActiveDayFilter && State.carpActiveDayFilter !== 'ALL') {
+      const dNum = parseInt(State.carpActiveDayFilter);
+      const filtered = (State.carpConfig.streets || []).filter(s => s.day == dNum || s.day === 'ALL' || !isStreetCollectible(s));
+      cfgToSolve = Object.assign({}, State.carpConfig, { streets: filtered });
+    }
+
+    const totalDemand = (cfgToSolve.streets || []).reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
+    const totalCapacity = (cfgToSolve.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
 
     if (totalCapacity < totalDemand) {
       showFleetShortageModal('carp', {
         modelName: 'CARP (Servizi Stradali & Rifiuti)',
         totalDemand: totalDemand,
         totalCapacity: totalCapacity,
-        numVehicles: (State.carpConfig.vehicles || []).length,
+        numVehicles: (cfgToSolve.vehicles || []).length,
         avgVehCap: 4500,
         onAutoScale: autoScaleCarpFleet,
         onCrop: cropCarpSectorByCurrentCapacity
@@ -3333,7 +3659,7 @@ async function solveCarp() {
     const res = await fetch('/api/solve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(State.carpConfig)
+      body: JSON.stringify(cfgToSolve)
     });
     const data = await res.json();
     if (!res.ok || data.success === false) {
@@ -3350,7 +3676,7 @@ async function solveCarp() {
         modelName: 'CARP (Servizi Stradali & Rifiuti)',
         totalDemand: totalDemand,
         totalCapacity: totalCapacity,
-        numVehicles: (State.carpConfig.vehicles || []).length,
+        numVehicles: (cfgToSolve.vehicles || []).length,
         avgVehCap: 4500,
         onAutoScale: autoScaleCarpFleet,
         onCrop: cropCarpSectorByCurrentCapacity
@@ -3368,7 +3694,7 @@ async function solveCarp() {
     const vEntries = Object.entries(data.vehicles || {});
     const usedVehicles = vEntries.filter(([_, v]) => v.used);
     const usedCount = usedVehicles.length;
-    const totalVehCount = vEntries.length || (State.carpConfig.vehicles || []).length;
+    const totalVehCount = vEntries.length || (cfgToSolve.vehicles || []).length;
     const activeVehKpi = document.getElementById('carpActiveVehiclesKpi');
     if (activeVehKpi) {
       activeVehKpi.innerText = `${usedCount} / ${totalVehCount} Mezzi`;
@@ -3386,6 +3712,67 @@ async function solveCarp() {
     const netKpi = document.getElementById('carpNetworkKpi');
     if (netKpi) {
       netKpi.innerHTML = `${netStats.totalKm.toFixed(1)} km <span style="font-size:11.5px; color:#34d399; font-weight:600;">(${netStats.activeCount} vie)</span>`;
+    }
+
+    // CALCOLO DEI DUE NUOVI KPI RICHIESTI (PUNTO 4):
+    // 1. Carico di lavoro (qt/km per mezzo e per operatore)
+    // 2. Tempo totale di lavoro (limite normativo 5 ore = 300 min)
+    let totalActiveDistKm = 0;
+    let totalActiveQt = 0;
+    let maxDurMin = 0;
+
+    usedVehicles.forEach(([vName, v]) => {
+      const moves = v.movements || [];
+      const servCost = moves.filter(m => m.type === 'SERVIZIO').reduce((a, m) => a + (parseFloat(m.cost) || 0), 0);
+      const transCost = moves.filter(m => m.type === 'TRANSITO').reduce((a, m) => a + (parseFloat(m.cost) || 0), 0);
+      const distKm = v.distance_km || Math.max(0.1, Math.round(((servCost / 1.8 * 0.1) + (transCost * 0.1)) * 100) / 100);
+      const loadKg = parseFloat(v.total_collected) || 0;
+      const loadQt = loadKg / 100.0;
+      const crewSize = parseInt(v.crew_size || 1);
+      v.distance_km = distKm;
+      v.workload_qt_per_km = Math.round((loadQt / Math.max(0.1, distKm)) * 100) / 100;
+      v.workload_qt_per_km_person = Math.round((v.workload_qt_per_km / Math.max(1, crewSize)) * 100) / 100;
+      v.crew_size = crewSize;
+      const dMin = parseFloat(v.shift_duration_min) || 0;
+      v.is_compliant_5h = (dMin <= 300.0);
+
+      totalActiveDistKm += distKm;
+      totalActiveQt += loadQt;
+      if (dMin > maxDurMin) maxDurMin = dMin;
+    });
+
+    const avgWorkload = totalActiveDistKm > 0 ? (totalActiveQt / totalActiveDistKm).toFixed(2) : '0.00';
+    const avgWorkloadPerson = totalActiveDistKm > 0 ? (totalActiveQt / totalActiveDistKm / 1.0).toFixed(2) : '0.00';
+
+    const kpiWorkload = document.getElementById('carpWorkloadKpi');
+    const kpiWorkloadSub = document.getElementById('carpWorkloadPersonSub');
+    if (kpiWorkload) {
+      kpiWorkload.innerText = `${avgWorkload} qt/km`;
+    }
+    if (kpiWorkloadSub) {
+      kpiWorkloadSub.innerText = `Per operatore: ~${avgWorkloadPerson} qt/km`;
+    }
+
+    const kpiWorkTime = document.getElementById('carpWorkTimeKpi');
+    const kpiWorkTimeSub = document.getElementById('carpWorkTimeStatusSub');
+    if (kpiWorkTime) {
+      const maxHours = Math.floor(maxDurMin / 60);
+      const maxMins = Math.round(maxDurMin % 60);
+      const durStr = `${maxHours}h ${String(maxMins).padStart(2, '0')}m`;
+      kpiWorkTime.innerText = `${durStr} / 5h 00m`;
+      if (maxDurMin <= 300.0) {
+        kpiWorkTime.className = 'kpi-val green';
+        if (kpiWorkTimeSub) {
+          kpiWorkTimeSub.innerText = `🟢 Limite 5h rispettato (Slack: +${Math.round(300 - maxDurMin)}m)`;
+          kpiWorkTimeSub.style.color = '#34d399';
+        }
+      } else {
+        kpiWorkTime.className = 'kpi-val red';
+        if (kpiWorkTimeSub) {
+          kpiWorkTimeSub.innerText = `🔴 Supera il limite 5h di ${Math.round(maxDurMin - 300)}m (Non a norma!)`;
+          kpiWorkTimeSub.style.color = '#f87171';
+        }
+      }
     }
 
     // Aggiorna ed evidenzia la Tabella Riassuntiva Merceologica del Comune
@@ -3595,26 +3982,41 @@ function renderCarpVehicleReport(data) {
     const volSatPct = volCapM3 > 0 ? Math.min(130, Math.round((volUsedM3 / volCapM3) * 1000) / 10) : 0.0;
     const isVolBinding = volSatPct > parseFloat(satPct);
 
-    // Calcolo Durata & Slack Time CPM (Cap. 6.4.1)
+    // Calcolo km percorsi e carico di lavoro qt/km (Punto 4)
+    const serviceMoves = movements.filter(m => m.type === 'SERVIZIO');
+    const transitMoves = movements.filter(m => m.type === 'TRANSITO');
+    const servCostMove = serviceMoves.reduce((acc, m) => acc + (parseFloat(m.cost) || 0), 0);
+    const transCostMove = transitMoves.reduce((acc, m) => acc + (parseFloat(m.cost) || 0), 0);
+    const distKm = vInfo.distance_km || Math.max(0.1, Math.round(((servCostMove / 1.8 * 0.1) + (transCostMove * 0.1)) * 100) / 100);
+    const crewSize = parseInt(vInfo.crew_size || 1);
+    const workloadQtKm = vInfo.workload_qt_per_km !== undefined ? vInfo.workload_qt_per_km : Math.round((parseFloat(collectedQt) / Math.max(0.1, distKm)) * 100) / 100;
+    const workloadPerson = vInfo.workload_qt_per_km_person !== undefined ? vInfo.workload_qt_per_km_person : Math.round((workloadQtKm / Math.max(1, crewSize)) * 100) / 100;
+    vInfo.distance_km = distKm;
+    vInfo.workload_qt_per_km = workloadQtKm;
+    vInfo.workload_qt_per_km_person = workloadPerson;
+    vInfo.crew_size = crewSize;
+
+    // Calcolo Durata & Slack Time CPM con Limite 5 Ore = 300 min (Cap. 6.4.1 & D.Lgs. 81/08)
     const durMin = vInfo.shift_duration_min || 0;
-    const slackMin = vInfo.slack_min !== undefined ? vInfo.slack_min : (360 - durMin);
+    const slackMin = vInfo.slack_min !== undefined ? vInfo.slack_min : (300 - durMin);
     const durHours = Math.floor(durMin / 60);
     const durRemMin = Math.round(durMin % 60);
     const durFormatted = vInfo.used ? `${durHours}h ${String(durRemMin).padStart(2, '0')}m` : '—';
-    const cpmStatus = vInfo.cpm_status || 'MARGINE_AMPIO';
+    const isCompliant5h = durMin <= 300.0;
+    const cpmStatus = vInfo.cpm_status || (isCompliant5h ? 'MARGINE_AMPIO' : 'SUPERAMENTO_5H');
     let cpmBadgeHtml = '<span style="color:var(--text-muted);">—</span>';
     if (vInfo.used) {
-      if (cpmStatus === 'CRITICO') {
+      if (!isCompliant5h || cpmStatus === 'SUPERAMENTO_5H') {
+        cpmBadgeHtml = `<span class="code-tag" style="color:#f87171; border-color:rgba(248,113,113,0.5); font-size:10px; font-weight:700;">🔴 ECCEDE 5H (+${Math.round(durMin - 300)}m)</span>`;
+      } else if (cpmStatus === 'CRITICO' || slackMin < 25) {
         cpmBadgeHtml = `<span class="code-tag" style="color:#f87171; border-color:rgba(248,113,113,0.4); font-size:10px;" title="Saturazione o durata prossima al limite del giro">🔴 CRITICO (Slack +${Math.round(slackMin)}m)</span>`;
-      } else if (cpmStatus === 'ATTENZIONE') {
+      } else if (cpmStatus === 'ATTENZIONE' || slackMin < 50) {
         cpmBadgeHtml = `<span class="code-tag" style="color:#fbbf24; border-color:rgba(251,191,36,0.4); font-size:10px;">🟡 ATTENZIONE (Slack +${Math.round(slackMin)}m)</span>`;
       } else {
         cpmBadgeHtml = `<span class="code-tag" style="color:#34d399; border-color:rgba(52,211,153,0.4); font-size:10px;">🟢 AMPIO (Slack +${Math.round(slackMin)}m)</span>`;
       }
     }
 
-    const serviceMoves = movements.filter(m => m.type === 'SERVIZIO');
-    const transitMoves = movements.filter(m => m.type === 'TRANSITO');
     const transitCount = transitMoves.reduce((acc, m) => acc + (m.times || 1), 0);
     const detailRowId = `carpVehMoves_${idx}`;
 
@@ -3658,7 +4060,7 @@ function renderCarpVehicleReport(data) {
           <b>${collected.toLocaleString()} kg</b> <span style="color: #fbbf24; font-weight: 600;">(${collectedQt} qt)</span>
           <br><small style="color: var(--text-muted); font-size: 10.5px;">su ${capacity.toLocaleString()} kg max</small>
         </td>
-        <td style="min-width: 145px;">
+        <td style="min-width: 140px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <div style="flex: 1; background: #17243c; height: 8px; border-radius: 4px; overflow: hidden;">
               <div style="background: ${color}; height: 100%; width: ${Math.min(parseFloat(satPct), 100)}%;"></div>
@@ -3668,19 +4070,29 @@ function renderCarpVehicleReport(data) {
         </td>
         <td>
           ${vInfo.used ? `
+            <b style="color: #38bdf8; font-size: 12.5px;">${workloadQtKm.toFixed(2)} qt/km</b>
+            <br><small style="color: #34d399; font-size: 10.5px;">${workloadPerson.toFixed(2)} qt/km/op</small>
+            <span class="code-tag" style="font-size: 9px; cursor: pointer; margin-left: 2px;" onclick="toggleCarpCrewSize('${vName}')" title="Clicca per passare da 1 a 2 operatori">👥 ${crewSize} op</span>
+          ` : '<span style="color:var(--text-muted);">—</span>'}
+        </td>
+        <td>
+          ${vInfo.used ? `
+            <b>⏱️ ${durFormatted}</b> <span style="font-size: 10px; color: ${isCompliant5h ? '#34d399' : '#f87171'};">/ 5h 00m</span>
+            <div style="background: #17243c; height: 6px; border-radius: 3px; overflow: hidden; margin: 3px 0 2px;">
+              <div style="background: ${durMin > 300 ? '#ef4444' : (durMin > 240 ? '#f59e0b' : '#10b981')}; height: 100%; width: ${Math.min(100, Math.round((durMin / 300) * 100))}%;"></div>
+            </div>
+            ${cpmBadgeHtml}
+          ` : '<span style="color:var(--text-muted);">—</span>'}
+        </td>
+        <td>
+          ${vInfo.used ? `
             <b>${volUsedM3.toFixed(1)} / ${volCapM3.toFixed(0)} m³</b> <span style="color:${volSatPct > 95 ? '#f87171' : '#38bdf8'};">(${volSatPct.toFixed(0)}%)</span>
             <br><small style="color: ${isVolBinding ? '#f59e0b' : 'var(--text-muted)'}; font-size: 10px;">Vincolo: <b>${isVolBinding ? '📦 VOLUME' : '⚖️ PESO'}</b></small>
           ` : '<span style="color:var(--text-muted);">—</span>'}
         </td>
         <td>
-          ${vInfo.used ? `
-            <b>⏱️ ${durFormatted}</b> <small style="color:var(--text-muted);">(${Math.round(durMin)}m)</small>
-            <br>${cpmBadgeHtml}
-          ` : '<span style="color:var(--text-muted);">—</span>'}
-        </td>
-        <td>
           <span style="color: #34d399; font-weight: 700;">✅ ${serviceMoves.length} vie</span>
-          <br><span style="color: #fbbf24; font-size: 11px;">🔄 ${transitCount} transiti</span>
+          <br><span style="color: #fbbf24; font-size: 11px;">🔄 ${transitCount} transiti (${distKm.toFixed(1)} km)</span>
         </td>
         <td style="font-size: 11.5px; color: var(--text-secondary);">
           ${vInfo.used ? `${fixedCost.toFixed(0)} € + ${opCost.toFixed(1)} €` : `<span style="color:#34d399;">Risparmiato (-${fixedCost.toFixed(0)} €)</span>`}
@@ -3703,10 +4115,10 @@ function renderCarpVehicleReport(data) {
       </tr>
       ${vInfo.used ? `
       <tr id="${detailRowId}" style="display: none; background: rgba(2, 6, 23, 0.75);">
-        <td colspan="10" style="padding: 10px 14px;">
+        <td colspan="11" style="padding: 10px 14px;">
           <div style="font-size: 12px; font-weight: 700; color: ${color}; margin-bottom: 6px; display: flex; justify-content: space-between;">
-            <span>🗺️ Foglio di Marcia Sequenziale — ${vName} (${serviceMoves.length} tratte servite, ${transitCount} transiti a vuoto)</span>
-            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: ${collected.toLocaleString()} kg (${collectedQt} qt) | Volume: ~${volUsedM3.toFixed(1)} m³ | Durata: ${durFormatted}</span>
+            <span>🗺️ Foglio di Marcia Sequenziale — ${vName} (${serviceMoves.length} tratte servite, ${transitCount} transiti a vuoto, ${distKm.toFixed(1)} km)</span>
+            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: ${collected.toLocaleString()} kg (${collectedQt} qt) | Carico specifico: ${workloadQtKm.toFixed(2)} qt/km | Durata: ${durFormatted}</span>
           </div>
           <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(9, 15, 29, 0.9); padding: 4px;">
             ${movesHtml}
@@ -3725,8 +4137,9 @@ function renderCarpVehicleReport(data) {
           <th>Stato</th>
           <th>Rifiuti Caricati</th>
           <th>Saturazione Peso</th>
+          <th>Carico Lavoro (qt/km)</th>
+          <th>Tempo Totale (Max 5h)</th>
           <th>Volume &amp; Vincolo (Cap. 4.1)</th>
-          <th>Durata &amp; Slack CPM (Cap. 6.4)</th>
           <th>Tratte &amp; Transiti</th>
           <th>Costo Fisso + Op.</th>
           <th>Totale Mezzo</th>
@@ -3740,6 +4153,19 @@ function renderCarpVehicleReport(data) {
   `;
 
   container.appendChild(tableWrap);
+}
+
+function toggleCarpCrewSize(vName) {
+  if (!State.carpResult || !State.carpResult.vehicles) return;
+  const v = State.carpResult.vehicles[vName];
+  if (!v) return;
+  v.crew_size = (parseInt(v.crew_size || 1) === 2) ? 1 : 2;
+  const loadQt = (parseFloat(v.total_collected) || 0) / 100.0;
+  const distKm = v.distance_km || 1.0;
+  v.workload_qt_per_km = Math.round((loadQt / Math.max(0.1, distKm)) * 100) / 100;
+  v.workload_qt_per_km_person = Math.round((v.workload_qt_per_km / v.crew_size) * 100) / 100;
+  renderCarpVehicleReport(State.carpResult);
+  showToast(`Equipaggio compattatore '${vName}' impostato a ${v.crew_size} ${v.crew_size === 1 ? 'operatore' : 'operatori'}.`);
 }
 
 // ==========================================
@@ -7570,18 +7996,54 @@ function renderCarpLeafletMap(cfg, res) {
     }
 
     const hasDemand = (parseFloat(s.demand_kg) || 0) > 0;
-    const baseColor = hasDemand ? '#38bdf8' : '#64748b';
-    const baseWeight = hasDemand ? 3.5 : 2.5;
+    let baseColor = hasDemand ? '#38bdf8' : '#64748b';
+    let baseWeight = hasDemand ? 3.5 : 2.5;
+    let baseOpacity = 0.75;
+    let dashArray = null;
+
+    // Distinzione visiva per zone residenziali ad alto carico e tipologia
+    if (s.zone_type === 'res_high') {
+      baseColor = '#f97316'; // Arancione brillante per zona residenziale alto carico
+      baseWeight = 5.0;
+      baseOpacity = 0.9;
+    } else if (s.zone_type === 'commercial') {
+      baseColor = '#a855f7'; // Viola per commerciale
+      baseWeight = 4.0;
+    } else if (s.zone_type === 'transit') {
+      baseColor = '#64748b'; // Grigio scuro per transito puro
+      baseWeight = 2.0;
+      dashArray = '5, 5';
+    } else if (s.zone_type === 'other') {
+      baseColor = '#eab308'; // Ambra
+      baseWeight = 3.0;
+    }
+
+    // Se c'è un filtro giorno attivo ed è diverso da questo giorno, de-enfatizza visivamente
+    const activeDayFilter = State.carpActiveDayFilter;
+    if (activeDayFilter && activeDayFilter !== 'ALL' && s.day && s.day != activeDayFilter) {
+      baseOpacity = 0.22;
+      baseWeight = Math.max(1.5, baseWeight - 1.5);
+    }
 
     const poly = L.polyline(pts, {
       color: baseColor,
       weight: baseWeight,
-      opacity: 0.7,
+      opacity: baseOpacity,
+      dashArray: dashArray,
       lineCap: 'round'
     }).addTo(layerGroup);
 
     const lm = s.length_m || (parseFloat(s.transit_cost || 1) * 100);
-    poly.bindTooltip(`<b>${s.name}</b> (${lm.toFixed(0)}m)<br>Rifiuti: <b>${s.demand_kg || 0} kg</b>`, { sticky: true });
+    const zLabels = {
+      res_high: '🏘️ Residenziale Alto Carico (+40%)',
+      res_std: '🏠 Residenziale Standard',
+      commercial: '🏬 Commerciale (+20%)',
+      other: '🌾 Periferica (-30%)',
+      transit: '🚫 Solo Transito (0 kg)'
+    };
+    const zoneBadge = zLabels[s.zone_type] || '🏠 Residenziale Standard';
+    const dayBadge = s.day ? `Giorno ${s.day}` : 'Giorno 1';
+    poly.bindTooltip(`<b>${s.name}</b> (${lm.toFixed(0)}m)<br>📅 <b>${dayBadge}</b> &bull; ${zoneBadge}<br>Rifiuti: <b>${s.demand_kg || 0} kg</b>`, { sticky: true });
 
     // Click handler sulla tratta: modifica o eliminazione diretta
     poly.on('click', function(e) {
@@ -7593,12 +8055,28 @@ function renderCarpLeafletMap(cfg, res) {
 
       // Popup di modifica rapida della via
       const popupHtml = `
-        <div style="font-family: Outfit, sans-serif; min-width: 230px; padding: 2px;">
+        <div style="font-family: Outfit, sans-serif; min-width: 250px; padding: 2px;">
           <div style="font-weight: 700; color: #38bdf8; font-size: 13.5px; margin-bottom: 4px;">🛣️ ${s.name}</div>
           <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">${s.description || 'Tratta comunale'} &bull; ${lm.toFixed(0)} m</div>
           <div style="margin-bottom: 6px;">
             <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Nome Via:</label>
             <input type="text" id="mapPopupName_${s.id}" class="cell-inp" style="width: 100%; font-size: 12px; padding: 4px;" value="${s.name}">
+          </div>
+          <div style="margin-bottom: 6px;">
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Tipologia Zona & Carico:</label>
+            <select id="mapPopupZone_${s.id}" class="cell-inp" style="width: 100%; font-size: 11px; padding: 4px;">
+              <option value="res_high" ${s.zone_type === 'res_high' ? 'selected' : ''}>🏘️ Residenziale Alto Carico (+40%)</option>
+              <option value="res_std" ${(s.zone_type === 'res_std' || !s.zone_type) ? 'selected' : ''}>🏠 Residenziale Standard (100%)</option>
+              <option value="commercial" ${s.zone_type === 'commercial' ? 'selected' : ''}>🏬 Commerciale / Mista (+20%)</option>
+              <option value="other" ${s.zone_type === 'other' ? 'selected' : ''}>🌾 Periferica / Altro (-30%)</option>
+              <option value="transit" ${s.zone_type === 'transit' ? 'selected' : ''}>🚫 Solo Transito (0 kg)</option>
+            </select>
+          </div>
+          <div style="margin-bottom: 6px;">
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Giorno di Raccolta:</label>
+            <select id="mapPopupDay_${s.id}" class="cell-inp" style="width: 100%; font-size: 11px; padding: 4px;">
+              ${[1, 2, 3, 4, 5, 6].map(d => `<option value="${d}" ${(s.day === d || (!s.day && d === 1)) ? 'selected' : ''}>Giorno ${d}</option>`).join('')}
+            </select>
           </div>
           <div style="margin-bottom: 8px;">
             <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Rifiuti da raccogliere (kg):</label>
@@ -7923,11 +8401,16 @@ function saveStreetFromMapPopup(streetId) {
 
   const nameInp = document.getElementById(`mapPopupName_${streetId}`);
   const demandInp = document.getElementById(`mapPopupDemand_${streetId}`);
+  const zoneInp = document.getElementById(`mapPopupZone_${streetId}`);
+  const dayInp = document.getElementById(`mapPopupDay_${streetId}`);
 
   if (nameInp && nameInp.value.trim()) st.name = nameInp.value.trim();
   if (demandInp) st.demand_kg = Math.max(0, parseFloat(demandInp.value) || 0);
+  if (zoneInp) st.zone_type = zoneInp.value;
+  if (dayInp) st.day = parseInt(dayInp.value) || 1;
   st.manual_override = true;
 
+  updateCarpFleetCapacitySummary();
   renderCarpTables();
   renderCarpLeafletMap(State.carpConfig, State.carpResult);
 
@@ -7938,7 +8421,8 @@ function saveStreetFromMapPopup(streetId) {
     body: JSON.stringify(State.carpConfig)
   }).catch(() => {});
 
-  showToast(`💾 Modifiche per '${st.name}' salvate con successo!`);
+  const zShort = (st.zone_type === 'res_high') ? 'Residenziale Alto (+40%)' : (st.zone_type || 'standard');
+  showToast(`💾 Modifiche per '${st.name}' (Zona: ${zShort}, Giorno ${st.day || 1}) salvate!`);
 }
 
 // ------------------------------------------

@@ -1191,6 +1191,9 @@ def convert_networkx_to_carp_config(
                 [round(float(v_data.get("y", 0.0)), 6), round(float(v_data.get("x", 0.0)), 6)]
             ]
 
+        zone_type = data.get("zone_type")
+        day_val = data.get("day", 1)
+
         # Se i dati della strada hanno già demand_kg e transit_cost (es. da filtro settore), preservali!
         if "demand_kg" in data and "transit_cost" in data:
             demand = float(data["demand_kg"])
@@ -1198,25 +1201,53 @@ def convert_networkx_to_carp_config(
             service_cost = float(data.get("service_cost", round(transit_cost * 1.8, 2)))
             length_m = float(data.get("length_m", round(transit_cost * 100.0, 1)))
             desc = _clean_osm_str(data.get("description"), f"Tratta con raccolta ({demand:.0f} kg)")
+            if not zone_type:
+                zone_type = "transit" if demand == 0 else "res_std"
         elif "demand_kg" in data:
             demand = float(data["demand_kg"])
             transit_cost = float(data.get("length", 1.0))
             service_cost = float(data.get("service_cost", round(transit_cost * 1.8, 2)))
             length_m = float(data.get("length_m", round(transit_cost * 100.0, 1)))
             desc = _clean_osm_str(data.get("description"), f"Tratta ({demand:.0f} kg)")
+            if not zone_type:
+                zone_type = "transit" if demand == 0 else "res_std"
         else:
             length_m = float(data.get("length", 100.0))
             highway_type = _clean_osm_str(data.get("highway", "residential"), "residential")
 
-            # Assegnazione domanda stimata: tutte le strade urbane/residenziali hanno rifiuti
+            # Assegnazione tipologia zona e domanda stimata:
+            # Distinzione zone residenziali con maggiore carico rifiuti (Punto 3)
             if any(k in highway_type for k in ("motorway", "trunk", "motorway_link", "trunk_link")):
                 demand = 0.0  # Tangenziali e superstrade solo transito veloce
+                zone_type = "transit"
                 desc = "Transito veloce / superstrada (0 kg)"
-            else:
-                # Stima lineare: demand_per_meter kg per metro di strada (es. 1.5 kg/m), minimo 10 kg per tratto attivo
-                raw_demand = round(length_m * demand_per_meter, -1)
+            elif highway_type in ("residential", "living_street"):
+                # Se è una via residenziale importante o centro abitato denso -> Residenziale con maggiore carico (+40%)
+                is_high_density = (
+                    length_m >= 150.0 
+                    or str(data.get("lanes", "1")) in ("2", "3")
+                    or any(w in street_name.lower() for w in ("corso", "viale", "piazza", "roma", "garibaldi", "dante", "matteotti", "veneto", "mille", "marconi", "libertà", "mazzini", "trieste", "cavallotti"))
+                )
+                if is_high_density:
+                    zone_type = "res_high"
+                    raw_demand = round(length_m * demand_per_meter * 1.40, -1)
+                    demand = max(15.0, raw_demand) if demand_per_meter > 0 else 0.0
+                    desc = f"Residenziale Alta Densità / Alto Carico (+40%, {length_m:.0f}m)"
+                else:
+                    zone_type = "res_std"
+                    raw_demand = round(length_m * demand_per_meter * 1.00, -1)
+                    demand = max(10.0, raw_demand) if demand_per_meter > 0 else 0.0
+                    desc = f"Residenziale Standard ({length_m:.0f}m)"
+            elif highway_type in ("commercial", "retail", "pedestrian"):
+                zone_type = "commercial"
+                raw_demand = round(length_m * demand_per_meter * 1.20, -1)
                 demand = max(10.0, raw_demand) if demand_per_meter > 0 else 0.0
-                desc = f"Raccolta porta a porta ({highway_type}, {length_m:.0f}m)"
+                desc = f"Attività Commerciali / Misto (+20%, {length_m:.0f}m)"
+            else:
+                zone_type = "other"
+                raw_demand = round(length_m * demand_per_meter * 0.70, -1)
+                demand = max(10.0, raw_demand) if demand_per_meter > 0 else 0.0
+                desc = f"Viabilità Secondaria / Altra via ({highway_type}, {length_m:.0f}m)"
 
             # Costo transito proporzionale a lunghezza (in centinaia di metri)
             transit_cost = round(length_m / 100.0, 2)
@@ -1224,6 +1255,8 @@ def convert_networkx_to_carp_config(
 
         if raw_id == "R0" or street_name.startswith("Raccordo Cantiere"):
             st_id = "R0"
+            zone_type = "transit"
+            day_val = "ALL"
             if not corridor_coords and edge_coords:
                 corridor_coords = edge_coords
         else:
@@ -1239,6 +1272,8 @@ def convert_networkx_to_carp_config(
             "transit_cost": max(transit_cost, 0.5),
             "service_cost": max(service_cost, 0.9 if demand > 0 else 0.5),
             "demand_kg": float(demand),
+            "zone_type": zone_type,
+            "day": day_val,
             "description": desc,
             "geometry": edge_coords
         })

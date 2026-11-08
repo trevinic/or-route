@@ -824,10 +824,10 @@
                 <div style="font-size: 13px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
                   <span>♻️</span> Frazioni del Giro (Stime FAQ & Dati Storici)<button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Guida su Frazioni Merceologiche e Densità Lineare (kg/m)">?</button>
                 </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px;" onclick="setCarpFractionPreset('min')" title="Imposta i valori minimi teorici delle FAQ">Min FAQ</button>
-                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px; border-color: #38bdf8; color: #38bdf8;" onclick="setCarpFractionPreset('avg')" title="Imposta i valori medi teorici delle FAQ">Medio FAQ</button>
-                  <button type="button" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px;" onclick="setCarpFractionPreset('max')" title="Imposta i valori massimi teorici delle FAQ">Max FAQ</button>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;" id="carpPresetButtonsContainer">
+                  <button type="button" id="btnCarpPresetMin" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px; transition: all 0.2s;" onclick="setCarpFractionPreset('min')" title="Imposta i valori minimi teorici delle FAQ"><span id="iconCarpPresetMin"></span> Min FAQ</button>
+                  <button type="button" id="btnCarpPresetAvg" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px; transition: all 0.2s;" onclick="setCarpFractionPreset('avg')" title="Imposta i valori medi teorici delle FAQ"><span id="iconCarpPresetAvg"></span> Medio FAQ</button>
+                  <button type="button" id="btnCarpPresetMax" class="btn btn-secondary btn-sm" style="font-size: 10.5px; padding: 2px 7px; transition: all 0.2s;" onclick="setCarpFractionPreset('max')" title="Imposta i valori massimi teorici delle FAQ"><span id="iconCarpPresetMax"></span> Max FAQ</button>
                 </div>
               </div>
               <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 8px; line-height: 1.4;">
@@ -893,9 +893,35 @@
                   <option value="30">30 vie (~1-2 compattatori)</option>
                 </select>
               </div>
-              <small style="color: var(--text-muted); font-size: 11px; display: block; line-height: 1.4;">
+              <small style="color: var(--text-muted); font-size: 11px; display: block; line-height: 1.4; margin-bottom: 9px;">
                 Permette di partizionare l'area urbana in settori operativi gestibili con meno veicoli o estenderla all'intero comune.
               </small>
+
+              <!-- DIVISIONE AREA IN PIU' GIORNI (SPLIT MULTI-GIORNO) - PUNTO 2 -->
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 9px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 5px;">
+                    <span>📅 Suddividi Area in più Giorni:</span>
+                    <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('osm-import')" title="Suddivide l'area stradale in N giorni/turni omogenei e bilanciati">?</button>
+                  </span>
+                  <div style="display: flex; align-items: center; gap: 5px;">
+                    <select id="carpSplitDaysSelect" style="background:#080d19; border:1px solid #10b981; color:#34d399; padding:3px 7px; border-radius:6px; font-size:11.5px; font-weight:700;" onchange="applyCarpDaysSplit(parseInt(this.value))">
+                      <option value="1">1 Giorno (Area Intera)</option>
+                      <option value="2">2 Giorni (Zona 1 &amp; Zona 2)</option>
+                      <option value="3">3 Giorni (3 Settori Giornalieri)</option>
+                      <option value="4">4 Giorni (4 Settori Giornalieri)</option>
+                      <option value="5">5 Giorni (Lun-Ven Feriale)</option>
+                      <option value="6">6 Giorni (Lun-Sab Completo)</option>
+                    </select>
+                    <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 3px 8px; border-color: #10b981; color: #34d399;" onclick="applyCarpDaysSplit(parseInt(document.getElementById('carpSplitDaysSelect').value))" title="Ricalcola la partizione e il bilanciamento dei giorni">
+                      ✂️ Split &amp; Ricalcola
+                    </button>
+                  </div>
+                </div>
+                <!-- Barra Schede Giorni (Tutti i Giorni, Giorno 1, Giorno 2, ...) -->
+                <div id="carpDaysTabBar" style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;"></div>
+                <div id="carpDaysSummaryInfo" style="font-size: 11px; color: var(--text-muted); line-height: 1.35;"></div>
+              </div>
             </div>
 
             <!-- Riepilogo Bilancio Flotta: Capacità vs Domanda -->
@@ -906,22 +932,26 @@
 
           <!-- Colonna Destra Configurazione: Tabella Strade & Tabella Flotta Compattatori -->
           <div>
-            <!-- Intestazione Strade con Filtro di Ricerca -->
+            <!-- Intestazione Strade con Filtro di Ricerca e Distinzione Zone Residenziali -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #38bdf8; display: flex; align-items: center;"><span>🛣️ Rete Stradale & Domanda Rifiuti (kg)</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa sono i Nodi e le Vie?">?</button></h4>
+              <h4 style="font-size: 14px; color: #38bdf8; display: flex; align-items: center;"><span>🛣️ Rete Stradale &amp; Domanda Rifiuti (kg)</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa sono i Nodi e le Vie?">?</button></h4>
               <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
             </div>
             
-            <div style="margin-bottom: 10px;">
-              <input type="text" id="carpStreetSearch" class="cell-inp" style="width: 100%; max-width: 100%; font-size: 12px; padding: 6px 10px;" 
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+              <input type="text" id="carpStreetSearch" class="cell-inp" style="flex: 1; min-width: 170px; font-size: 12px; padding: 6px 10px;" 
                      placeholder="🔍 Cerca via per nome o nodo..." oninput="filterCarpStreets(this.value)">
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 5px 9px; border-color: #f97316; color: #f97316;" onclick="batchSetHighResidentialZone()" title="Assegna a tutte le vie residenziali il maggiore carico rifiuti (+40%)">
+                🏘️ Residenziali Alto Carico (+40%)
+              </button>
             </div>
 
             <div class="table-responsive" style="max-height: 290px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
               <table class="opt-table" id="carpStreetsTable">
                 <thead>
                   <tr>
-                    <th>Nome Strada</th>
+                    <th>Nome Strada &amp; Giorno</th>
+                    <th style="min-width: 140px;">Tipologia Zona &amp; Carico</th>
                     <th>Nodi <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa sono i nodi u e v?">?</button></th>
                     <th>Domanda (kg) <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Come viene stimata la domanda in kg?">?</button></th>
                     <th>Costo Transito <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('deadhead')" title="Cosa sono i costi di transito e deadheading?">?</button></th>
@@ -967,8 +997,8 @@
             <span class="code-tag" style="color: #34d399; font-size: 11px;">MILP + Ricerca Locale 2-Opt, k-Clustering, Min-Max &amp; Bipartite Matching</span>
           </div>
 
-          <!-- Riga 1: 6 KPI Esecutivi -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 10px; margin-bottom: 16px;">
+          <!-- Riga 1: 8 KPI Esecutivi & Normativi -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 16px;">
             <div class="kpi-card">
               <div class="kpi-label">Stato Solutore</div>
               <div class="kpi-val green" id="carpStatus">Pronto</div>
@@ -991,7 +1021,25 @@
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Rete & Efficienza</div>
-              <div class="kpi-val" style="font-size: 16px;" id="carpNetworkKpi">-- km</div>
+              <div class="kpi-val" style="font-size: 15px;" id="carpNetworkKpi">-- km</div>
+            </div>
+            <!-- KPI 7: Carico di Lavoro (qt/km per mezzo e per persona) -->
+            <div class="kpi-card" style="border-color: rgba(56, 189, 248, 0.4);">
+              <div class="kpi-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Carico Lavoro (qt/km)</span>
+                <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('linear-density')" title="Quintali raccolti per km di percorso dal mezzo e per operatore">?</button>
+              </div>
+              <div class="kpi-val" id="carpWorkloadKpi" style="font-size: 14.5px; color: #38bdf8;">-- qt/km</div>
+              <small id="carpWorkloadPersonSub" style="color: var(--text-muted); font-size: 9.5px; display: block; margin-top: 1px;">Per persona: -- qt/km</small>
+            </div>
+            <!-- KPI 8: Tempo Totale Lavoro (Max 5h D.Lgs. 81/08 & CCNL) -->
+            <div class="kpi-card" style="border-color: rgba(52, 211, 153, 0.4);">
+              <div class="kpi-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Tempo Totale (Max 5h)</span>
+                <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('solver-optimization')" title="Limite 5 ore continue di servizio di raccolta attiva (D.Lgs. 81/08 e CCNL Servizi Ambientali)">?</button>
+              </div>
+              <div class="kpi-val green" id="carpWorkTimeKpi" style="font-size: 14.5px;">-- / 5h 00m</div>
+              <small id="carpWorkTimeStatusSub" style="color: #34d399; font-size: 9.5px; display: block; margin-top: 1px;">🟢 Limite 5h (A norma)</small>
             </div>
           </div>
 
@@ -1029,6 +1077,16 @@
 
               <!-- Contenitore Mappa Leaflet CARP -->
               <div id="carpMap" style="width: 100%; height: 440px; flex: 1; min-height: 400px; border: 1px solid var(--border-color); border-radius: 8px; background: #080d18; position: relative;"></div>
+
+              <!-- Legenda Mappa CARP Tipologie Zone & Stato -->
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-start; margin-top: 8px; font-size: 11px; color: #94a3b8; background: rgba(15, 23, 42, 0.6); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-weight: 600; color: #cbd5e1;">Legenda Zone:</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 4px; background: #f97316; border-radius: 2px;"></span> <b style="color: #f97316;">Resid. Alto (+40%)</b></span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #38bdf8; border-radius: 2px;"></span> Resid. Standard</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #a855f7; border-radius: 2px;"></span> Commerciale (+20%)</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #eab308; border-radius: 2px;"></span> Periferica (-30%)</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 2px; border-top: 2px dashed #64748b;"></span> Transito (0 kg)</span>
+              </div>
             </div>
 
             <!-- Tabella Riassuntiva Frazioni & Stime di Carico per il Comune (Evidenziata dopo l'ottimizzazione per qualsiasi comune) -->

@@ -572,10 +572,10 @@ def compute_ro_advanced_analytics(
     )
 
     # -------------------------------------------------------------------------
-    # 2. METRICHE PER VEICOLO: CPM SLACK TIME (Cap. 6.4.1) & VOLUME (Cap. 4.1.1)
+    # 2. METRICHE PER VEICOLO: CPM SLACK TIME (Cap. 6.4.1), CARICO QT/KM E TEMPO MAX 5H (Cap. 4.1.1)
     # -------------------------------------------------------------------------
     # Densità media in cassone compattato ~ 260 kg/m3 -> capacità volumetrica stimata = capacity_kg / 250 m3
-    SHIFT_MAX_MIN = 360.0  # Turno operativo standard 6 ore (360 min)
+    SHIFT_MAX_MIN = 300.0  # Limite turno massimo di raccolta continua 5 ore (300 min) - D.Lgs. 81/08 & CCNL Servizi Ambientali
     UNLOAD_TIME_MIN = 25.0  # Tempo scarico fine giro / impianto (25 min)
 
     active_vehicles_list = []
@@ -587,12 +587,18 @@ def compute_ro_advanced_analytics(
     for v_name, v_info in result.get("vehicles", {}).items():
         if not v_info.get("used"):
             v_info["shift_duration_min"] = 0.0
+            v_info["shift_max_min"] = SHIFT_MAX_MIN
             v_info["slack_min"] = SHIFT_MAX_MIN
             v_info["cpm_status"] = "RIPOSO"
             v_info["volume_m3"] = 0.0
             v_info["volume_capacity_m3"] = round(float(v_info.get("capacity", 4500.0)) / 250.0, 1)
             v_info["volume_saturation_pct"] = 0.0
             v_info["binding_constraint"] = "NESSUNO"
+            v_info["distance_km"] = 0.0
+            v_info["workload_qt_per_km"] = 0.0
+            v_info["workload_qt_per_km_person"] = 0.0
+            v_info["crew_size"] = int(v_info.get("crew_size", 1))
+            v_info["is_compliant_5h"] = True
             continue
 
         cap_kg = max(1.0, float(v_info.get("capacity", 4500.0)))
@@ -619,17 +625,28 @@ def compute_ro_advanced_analytics(
             + UNLOAD_TIME_MIN,
             1
         )
-        est_duration_min = round(min(355.0, max(45.0, est_duration_min)), 1)
+        est_duration_min = round(max(45.0, est_duration_min), 1)
 
-        # Calcolo Tempo di Slittamento (Slack Time, Cap. 6.4.1 CPM):
-        # Rispetto alla finestra operativa standard del giro (240 min = 4h per singolo giro, 360 min = 6h turno pieno)
-        TOUR_TARGET_MIN = 240.0
+        # Calcolo km percorsi dal mezzo (servizio + transito):
+        # 1 unità transit = 100m (0.1 km); 1 unità service = transit * 1.8 -> lunghezza = (serv_cost / 1.8) * 100m
+        dist_service_km = (serv_cost_v / 1.8) * 0.1
+        dist_transit_km = trans_cost_v * 0.1
+        dist_total_km = round(max(0.1, dist_service_km + dist_transit_km), 2)
+        load_qt = round(load_kg / 100.0, 2)
+        workload_qt_km = round(load_qt / max(0.1, dist_total_km), 2)
+        crew_size = int(v_info.get("crew_size", 1))
+        workload_person_qt_km = round(workload_qt_km / max(1, crew_size), 2)
+        is_compliant_5h = (est_duration_min <= SHIFT_MAX_MIN)
+
+        # Calcolo Tempo di Slittamento (Slack Time, Cap. 6.4.1 CPM rispetto a 5 ore = 300 min):
         slack_min = round(SHIFT_MAX_MIN - est_duration_min, 1)
-        tour_slack_min = round(TOUR_TARGET_MIN - est_duration_min, 1)
-        if tour_slack_min < 25.0 or sat_pct > 96.0:
+        if not is_compliant_5h:
+            cpm_status = "SUPERAMENTO_5H"
+            critical_vehicles_count += 1
+        elif slack_min < 25.0 or sat_pct > 96.0:
             cpm_status = "CRITICO"
             critical_vehicles_count += 1
-        elif tour_slack_min < 55.0 or sat_pct > 88.0:
+        elif slack_min < 50.0 or sat_pct > 88.0:
             cpm_status = "ATTENZIONE"
         else:
             cpm_status = "MARGINE_AMPIO"
@@ -651,6 +668,11 @@ def compute_ro_advanced_analytics(
         v_info["binding_constraint"] = binding_constr
         v_info["service_cost_total"] = round(serv_cost_v, 2)
         v_info["deadhead_cost_total"] = round(trans_cost_v, 2)
+        v_info["distance_km"] = dist_total_km
+        v_info["workload_qt_per_km"] = workload_qt_km
+        v_info["workload_qt_per_km_person"] = workload_person_qt_km
+        v_info["crew_size"] = crew_size
+        v_info["is_compliant_5h"] = is_compliant_5h
 
         active_vehicles_list.append({
             "name": v_name,
@@ -660,6 +682,10 @@ def compute_ro_advanced_analytics(
             "sat_pct": sat_pct,
             "duration_min": est_duration_min,
             "slack_min": slack_min,
+            "distance_km": dist_total_km,
+            "workload_qt_per_km": workload_qt_km,
+            "workload_qt_per_km_person": workload_person_qt_km,
+            "is_compliant_5h": is_compliant_5h,
         })
 
     # -------------------------------------------------------------------------
@@ -774,6 +800,11 @@ def compute_ro_advanced_analytics(
             "avg_duration_min": round(
                 sum(v["duration_min"] for v in active_vehicles_list) / max(1, n_act), 1
             ) if active_vehicles_list else 0.0,
+            "max_duration_min": max((v["duration_min"] for v in active_vehicles_list), default=0.0),
+            "all_compliant_5h": all(v.get("is_compliant_5h", True) for v in active_vehicles_list),
+            "avg_workload_qt_per_km": round(sum(v["workload_qt_per_km"] for v in active_vehicles_list) / max(1, n_act), 2) if active_vehicles_list else 0.0,
+            "avg_workload_person_qt_km": round(sum(v["workload_qt_per_km_person"] for v in active_vehicles_list) / max(1, n_act), 2) if active_vehicles_list else 0.0,
+            "total_distance_km": round(sum(v["distance_km"] for v in active_vehicles_list), 2) if active_vehicles_list else 0.0,
         },
         "bipartite_matching": {
             "active_tours_count": n_act,
