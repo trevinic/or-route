@@ -1045,17 +1045,24 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "workload_qt_per_km": v.get("workload_qt_per_km", 0.0),
                         "workload_qt_per_km_person": v.get("workload_qt_per_km_person", 0.0),
                         "crew_size": v.get("crew_size", 1),
+                        "driver_rate": v.get("driver_rate", 22.0),
+                        "vehicle_daily": v.get("vehicle_daily", 40.0),
+                        "cost_per_km": v.get("cost_per_km", 1.20),
+                        "load_qt": v.get("load_qt", round(v.get("total_collected", 0.0) / 100.0, 2)),
+                        "capacity_qt": v.get("capacity_qt", round(v.get("capacity", 4500.0) / 100.0, 1)),
                         "is_compliant_5h": v.get("is_compliant_5h", True),
                     }
 
                 streets = cfg.get("streets", [])
+                total_dem_kg = sum(float(s.get("demand_kg", 0.0)) for s in streets)
                 resp_data = {
                     "status": result.get("status", "OPTIMAL"),
                     "is_optimal": result.get("is_optimal", True),
                     "objective_value": result.get("objective_value", 0.0),
                     "vehicles": clean_vehicles,
                     "ro_analytics": result.get("ro_analytics", {}),
-                    "total_demand_kg": sum(float(s.get("demand_kg", 0.0)) for s in streets),
+                    "total_demand_kg": total_dem_kg,
+                    "total_demand_qt": round(total_dem_kg / 100.0, 2),
                     "map_url": f"/output/percorso_raccolta.html?t={int(time.time())}"
                 }
 

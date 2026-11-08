@@ -1334,7 +1334,7 @@ def solve_carp_from_config(config: Dict[str, Any], solver_msg: bool = False) -> 
 
     # Dual-Engine: se l'istanza è grande, usa l'euristica ad alte prestazioni
     if len(edges_data) > 45 or len(vehicles) > 8:
-        return solve_carp_heuristic(
+        res = solve_carp_heuristic(
             nodes=nodes,
             edges_data=edges_data,
             vehicles=vehicles,
@@ -1342,32 +1342,49 @@ def solve_carp_from_config(config: Dict[str, Any], solver_msg: bool = False) -> 
             fixed_vehicle_cost=fixed_vehicle_cost,
             depot=depot
         )
+    else:
+        # Per piccole istanze tenta il MILP esatto con fallback su euristica
+        res = None
+        try:
+            milp_res = solve_carp(
+                nodes=nodes,
+                edges_data=edges_data,
+                vehicles=vehicles,
+                vehicle_capacity=vehicle_capacity,
+                fixed_vehicle_cost=fixed_vehicle_cost,
+                depot=depot,
+                deadhead_upper_bound=deadhead_bound,
+                solver_msg=solver_msg
+            )
+            if milp_res.get("is_optimal", False):
+                res = milp_res
+        except Exception as e:
+            print(f"Avviso solutore MILP CBC: {e}. Esecuzione euristica Augmented Path-Scanning...")
 
-    # Per piccole istanze tenta il MILP esatto con fallback su euristica
-    try:
-        milp_res = solve_carp(
-            nodes=nodes,
-            edges_data=edges_data,
-            vehicles=vehicles,
-            vehicle_capacity=vehicle_capacity,
-            fixed_vehicle_cost=fixed_vehicle_cost,
-            depot=depot,
-            deadhead_upper_bound=deadhead_bound,
-            solver_msg=solver_msg
-        )
-        if milp_res.get("is_optimal", False):
-            return milp_res
-    except Exception as e:
-        print(f"Avviso solutore MILP CBC: {e}. Esecuzione euristica Augmented Path-Scanning...")
+        if res is None:
+            res = solve_carp_heuristic(
+                nodes=nodes,
+                edges_data=edges_data,
+                vehicles=vehicles,
+                vehicle_capacity=vehicle_capacity,
+                fixed_vehicle_cost=fixed_vehicle_cost,
+                depot=depot
+            )
 
-    return solve_carp_heuristic(
-        nodes=nodes,
-        edges_data=edges_data,
-        vehicles=vehicles,
-        vehicle_capacity=vehicle_capacity,
-        fixed_vehicle_cost=fixed_vehicle_cost,
-        depot=depot
-    )
+    # Assicura che ogni veicolo nel risultato mantenga le proprietà dal config
+    veh_cfg_map = {str(v.get("name")): v for v in config.get("vehicles", [])}
+    for vname, vinfo in res.get("vehicles", {}).items():
+        vcfg = veh_cfg_map.get(vname, {})
+        vinfo["crew_size"] = int(vcfg.get("crew_size", vinfo.get("crew_size", 1)))
+        vinfo["driver_rate"] = float(vcfg.get("driver_rate", 22.0))
+        vinfo["vehicle_daily"] = float(vcfg.get("vehicle_daily", 40.0))
+        vinfo["cost_per_km"] = float(vcfg.get("cost_per_km", 1.20))
+        vinfo["capacity_kg"] = float(vcfg.get("capacity_kg", vinfo.get("capacity", 4500.0)))
+        load_kg = float(vinfo.get("total_collected", 0.0))
+        vinfo["load_qt"] = round(load_kg / 100.0, 2)
+        vinfo["capacity_qt"] = round(float(vinfo.get("capacity", 4500.0)) / 100.0, 1)
+
+    return res
 
 
 def solve_carp_waste_collection() -> Dict[str, Any]:

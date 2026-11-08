@@ -216,6 +216,52 @@ def logout_token(token: str) -> bool:
         conn.close()
 
 
+def list_registered_users() -> List[Dict[str, Any]]:
+    """Restituisce l'elenco di tutti gli utenti registrati con il conteggio dei loro scenari salvati."""
+    conn = get_db_connection()
+    try:
+        rows = conn.execute("""
+            SELECT u.id, u.username, u.email, u.created_at,
+                   COUNT(s.id) AS scenario_count
+            FROM users u
+            LEFT JOIN scenarios s ON u.id = s.user_id
+            GROUP BY u.id
+            ORDER BY u.id ASC
+        """).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "username": r["username"],
+                "email": r["email"],
+                "created_at": str(r["created_at"]),
+                "scenario_count": r["scenario_count"]
+            }
+            for r in rows
+        ]
+    finally:
+        conn.close()
+
+
+def reset_user_password(username: str, new_password: str) -> bool:
+    """Reimposta la password di un utente esistente."""
+    username = str(username or "").strip()
+    new_password = str(new_password or "").strip()
+    if len(new_password) < 5:
+        return False
+    salt = secrets.token_hex(16)
+    pwd_hash = _hash_password(new_password, salt)
+    conn = get_db_connection()
+    try:
+        with conn:
+            cur = conn.execute(
+                "UPDATE users SET password_hash = ?, salt = ? WHERE username = ? COLLATE NOCASE",
+                (pwd_hash, salt, username)
+            )
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
 # -------------------------------------------------------------
 # GESTIONE SCENARI E CONFIGURAZIONI SALVATE
 # -------------------------------------------------------------

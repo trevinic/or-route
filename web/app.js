@@ -2990,7 +2990,6 @@ function renderCarpMunicipalitySummaryTable() {
       <td><b style="color:#38bdf8;">${f.rate.toFixed(2)} kg/m</b></td>
       <td>
         <b style="color:#fbbf24;">${estQt} qt</b>
-        <span style="color:var(--text-muted); font-size:10.5px;">(${estKg.toLocaleString()} kg)</span>
       </td>
       <td><span style="color:var(--text-secondary);">${fleetLabel}</span></td>
       <td style="text-align: center;">
@@ -3016,7 +3015,7 @@ function renderCarpMunicipalitySummaryTable() {
       <td><b style="color:#38bdf8;">🎯 Giro Attuale (${getActiveCarpFractionsLabel()})</b></td>
       <td><span style="color:var(--text-muted);">Personalizzato</span></td>
       <td><b style="color:#38bdf8;">${currentEffRate.toFixed(2)} kg/m</b></td>
-      <td><b style="color:#34d399;">${currentActualQt} qt</b> <span style="color:var(--text-muted); font-size:10.5px;">(${currentActualKg.toLocaleString()} kg)</span></td>
+      <td><b style="color:#34d399;">${currentActualQt} qt</b></td>
       <td><b style="color:#34d399;">~${currentTrucks} mezzi</b></td>
       <td style="text-align:center;"><span class="code-tag" style="color:#38bdf8; font-size:10px;">ATTIVO</span></td>
     `;
@@ -3043,7 +3042,6 @@ function renderCarpMunicipalitySummaryTable() {
     <td><b style="color:#fbbf24;">${sumActiveRate.toFixed(2)} kg/m</b></td>
     <td>
       <b style="color:#fbbf24;">${totalWeekQt} qt</b>
-      <span style="color:var(--text-muted); font-size:10.5px;">(${totalWeekKg.toLocaleString()} kg)</span>
     </td>
     <td><span style="color:var(--text-secondary);">Ciclo 6 giorni</span></td>
     <td style="text-align: center;">
@@ -3135,9 +3133,9 @@ function renderCarpTables() {
           </td>
           <td><span class="code-tag">${s.u} &rarr; ${s.v}</span></td>
           <td>
-            <input type="number" class="cell-inp" min="0" step="10" value="${s.demand_kg}"
+            <input type="number" class="cell-inp" min="0" step="0.1" value="${(parseFloat(s.demand_kg || 0) / 100.0).toFixed(1)}"
               style="${s.manual_override ? 'border-color:#fbbf24; color:#fbbf24; font-weight:700;' : (zType === 'res_high' ? 'color:#f97316; font-weight:700;' : '')}"
-              onchange="updateCarpStreetDemand(${idx}, this.value)">
+              onchange="updateCarpStreetDemand(${idx}, this.value)" title="Domanda di rifiuto in quintali (1 qt = 100 kg)">
           </td>
           <td>
             <input type="number" class="cell-inp" min="0.5" step="0.5" value="${s.transit_cost}"
@@ -3154,31 +3152,60 @@ function renderCarpTables() {
     renderCarpLeafletMap(State.carpConfig, State.carpResult);
   }
 
-  // 2. Tabella Veicoli / Compattatori
+  // 2. Tabella Veicoli / Compattatori con multi-selezione e parametri completi (portata qt, operatori, costi)
   const vbody = document.getElementById('carpVehiclesBody');
   if (vbody && State.carpConfig.vehicles) {
     vbody.innerHTML = '';
     State.carpConfig.vehicles.forEach((v, idx) => {
+      const capQt = (parseFloat(v.capacity_kg || 4500) / 100.0).toFixed(1);
+      const crew = parseInt(v.crew_size || 1);
+      const dRate = parseFloat(v.driver_rate !== undefined ? v.driver_rate : 22.0);
+      const vDaily = parseFloat(v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0);
+      const cKm = parseFloat(v.cost_per_km !== undefined ? v.cost_per_km : 1.20);
+      const fCost = parseFloat(v.fixed_cost !== undefined ? v.fixed_cost : (dRate * crew * 5.0 + vDaily));
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td style="text-align: center;">
+          <input type="checkbox" class="chk-carp-veh" data-idx="${idx}" onchange="updateCarpVehSelectionUI()">
+        </td>
         <td>
           <b>🚛 ${v.name}</b>
-          ${v.description ? `<br><small style="color:var(--text-muted);">${v.description}</small>` : ''}
+          ${v.description ? `<br><small style="color:var(--text-muted); font-size:10px;">${v.description}</small>` : ''}
         </td>
         <td>
-          <input type="number" class="cell-inp" min="500" step="250" value="${v.capacity_kg}"
-            onchange="updateCarpVehicleCapacity(${idx}, this.value)">
+          <input type="number" class="cell-inp" min="5" step="0.5" style="width: 100%; text-align: right;" value="${capQt}"
+            onchange="updateCarpVehicleCapacity(${idx}, this.value)" title="Portata utile compattatore in quintali">
         </td>
         <td>
-          <input type="number" class="cell-inp" min="0" step="10" value="${v.fixed_cost}"
-            onchange="updateCarpVehicleCost(${idx}, this.value)">
+          <select class="cell-inp" style="width: 100%; font-size: 11px; padding: 2px 4px;" onchange="updateCarpVehicleCrew(${idx}, this.value)">
+            <option value="1" ${crew === 1 ? 'selected' : ''}>1 (Autista)</option>
+            <option value="2" ${crew === 2 ? 'selected' : ''}>2 (Autista+Op)</option>
+          </select>
         </td>
         <td>
-          <button class="btn-danger-outline" title="Rimuovi Compattatore" onclick="removeCarpVehicle(${idx})">&times;</button>
+          <input type="number" class="cell-inp" min="10" step="1" style="width: 100%; text-align: right;" value="${dRate}"
+            onchange="updateCarpVehicleField(${idx}, 'driver_rate', this.value)" title="Tariffa oraria per singolo operatore (€/h)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" min="0" step="5" style="width: 100%; text-align: right;" value="${vDaily}"
+            onchange="updateCarpVehicleField(${idx}, 'vehicle_daily', this.value)" title="Costo fisso giornaliero ammortamento mezzo (€/g)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" min="0" step="5" style="width: 100%; text-align: right; font-weight:700; color:#34d399;" value="${fCost}"
+            onchange="updateCarpVehicleField(${idx}, 'fixed_cost', this.value)" title="Costo fisso turno (€)">
+        </td>
+        <td>
+          <input type="number" class="cell-inp" min="0.2" step="0.05" style="width: 100%; text-align: right;" value="${cKm}"
+            onchange="updateCarpVehicleField(${idx}, 'cost_per_km', this.value)" title="Costo chilometrico variabile (€/km)">
+        </td>
+        <td style="text-align: center;">
+          <button class="btn-danger-outline" style="padding: 2px 6px; font-size: 11px;" title="Rimuovi Compattatore" onclick="removeCarpVehicle(${idx})">&times;</button>
         </td>
       `;
       vbody.appendChild(tr);
     });
+    updateCarpVehSelectionUI();
   }
 
   // 3. Bilancio Capacità Flotta vs Domanda Totale
@@ -3362,13 +3389,13 @@ function renderCarpDaysTabBar() {
 
   if (infoEl) {
     if (activeDay === 'ALL') {
-      infoEl.innerHTML = `Panoramica completa: <b>${numDays} ${numDays === 1 ? 'giorno' : 'giorni'}</b> di servizio, totale <b>${totalStreets} tratte</b> con <b>${totalQt} quintali (${totalDem.toLocaleString()} kg)</b>.`;
+      infoEl.innerHTML = `Panoramica completa: <b>${numDays} ${numDays === 1 ? 'giorno' : 'giorni'}</b> di servizio, totale <b>${totalStreets} tratte</b> con <b>${totalQt} quintali</b>.`;
     } else {
       const dNum = parseInt(activeDay);
       const dayStreets = streets.filter(s => s.day === dNum && isStreetCollectible(s));
       const dayDem = dayStreets.reduce((acc, s) => acc + (parseFloat(s.demand_kg) || 0), 0);
       const dayQt = (dayDem / 100.0).toFixed(1);
-      infoEl.innerHTML = `Filtro attivo su <b>Giorno ${dNum}</b>: <b>${dayStreets.length} tratte viarie</b> selezionate, carico previsto: <b style="color:#34d399;">${dayQt} quintali (${dayDem.toLocaleString()} kg)</b>.`;
+      infoEl.innerHTML = `Filtro attivo su <b>Giorno ${dNum}</b>: <b>${dayStreets.length} tratte viarie</b> selezionate, carico previsto: <b style="color:#34d399;">${dayQt} quintali</b>.`;
     }
   }
 }
@@ -3398,15 +3425,19 @@ function updateCarpFleetCapacitySummary() {
   const totalCapacity = (State.carpConfig.vehicles || []).reduce((acc, v) => acc + (parseFloat(v.capacity_kg) || 0), 0);
   const dayLabel = (activeFilter && activeFilter !== 'ALL') ? ` (Giorno ${activeFilter})` : '';
 
+  const totalCapQt = (totalCapacity / 100.0).toFixed(1);
+  const totalDemQt = (totalDemand / 100.0).toFixed(1);
+
   if (totalCapacity < totalDemand) {
     const missing = totalDemand - totalCapacity;
+    const missingQt = (missing / 100.0).toFixed(1);
     sumEl.style.background = 'rgba(239, 68, 68, 0.15)';
     sumEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
     sumEl.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div>
           <span style="color: #f87171; font-weight: 700;">⚠️ Portata Flotta Insufficiente per quest'area!</span> 
-          Portata totale: <b>${totalCapacity.toLocaleString()} kg</b> &lt; Rifiuti stimati: <b>${totalDemand.toLocaleString()} kg</b> (Mancano ${missing.toLocaleString()} kg).
+          Portata totale: <b>${totalCapQt} qt</b> &lt; Rifiuti stimati: <b>${totalDemQt} qt</b> (Mancano ${missingQt} qt).
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="btn btn-sm btn-primary" onclick="autoScaleCarpFleet()" style="font-size: 11.5px; padding: 4px 10px;">
@@ -3424,7 +3455,7 @@ function updateCarpFleetCapacitySummary() {
     sumEl.style.borderColor = 'rgba(16, 185, 129, 0.3)';
     sumEl.innerHTML = `
       <span style="color: #34d399; font-weight: 700;">✅ Flotta Idonea:</span> 
-      Portata Flotta <b>${totalCapacity.toLocaleString()} kg</b> per <b>${totalDemand.toLocaleString()} kg</b> di rifiuti stimati (Margine sicurezza: +${marginPct}%).
+      Portata Flotta <b>${totalCapQt} qt</b> per <b>${totalDemQt} qt</b> di rifiuti stimati (Margine sicurezza: +${marginPct}%).
     `;
   }
 }
@@ -3468,6 +3499,170 @@ function filterCarpStreets(query) {
   });
 }
 
+// ------------------------------------------
+// GESTIONE FLOTTA CARP: MULTI-SELEZIONE & MODIFICA IN BLOCCO
+// ------------------------------------------
+
+function getSelectedCarpVehicleIndices() {
+  const checkboxes = document.querySelectorAll('.chk-carp-veh:checked');
+  const indices = [];
+  checkboxes.forEach(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    if (!isNaN(idx)) indices.push(idx);
+  });
+  return indices;
+}
+
+function updateCarpVehSelectionUI() {
+  const selected = getSelectedCarpVehicleIndices();
+  const bar = document.getElementById('carpVehBatchBar');
+  const badge = document.getElementById('carpVehSelectedCountBadge');
+  const selectAllCb = document.getElementById('chkCarpSelectAllVeh');
+
+  const total = (State.carpConfig && State.carpConfig.vehicles) ? State.carpConfig.vehicles.length : 0;
+  if (selectAllCb) {
+    selectAllCb.checked = (total > 0 && selected.length === total);
+    selectAllCb.indeterminate = (selected.length > 0 && selected.length < total);
+  }
+
+  if (bar) {
+    if (selected.length > 0) {
+      bar.style.display = 'flex';
+      if (badge) badge.innerText = `${selected.length} / ${total} mezzi selezionati`;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+}
+
+function toggleCarpSelectAllVehicles(isChecked) {
+  const checkboxes = document.querySelectorAll('.chk-carp-veh');
+  checkboxes.forEach(cb => { cb.checked = isChecked; });
+  updateCarpVehSelectionUI();
+}
+
+function deleteSelectedCarpVehicles() {
+  const indices = getSelectedCarpVehicleIndices();
+  if (indices.length === 0) return;
+  if (!State.carpConfig || !State.carpConfig.vehicles) return;
+
+  if (indices.length >= State.carpConfig.vehicles.length) {
+    alert("È necessario mantenere almeno un veicolo nella flotta di raccolta.");
+    return;
+  }
+
+  if (!confirm(`Sei sicuro di voler eliminare ${indices.length} compattatori selezionati dalla flotta?`)) {
+    return;
+  }
+
+  indices.sort((a, b) => b - a);
+  indices.forEach(idx => {
+    State.carpConfig.vehicles.splice(idx, 1);
+  });
+
+  renderCarpTables();
+  showToast(`🗑️ ${indices.length} compattatori rimossi dalla flotta.`);
+}
+
+function batchSetCarpVehCrew(crewNum) {
+  const indices = getSelectedCarpVehicleIndices();
+  if (indices.length === 0) {
+    showToast('Spunta almeno un mezzo per impostare gli operatori.');
+    return;
+  }
+  if (!State.carpConfig || !State.carpConfig.vehicles) return;
+
+  indices.forEach(idx => {
+    const v = State.carpConfig.vehicles[idx];
+    if (v) {
+      v.crew_size = crewNum;
+      const dRate = parseFloat(v.driver_rate !== undefined ? v.driver_rate : 22.0);
+      const vDaily = parseFloat(v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0);
+      v.fixed_cost = Math.round((dRate * crewNum * 5.0 + vDaily) * 100) / 100;
+    }
+  });
+
+  renderCarpTables();
+  showToast(`👥 Impostati ${crewNum} operatori su ${indices.length} mezzi selezionati.`);
+}
+
+function batchSetCarpVehCapacity(capQt) {
+  const indices = getSelectedCarpVehicleIndices();
+  if (indices.length === 0) {
+    showToast('Spunta almeno un mezzo per impostare la portata.');
+    return;
+  }
+  if (!State.carpConfig || !State.carpConfig.vehicles) return;
+
+  indices.forEach(idx => {
+    const v = State.carpConfig.vehicles[idx];
+    if (v) {
+      v.capacity_kg = capQt * 100.0;
+    }
+  });
+
+  renderCarpTables();
+  showToast(`⚡ Impostata portata ${capQt} qt su ${indices.length} mezzi selezionati.`);
+}
+
+function openCarpVehBatchEditModal() {
+  const indices = getSelectedCarpVehicleIndices();
+  if (indices.length === 0) {
+    showToast('Spunta almeno un mezzo per procedere alla modifica.');
+    return;
+  }
+  const modal = document.getElementById('modalCarpVehBatchEdit');
+  const sub = document.getElementById('carpVehBatchModalSubtitle');
+  if (sub) {
+    sub.innerText = `Stai modificando contemporaneamente ${indices.length} compattatori selezionati:`;
+  }
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeCarpVehBatchEditModal() {
+  const modal = document.getElementById('modalCarpVehBatchEdit');
+  if (modal) modal.style.display = 'none';
+}
+
+function applyCarpVehBatchEdit() {
+  const indices = getSelectedCarpVehicleIndices();
+  if (indices.length === 0 || !State.carpConfig || !State.carpConfig.vehicles) {
+    closeCarpVehBatchEditModal();
+    return;
+  }
+
+  const applyCap = document.getElementById('chkBatchApplyCap')?.checked;
+  const applyCrew = document.getElementById('chkBatchApplyCrew')?.checked;
+  const applyDriverRate = document.getElementById('chkBatchApplyDriverRate')?.checked;
+  const applyDaily = document.getElementById('chkBatchApplyDaily')?.checked;
+  const applyCostKm = document.getElementById('chkBatchApplyCostKm')?.checked;
+
+  const capQt = parseFloat(document.getElementById('inpBatchVehCap')?.value) || 45.0;
+  const crew = parseInt(document.getElementById('selBatchVehCrew')?.value) || 1;
+  const driverRate = parseFloat(document.getElementById('inpBatchVehDriverRate')?.value) || 22.0;
+  const daily = parseFloat(document.getElementById('inpBatchVehDaily')?.value) || 40.0;
+  const costKm = parseFloat(document.getElementById('inpBatchVehCostKm')?.value) || 1.20;
+
+  indices.forEach(idx => {
+    const v = State.carpConfig.vehicles[idx];
+    if (!v) return;
+    if (applyCap) v.capacity_kg = capQt * 100.0;
+    if (applyCrew) v.crew_size = crew;
+    if (applyDriverRate) v.driver_rate = driverRate;
+    if (applyDaily) v.vehicle_daily = daily;
+    if (applyCostKm) v.cost_per_km = costKm;
+
+    const curCrew = parseInt(v.crew_size || 1);
+    const curRate = parseFloat(v.driver_rate !== undefined ? v.driver_rate : 22.0);
+    const curDaily = parseFloat(v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0);
+    v.fixed_cost = Math.round((curRate * curCrew * 5.0 + curDaily) * 100) / 100;
+  });
+
+  closeCarpVehBatchEditModal();
+  renderCarpTables();
+  showToast(`✅ Parametri aggiornati con successo su ${indices.length} compattatori.`);
+}
+
 function addCarpVehicleRow() {
   if (!State.carpConfig) return;
   if (!State.carpConfig.vehicles) State.carpConfig.vehicles = [];
@@ -3475,7 +3670,11 @@ function addCarpVehicleRow() {
   State.carpConfig.vehicles.push({
     name: `Compattatore_${nextNum}`,
     capacity_kg: 4500,
-    fixed_cost: 100.0,
+    crew_size: 1,
+    driver_rate: 22.0,
+    vehicle_daily: 40.0,
+    fixed_cost: 150.0,
+    cost_per_km: 1.20,
     description: `Compattatore RSU #${nextNum}`
   });
   renderCarpTables();
@@ -3498,19 +3697,43 @@ function removeCarpVehicle(idx) {
 
 function updateCarpVehicleCapacity(idx, val) {
   if (!State.carpConfig || !State.carpConfig.vehicles[idx]) return;
-  State.carpConfig.vehicles[idx].capacity_kg = parseFloat(val) || 4500;
+  const qt = parseFloat(val) || 45.0;
+  State.carpConfig.vehicles[idx].capacity_kg = qt * 100.0;
   updateCarpFleetCapacitySummary();
 }
 
-function updateCarpVehicleCost(idx, val) {
+function updateCarpVehicleCrew(idx, val) {
   if (!State.carpConfig || !State.carpConfig.vehicles[idx]) return;
-  State.carpConfig.vehicles[idx].fixed_cost = parseFloat(val) || 100.0;
+  const v = State.carpConfig.vehicles[idx];
+  v.crew_size = parseInt(val) || 1;
+  const dRate = parseFloat(v.driver_rate !== undefined ? v.driver_rate : 22.0);
+  const vDaily = parseFloat(v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0);
+  v.fixed_cost = Math.round((dRate * v.crew_size * 5.0 + vDaily) * 100) / 100;
+  renderCarpTables();
+}
+
+function updateCarpVehicleField(idx, field, val) {
+  if (!State.carpConfig || !State.carpConfig.vehicles[idx]) return;
+  const v = State.carpConfig.vehicles[idx];
+  v[field] = parseFloat(val) || 0.0;
+  if (field === 'driver_rate' || field === 'vehicle_daily') {
+    const dRate = parseFloat(v.driver_rate !== undefined ? v.driver_rate : 22.0);
+    const vDaily = parseFloat(v.vehicle_daily !== undefined ? v.vehicle_daily : 40.0);
+    const crew = parseInt(v.crew_size || 1);
+    v.fixed_cost = Math.round((dRate * crew * 5.0 + vDaily) * 100) / 100;
+  }
+  updateCarpFleetCapacitySummary();
+  if (field === 'driver_rate' || field === 'vehicle_daily') {
+    renderCarpTables();
+  }
 }
 
 function updateCarpStreetDemand(idx, val) {
   if (!State.carpConfig || !State.carpConfig.streets || !State.carpConfig.streets[idx]) return;
-  State.carpConfig.streets[idx].demand_kg = parseFloat(val) || 0;
+  const qt = parseFloat(val) || 0;
+  State.carpConfig.streets[idx].demand_kg = Math.round(qt * 100.0 * 10) / 10;
   State.carpConfig.streets[idx].manual_override = true;
+  updateCarpFleetCapacitySummary();
   renderCarpTables();
 }
 
@@ -3688,7 +3911,7 @@ async function solveCarp() {
     const solvedQt = (solvedKg / 100.0).toFixed(1);
     document.getElementById('carpStatus').innerText = data.status;
     document.getElementById('carpCost').innerText = data.objective_value ? `${data.objective_value.toFixed(2)} €` : 'N/D';
-    document.getElementById('carpDemand').innerText = `${solvedQt} qt (${solvedKg.toLocaleString()} kg)`;
+    document.getElementById('carpDemand').innerText = `${solvedQt} qt`;
 
     // Calcolo KPI aggiuntivi Layout 1 (Compattatori Attivi, Saturazione Media, Rete & Efficienza)
     const vEntries = Object.entries(data.vehicles || {});
@@ -4029,7 +4252,7 @@ function renderCarpVehicleReport(data) {
           movesHtml += `
             <div style="font-size: 11.5px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
               <span><b style="color: #34d399;">Tappa ${mIdx + 1}. [RACCOLTA]</b> <b>${sName}</b> &bull; <span style="color:#38bdf8; font-weight:600;">Direzione: ${dirInfo.cardinal}</span></span>
-              <span style="color: var(--text-secondary);"><b style="color:#34d399;">${m.demand_kg} kg</b> | Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
+              <span style="color: var(--text-secondary);"><b style="color:#34d399;">${(m.demand_kg / 100.0).toFixed(1)} qt</b> | Costo: ${parseFloat(m.cost).toFixed(1)} €</span>
             </div>
           `;
         } else {
@@ -4057,8 +4280,8 @@ function renderCarpVehicleReport(data) {
           </span>
         </td>
         <td>
-          <b>${collected.toLocaleString()} kg</b> <span style="color: #fbbf24; font-weight: 600;">(${collectedQt} qt)</span>
-          <br><small style="color: var(--text-muted); font-size: 10.5px;">su ${capacity.toLocaleString()} kg max</small>
+          <b>${collectedQt} qt</b>
+          <br><small style="color: var(--text-muted); font-size: 10.5px;">su ${(capacity / 100.0).toFixed(1)} qt max</small>
         </td>
         <td style="min-width: 140px;">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -4118,7 +4341,7 @@ function renderCarpVehicleReport(data) {
         <td colspan="11" style="padding: 10px 14px;">
           <div style="font-size: 12px; font-weight: 700; color: ${color}; margin-bottom: 6px; display: flex; justify-content: space-between;">
             <span>🗺️ Foglio di Marcia Sequenziale — ${vName} (${serviceMoves.length} tratte servite, ${transitCount} transiti a vuoto, ${distKm.toFixed(1)} km)</span>
-            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: ${collected.toLocaleString()} kg (${collectedQt} qt) | Carico specifico: ${workloadQtKm.toFixed(2)} qt/km | Durata: ${durFormatted}</span>
+            <span style="color: var(--text-muted); font-weight: 400;">Totale raccolto: <b>${collectedQt} qt</b> | Carico specifico: ${workloadQtKm.toFixed(2)} qt/km | Durata: ${durFormatted}</span>
           </div>
           <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(9, 15, 29, 0.9); padding: 4px;">
             ${movesHtml}
@@ -8043,7 +8266,8 @@ function renderCarpLeafletMap(cfg, res) {
     };
     const zoneBadge = zLabels[s.zone_type] || '🏠 Residenziale Standard';
     const dayBadge = s.day ? `Giorno ${s.day}` : 'Giorno 1';
-    poly.bindTooltip(`<b>${s.name}</b> (${lm.toFixed(0)}m)<br>📅 <b>${dayBadge}</b> &bull; ${zoneBadge}<br>Rifiuti: <b>${s.demand_kg || 0} kg</b>`, { sticky: true });
+    const sDemQt = (parseFloat(s.demand_kg || 0) / 100.0).toFixed(1);
+    poly.bindTooltip(`<b>${s.name}</b> (${lm.toFixed(0)}m)<br>📅 <b>${dayBadge}</b> &bull; ${zoneBadge}<br>Rifiuti: <b>${sDemQt} qt</b>`, { sticky: true });
 
     // Click handler sulla tratta: modifica o eliminazione diretta
     poly.on('click', function(e) {
@@ -8079,8 +8303,8 @@ function renderCarpLeafletMap(cfg, res) {
             </select>
           </div>
           <div style="margin-bottom: 8px;">
-            <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Rifiuti da raccogliere (kg):</label>
-            <input type="number" id="mapPopupDemand_${s.id}" class="cell-inp" style="width: 100%; font-size: 12px; padding: 4px;" value="${s.demand_kg || 0}" step="20">
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 2px;">Rifiuti da raccogliere (qt):</label>
+            <input type="number" id="mapPopupDemand_${s.id}" class="cell-inp" style="width: 100%; font-size: 12px; padding: 4px;" value="${sDemQt}" step="0.1">
           </div>
           <div style="display: flex; gap: 6px; margin-top: 10px;">
             <button class="btn btn-primary btn-sm" style="flex: 1; font-size: 11px; padding: 4px;" onclick="saveStreetFromMapPopup('${s.id}')">💾 Salva</button>
@@ -8141,11 +8365,11 @@ function renderCarpLeafletMap(cfg, res) {
           <b>🚛 ${vName} &mdash; TAPPA #${stepIdx}</b><br>
           Via: <b>${sName}</b><br>
           Senso di marcia: <b style="color:#38bdf8;">${dirInfo.cardinal}</b><br>
-          Azione: <b>${isService ? '🟢 RACCOLTA ATTIVA (' + m.demand_kg + ' kg)' : '🟡 TRANSITO DI COLLEGAMENTO'}</b><br>
+          Azione: <b>${isService ? '🟢 RACCOLTA ATTIVA (' + (parseFloat(m.demand_kg || 0) / 100.0).toFixed(1) + ' qt)' : '🟡 TRANSITO DI COLLEGAMENTO'}</b><br>
           Costo tratta: ${parseFloat(m.cost).toFixed(2)} €
         `;
         movePoly.bindPopup(popupText);
-        movePoly.bindTooltip(`Tappa #${stepIdx}: ${vName} &bull; ${sName} (${dirInfo.cardinal}) | ${isService ? m.demand_kg + ' kg' : 'Transito'}`, { sticky: true });
+        movePoly.bindTooltip(`Tappa #${stepIdx}: ${vName} &bull; ${sName} (${dirInfo.cardinal}) | ${isService ? (parseFloat(m.demand_kg || 0) / 100.0).toFixed(1) + ' qt' : 'Transito'}`, { sticky: true });
 
         // Aggiungi frecce direzionali lungo la tratta del compattatore
         if (typeof L.polylineDecorator !== 'undefined') {
@@ -8258,7 +8482,7 @@ function handleMapClickForAddStreet(e) {
     const nextNum = ((State.carpConfig && State.carpConfig.streets) ? State.carpConfig.streets.length : 0) + 1;
 
     if (nameInp) nameInp.value = `Nuova Via ${nextNum}`;
-    if (demandInp) demandInp.value = '1200';
+    if (demandInp) demandInp.value = '12.0';
     if (modal) modal.style.display = 'flex';
   }
 }
@@ -8271,7 +8495,8 @@ function confirmAddStreetFromMap() {
   const nameInp = document.getElementById('inpNewStreetName');
   const demandInp = document.getElementById('inpNewStreetDemand');
   const streetName = (nameInp && nameInp.value.trim()) ? nameInp.value.trim() : 'Nuova Via';
-  const demandKg = parseFloat(demandInp ? demandInp.value : 1000) || 0;
+  const demandQt = parseFloat(demandInp ? demandInp.value : 12.0) || 0;
+  const demandKg = Math.round(demandQt * 100.0 * 10) / 10;
 
   if (!State.carpConfig) State.carpConfig = { nodes: [], streets: [], vehicles: [] };
   if (!State.carpConfig.nodes) State.carpConfig.nodes = [];
@@ -8317,7 +8542,7 @@ function confirmAddStreetFromMap() {
     body: JSON.stringify(State.carpConfig)
   }).catch(() => {});
 
-  showToast(`✅ Via '${streetName}' (${demandKg} kg) aggiunta alla rete stradale!`);
+  showToast(`✅ Via '${streetName}' (${demandQt.toFixed(1)} qt) aggiunta alla rete stradale!`);
 }
 
 function toggleMapDeleteStreetMode() {
@@ -8405,7 +8630,7 @@ function saveStreetFromMapPopup(streetId) {
   const dayInp = document.getElementById(`mapPopupDay_${streetId}`);
 
   if (nameInp && nameInp.value.trim()) st.name = nameInp.value.trim();
-  if (demandInp) st.demand_kg = Math.max(0, parseFloat(demandInp.value) || 0);
+  if (demandInp) st.demand_kg = Math.max(0, Math.round((parseFloat(demandInp.value) || 0) * 100.0 * 10) / 10);
   if (zoneInp) st.zone_type = zoneInp.value;
   if (dayInp) st.day = parseInt(dayInp.value) || 1;
   st.manual_override = true;
@@ -8509,7 +8734,7 @@ function openCarpDriverSheet(vName) {
   let plainText = `====================================================\n`;
   plainText += `🚛 FOGLIO DI VIAGGIO RACCOLTA RSU - ${vName}\n`;
   plainText += `Base di Partenza e Rientro: ${depName}\n`;
-  plainText += `Carico Totale Previsto: ${collected.toLocaleString()} kg / ${capacity.toLocaleString()} kg (${satPct}%)\n`;
+  plainText += `Carico Totale Previsto: ${(collected / 100.0).toFixed(1)} qt / ${(capacity / 100.0).toFixed(1)} qt (${satPct}%)\n`;
   plainText += `Durata Stimata Turno: ${durFormatted}\n`;
   plainText += `====================================================\n\n`;
   plainText += `SEQUENZA ORDINATA DEL TRAGITTO DI RACCOLTA:\n\n`;
@@ -8556,26 +8781,26 @@ function openCarpDriverSheet(vName) {
           ${actionBadge}
         </td>
         <td style="text-align: right; font-weight: 700; font-size: 13px; color: ${isService ? '#34d399' : '#94a3b8'};">
-          ${isService ? dKg.toLocaleString() + ' kg' : '—'}
+          ${isService ? (dKg / 100.0).toFixed(1) + ' qt' : '—'}
         </td>
       </tr>
     `;
 
     plainText += `${stepNum}. ${sName}\n`;
     plainText += `   Senso di marcia: ${dirInfo.cardinal}\n`;
-    plainText += `   Azione: ${isService ? 'RACCOLTA (' + dKg + ' kg)' : 'Transito di collegamento'}\n\n`;
+    plainText += `   Azione: ${isService ? 'RACCOLTA (' + (dKg / 100.0).toFixed(1) + ' qt)' : 'Transito di collegamento'}\n\n`;
 
     stepNum++;
   });
 
-  plainText += `Totale Rifiuti Raccolti a Bordo: ${collected.toLocaleString()} kg\n`;
+  plainText += `Totale Rifiuti Raccolti a Bordo: ${(collected / 100.0).toFixed(1)} qt\n`;
   State._lastDriverSheetText = plainText;
 
   if (content) {
     content.innerHTML = `
       <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12.5px;">
         <div>Base di Partenza: <b style="color:#e2e8f0;">${depName}</b></div>
-        <div>Carico Totale: <b style="color:#34d399;">${collected.toLocaleString()} kg</b> <small>(${satPct}% capienza)</small></div>
+        <div>Carico Totale: <b style="color:#34d399;">${(collected / 100.0).toFixed(1)} qt</b> <small>(${satPct}% capienza)</small></div>
         <div>Durata Stimata: <b style="color:#fbbf24;">${durFormatted}</b></div>
         <div>Tappe Totali: <b style="color:#38bdf8;">${movements.length} tratte</b></div>
       </div>
