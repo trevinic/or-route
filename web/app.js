@@ -9802,12 +9802,12 @@ document.addEventListener('keydown', function(e) {
 // =========================================================================
 
 const MONETIZATION_CONFIG = {
-  paypalUrl: 'https://www.paypal.com/paypalme/orroute',
-  bmcUrl: 'https://www.buymeacoffee.com/orroute',
-  revolutUrl: 'https://revolut.me/orroute',
-  satispayUrl: 'https://www.satispay.com',
-  walletTag: '@or-route-official',
-  walletAddress: 'IT60X0542811101000000123456',
+  paypalUrl: 'https://www.paypal.com/paypalme/nicolatrevi',
+  bmcUrl: 'https://www.paypal.com/paypalme/nicolatrevi',
+  solanaWallet: 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn',
+  ibanAddress: 'IT39Q0320502000000099239686',
+  walletTag: 'https://www.paypal.com/paypalme/nicolatrevi',
+  walletAddress: 'IT39Q0320502000000099239686',
   adsensePublisherId: 'ca-pub-XXXXXXXXXXXXXXXX',
   selectedDonationEur: 5
 };
@@ -9817,6 +9817,22 @@ function loadMonetizationConfig() {
     const saved = localStorage.getItem('or_route_monetization_cfg');
     if (saved) {
       const parsed = JSON.parse(saved);
+      // Sovrascrive vecchi valori demo se presenti in cache
+      if (parsed.paypalUrl && parsed.paypalUrl.includes('orroute')) {
+        parsed.paypalUrl = 'https://www.paypal.com/paypalme/nicolatrevi';
+      }
+      if (parsed.bmcUrl && parsed.bmcUrl.includes('orroute')) {
+        parsed.bmcUrl = 'https://www.paypal.com/paypalme/nicolatrevi';
+      }
+      if (parsed.walletAddress && parsed.walletAddress === 'IT60X0542811101000000123456') {
+        parsed.walletAddress = 'IT39Q0320502000000099239686';
+      }
+      if (parsed.walletTag && parsed.walletTag === '@or-route-official') {
+        parsed.walletTag = 'https://www.paypal.com/paypalme/nicolatrevi';
+      }
+      if (!parsed.solanaWallet) {
+        parsed.solanaWallet = 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
+      }
       Object.assign(MONETIZATION_CONFIG, parsed);
     }
   } catch (e) {
@@ -9826,26 +9842,36 @@ function loadMonetizationConfig() {
 }
 
 function syncMonetizationFieldsUI() {
-  const tagEl = document.getElementById('walletTagDisplay');
-  if (tagEl) tagEl.innerText = MONETIZATION_CONFIG.walletTag || '@or-route-official';
+  const solanaAddr = MONETIZATION_CONFIG.solanaWallet || 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
+  const ibanAddr = MONETIZATION_CONFIG.walletAddress || 'IT39Q0320502000000099239686';
+  const paypalLink = MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
+
+  const solEl = document.getElementById('solanaWalletDisplay');
+  if (solEl) solEl.innerText = solanaAddr;
+
+  const inlineSolEl = document.getElementById('inlineSolanaDisplay');
+  if (inlineSolEl) inlineSolEl.innerText = solanaAddr;
 
   const addrEl = document.getElementById('walletAddressDisplay');
-  if (addrEl) addrEl.innerText = MONETIZATION_CONFIG.walletAddress || 'IT60X0542811101000000123456';
+  if (addrEl) addrEl.innerText = ibanAddr;
+
+  const inlineIbanEl = document.getElementById('inlineIbanDisplay');
+  if (inlineIbanEl) inlineIbanEl.innerText = ibanAddr;
+
+  const tagEl = document.getElementById('walletTagDisplay');
+  if (tagEl) tagEl.innerText = paypalLink;
 
   const inpPaypal = document.getElementById('cfgPaypalUrl');
-  if (inpPaypal) inpPaypal.value = MONETIZATION_CONFIG.paypalUrl || '';
+  if (inpPaypal) inpPaypal.value = paypalLink;
 
-  const inpBmc = document.getElementById('cfgBmcUrl');
-  if (inpBmc) inpBmc.value = MONETIZATION_CONFIG.bmcUrl || '';
-
-  const inpRev = document.getElementById('cfgRevolutUrl');
-  if (inpRev) inpRev.value = MONETIZATION_CONFIG.revolutUrl || '';
-
-  const inpSat = document.getElementById('cfgSatispayUrl');
-  if (inpSat) inpSat.value = MONETIZATION_CONFIG.satispayUrl || '';
+  const inpSol = document.getElementById('cfgSolanaWallet');
+  if (inpSol) inpSol.value = solanaAddr;
 
   const inpWal = document.getElementById('cfgWalletAddress');
-  if (inpWal) inpWal.value = MONETIZATION_CONFIG.walletAddress || '';
+  if (inpWal) inpWal.value = ibanAddr;
+
+  const inpBmc = document.getElementById('cfgBmcUrl');
+  if (inpBmc) inpBmc.value = MONETIZATION_CONFIG.bmcUrl || paypalLink;
 
   const inpAds = document.getElementById('cfgAdsenseId');
   if (inpAds) inpAds.value = MONETIZATION_CONFIG.adsensePublisherId || '';
@@ -9853,22 +9879,21 @@ function syncMonetizationFieldsUI() {
 
 function saveMonetizationConfig() {
   const paypal = document.getElementById('cfgPaypalUrl')?.value.trim();
-  const bmc = document.getElementById('cfgBmcUrl')?.value.trim();
-  const rev = document.getElementById('cfgRevolutUrl')?.value.trim();
-  const sat = document.getElementById('cfgSatispayUrl')?.value.trim();
+  const sol = document.getElementById('cfgSolanaWallet')?.value.trim();
   const wal = document.getElementById('cfgWalletAddress')?.value.trim();
+  const bmc = document.getElementById('cfgBmcUrl')?.value.trim();
   const ads = document.getElementById('cfgAdsenseId')?.value.trim();
 
-  if (paypal) MONETIZATION_CONFIG.paypalUrl = paypal;
-  if (bmc) MONETIZATION_CONFIG.bmcUrl = bmc;
-  if (rev) {
-    MONETIZATION_CONFIG.revolutUrl = rev;
-    const parts = rev.split('/');
-    const lastPart = parts[parts.length - 1];
-    if (lastPart) MONETIZATION_CONFIG.walletTag = lastPart.startsWith('@') ? lastPart : '@' + lastPart;
+  if (paypal) {
+    MONETIZATION_CONFIG.paypalUrl = paypal.startsWith('http') || paypal.includes('@') ? paypal : 'https://' + paypal;
+    MONETIZATION_CONFIG.walletTag = MONETIZATION_CONFIG.paypalUrl;
   }
-  if (sat) MONETIZATION_CONFIG.satispayUrl = sat;
-  if (wal) MONETIZATION_CONFIG.walletAddress = wal;
+  if (sol) MONETIZATION_CONFIG.solanaWallet = sol;
+  if (wal) {
+    MONETIZATION_CONFIG.walletAddress = wal;
+    MONETIZATION_CONFIG.ibanAddress = wal;
+  }
+  if (bmc) MONETIZATION_CONFIG.bmcUrl = bmc;
   if (ads) MONETIZATION_CONFIG.adsensePublisherId = ads;
 
   try {
@@ -9876,7 +9901,7 @@ function saveMonetizationConfig() {
   } catch (e) {}
 
   syncMonetizationFieldsUI();
-  showToast('✅ Coordinate di monetizzazione (PayPal, Portafoglio Digitale e AdSense) salvate!');
+  showToast('✅ Coordinate di monetizzazione (PayPal, Wallet Solana e IBAN) salvate!');
   switchSupportCoffeeTab('paypal');
 }
 
@@ -9954,7 +9979,10 @@ function executeDonationPayment(provider) {
   const amount = MONETIZATION_CONFIG.selectedDonationEur || 5;
 
   if (provider === 'paypal') {
-    let base = (MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/orroute').replace(/\/+$/, '');
+    let base = (MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/nicolatrevi').replace(/\/+$/, '');
+    if (!base.startsWith('http') && !base.includes('@')) {
+      base = 'https://' + base;
+    }
     let targetUrl = base;
     if (base.includes('paypal.me') || base.includes('paypalme')) {
       targetUrl = `${base}/${amount}EUR`;
@@ -9962,31 +9990,34 @@ function executeDonationPayment(provider) {
       targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(base)}&currency_code=EUR&amount=${amount}&item_name=${encodeURIComponent('Supporto Progetto OR-Route')}`;
     }
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    showToast(`☕ Apertura PayPal per donazione libera di ${amount}€... Grazie per il tuo supporto!`);
+    showToast(`☕ Apertura PayPal (paypal.me/nicolatrevi) per donazione di ${amount}€... Grazie per il tuo supporto!`);
   } else if (provider === 'bmc') {
-    const targetUrl = MONETIZATION_CONFIG.bmcUrl || 'https://www.buymeacoffee.com/orroute';
+    const targetUrl = MONETIZATION_CONFIG.bmcUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    showToast(`☕ Apertura pagina Buy Me a Coffee... Grazie per il supporto!`);
-  } else if (provider === 'revolut') {
-    const targetUrl = MONETIZATION_CONFIG.revolutUrl || 'https://revolut.me/orroute';
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    showToast(`⚡ Apertura Revolut.Me per versamento di ${amount}€!`);
-  } else if (provider === 'satispay') {
-    const targetUrl = MONETIZATION_CONFIG.satispayUrl || 'https://www.satispay.com';
-    window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    showToast(`📲 Apertura Satispay per versamento rapido!`);
+    showToast(`☕ Apertura pagina di supporto... Grazie!`);
   }
 }
 
 function copyWalletField(fieldType) {
-  const textToCopy = (fieldType === 'tag')
-    ? (MONETIZATION_CONFIG.walletTag || '@or-route-official')
-    : (MONETIZATION_CONFIG.walletAddress || 'IT60X0542811101000000123456');
+  loadMonetizationConfig();
+  let textToCopy = '';
+  let label = 'Valore';
+
+  if (fieldType === 'solana') {
+    textToCopy = MONETIZATION_CONFIG.solanaWallet || 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
+    label = 'Wallet Solana (SOL)';
+  } else if (fieldType === 'iban' || fieldType === 'address') {
+    textToCopy = MONETIZATION_CONFIG.walletAddress || 'IT39Q0320502000000099239686';
+    label = 'IBAN';
+  } else {
+    textToCopy = MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
+    label = 'Link PayPal';
+  }
 
   navigator.clipboard.writeText(textToCopy).then(() => {
-    showToast(`📋 Copiato negli appunti: ${textToCopy}`);
+    showToast(`📋 ${label} copiato negli appunti: ${textToCopy}`);
   }).catch(() => {
-    showToast(`Valore: ${textToCopy}`);
+    showToast(`${label}: ${textToCopy}`);
   });
 }
 

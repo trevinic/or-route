@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Foglio di Stile Personalizzato -->
-  <link rel="stylesheet" href="style.css?v=20261115_1145">
+  <link rel="stylesheet" href="style.css?v=20261115_1420">
 
   <!-- Libreria Cartografica Interattiva Leaflet GIS (OSM Stradario) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
@@ -448,7 +448,7 @@
             <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(245, 158, 11, 0.16); border: 1px solid rgba(245, 158, 11, 0.45); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">☕</div>
             <div>
               <div style="font-size: 14px; font-weight: 800; color: #fbbf24;">Buy Me a Coffee &bull; Sostieni il Progetto</div>
-              <div style="font-size: 12px; color: #cbd5e1;">Donazione libera tramite <b>PayPal</b>, <b>Revolut</b>, <b>Satispay</b> o <b>Portafoglio Digitale</b></div>
+              <div style="font-size: 12px; color: #cbd5e1;">Donazione libera tramite <b>PayPal</b>, <b>Wallet Solana (SOL)</b> o <b>Bonifico IBAN</b></div>
             </div>
           </div>
           <button type="button" class="btn-coffee-header" onclick="openSupportCoffeeModal()" style="white-space: nowrap;">
@@ -3976,7 +3976,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           </h2>
 
           <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px;">
-            Manteniamo questa piattaforma di <b>Ricerca Operativa e Cartografia GIS aperta, gratuita e priva di paywall</b> per ingegneri, fleet manager, pubbliche amministrazioni e studenti. Se gli algoritmi ti sono stati utili, puoi fare una <b>libera donazione</b> tramite <b>PayPal</b> o <b>Portafoglio Digitale (Revolut, Satispay, Wallet)</b> per contribuire ai costi dei server e del dominio:
+            Manteniamo questa piattaforma di <b>Ricerca Operativa e Cartografia GIS aperta, gratuita e priva di paywall</b> per ingegneri, fleet manager, pubbliche amministrazioni e studenti. Se gli algoritmi ti sono stati utili, puoi fare una <b>libera donazione</b> tramite <b>PayPal (`paypal.me/nicolatrevi`)</b>, <b>Wallet Circuito Solana</b> o <b>Bonifico IBAN</b> per contribuire ai costi dei server e del dominio:
           </p>
 
           <!-- Selettore Importo Rapido Donazione -->
@@ -3990,9 +3990,27 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
               <input type="number" id="inlineCustomCoffeeAmount" min="1" max="1000" step="1" value="5" style="width: 58px; background: transparent; border: none; color: #fff; font-weight: 800; font-size: 13.5px; outline: none; text-align: center;" onchange="setCustomCoffeeAmount(this.value)">
             </div>
           </div>
+
+          <!-- Coordinate Dirette Rapide (Solana & IBAN) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
+            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="min-width: 0;">
+                <div style="font-size: 10.5px; color: #c084fc; font-weight: 700; text-transform: uppercase;">🟣 Wallet Solana (SOL / USDC)</div>
+                <div id="inlineSolanaDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn</div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; flex-shrink: 0;" onclick="copyWalletField('solana')">📋 Copia</button>
+            </div>
+            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="min-width: 0;">
+                <div style="font-size: 10.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">🏦 Coordinate IBAN</div>
+                <div id="inlineIbanDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">IT39Q0320502000000099239686</div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; flex-shrink: 0;" onclick="copyWalletField('iban')">📋 Copia</button>
+            </div>
+          </div>
         </div>
 
-        <!-- Pannello Azioni Versamento Diretto (PayPal / BuyMeACoffee / Digital Wallet) -->
+        <!-- Pannello Azioni Versamento Diretto (PayPal / Solana / IBAN) -->
         <div style="background: rgba(10, 16, 30, 0.88); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Importo Donazione Libera:</span>
@@ -4000,15 +4018,15 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           </div>
 
           <button type="button" class="btn btn-paypal-donate" style="width: 100%; justify-content: center; padding: 11px 16px; font-size: 14px;" onclick="executeDonationPayment('paypal')">
-            <span>💳</span> Dona Ora con PayPal &nearr;
-          </button>
-
-          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 11px 16px; font-size: 14px; border-radius: 6px;" onclick="executeDonationPayment('bmc')">
-            <span>☕</span> Buy Me a Coffee / Carta &nearr;
+            <span>💳</span> Dona con PayPal (paypal.me/nicolatrevi) &nearr;
           </button>
 
           <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px;" onclick="openSupportCoffeeModal('wallet')">
-            <span>📱</span> Portafoglio Digitale (Revolut / Satispay / IBAN)
+            <span>🟣</span> Wallet Solana (SOL) &amp; Bonifico IBAN
+          </button>
+
+          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px; border-radius: 6px;" onclick="copyWalletField('solana')">
+            <span>📋</span> Copia Indirizzo Solana con 1 Click
           </button>
 
           <div style="text-align: center; margin-top: 4px;">
@@ -4405,7 +4423,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1145"></script>
+  <script src="app.js?v=20261115_1420"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
@@ -4880,79 +4898,72 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
 
         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
           <button type="button" class="btn btn-paypal-donate" style="width: 100%; justify-content: center; padding: 12px; font-size: 14.5px;" onclick="executeDonationPayment('paypal')">
-            <span>💳</span> Versamento Immediato con PayPal (PayPal.Me) &nearr;
+            <span>💳</span> Versamento Immediato con PayPal (paypal.me/nicolatrevi) &nearr;
           </button>
 
-          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 12px; font-size: 14.5px; border-radius: 8px;" onclick="executeDonationPayment('bmc')">
-            <span>☕</span> Dona su Buy Me a Coffee / Carta / Apple Pay &nearr;
+          <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; border-radius: 8px;" onclick="switchSupportCoffeeTab('wallet')">
+            <span>🟣</span> Dona su Wallet Circuito Solana (SOL) o Bonifico IBAN &rarr;
           </button>
         </div>
 
         <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #94a3b8;">
-          🔒 <b>Transazione Sicura:</b> il versamento avviene direttamente sulle pagine ufficiali crittografate di PayPal o Buy Me a Coffee senza alcuna commissione aggiuntiva per il donatore.
+          🔒 <b>Transazione Sicura:</b> il versamento avviene direttamente sulla pagina ufficiale crittografata <code>paypal.me/nicolatrevi</code> oppure tramite trasferimento diretto sul circuito Solana / IBAN.
         </div>
       </div>
 
-      <!-- TAB 2: PORTAFOGLIO DIGITALE (REVOLUT / SATISPAY / CRYPTO / IBAN) -->
+      <!-- TAB 2: PORTAFOGLIO DIGITALE (SOLANA WALLET / IBAN / PAYPAL) -->
       <div id="coffeePanelWallet" style="display: none;">
         <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 12px;">
-          Puoi inviare una donazione istantanea dal tuo smartphone o home banking verso uno dei seguenti <b>Portafogli Digitali</b>:
+          Puoi inviare una donazione istantanea tramite <b>Wallet Circuito Solana (SOL / USDC / USDT)</b>, <b>Bonifico Bancario IBAN</b> o <b>PayPal</b>:
         </p>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-          <button type="button" class="btn btn-blue" style="justify-content: center; padding: 10px;" onclick="executeDonationPayment('revolut')">
-            ⚡ Apri Revolut.Me &nearr;
-          </button>
-          <button type="button" class="btn btn-primary" style="justify-content: center; padding: 10px;" onclick="executeDonationPayment('satispay')">
-            📲 Paga con Satispay &nearr;
-          </button>
+        <div style="font-size: 11.5px; font-weight: 700; color: #c084fc; margin-bottom: 5px;">
+          🟣 Indirizzo Wallet Circuito Solana (SOL / USDC / USDT):
+        </div>
+        <div class="wallet-address-box" style="border-color: rgba(168, 85, 247, 0.45); color: #e9d5ff;">
+          <span id="solanaWalletDisplay" style="overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;">FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap;" onclick="copyWalletField('solana')">📋 Copia Wallet Solana</button>
+        </div>
+
+        <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 5px;">
+          🏦 Coordinate IBAN Bonifico Bancario (SEPA / Istantaneo):
+        </div>
+        <div class="wallet-address-box">
+          <span id="walletAddressDisplay" style="overflow: hidden; text-overflow: ellipsis;">IT39Q0320502000000099239686</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap;" onclick="copyWalletField('iban')">📋 Copia IBAN</button>
         </div>
 
         <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px;">
-          📌 Tag Revolut / PayPal / Satispay Rapido:
+          💳 Link Diretto PayPal.Me:
         </div>
         <div class="wallet-address-box">
-          <span id="walletTagDisplay" style="overflow: hidden; text-overflow: ellipsis;">@or-route-official</span>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="copyWalletField('tag')">📋 Copia Tag</button>
-        </div>
-
-        <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px;">
-          🏦 Coordinate IBAN / Portafoglio Digitale (USDT / BTC / ETH):
-        </div>
-        <div class="wallet-address-box">
-          <span id="walletAddressDisplay" style="overflow: hidden; text-overflow: ellipsis;">IT60X0542811101000000123456</span>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="copyWalletField('address')">📋 Copia Indirizzo</button>
+          <span id="walletTagDisplay" style="overflow: hidden; text-overflow: ellipsis;">https://www.paypal.com/paypalme/nicolatrevi</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap;" onclick="copyWalletField('paypal')">📋 Copia PayPal</button>
         </div>
       </div>
 
       <!-- TAB 3: CONFIGURAZIONE COORDINATE PROPRIETARIO SITO -->
       <div id="coffeePanelConfig" style="display: none;">
         <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px;">
-          Personalizza i tuoi link di incasso per il dominio pubblico (vengono salvati e applicati istantaneamente a tutti i pulsanti della piattaforma):
+          Coordinate ufficiali configurate per il dominio pubblico (vengono salvate e applicate a tutti i pulsanti della piattaforma):
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
           <div>
             <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link PayPal.Me o Email PayPal:</label>
-            <input type="text" id="cfgPaypalUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://www.paypal.com/paypalme/tuonome">
+            <input type="text" id="cfgPaypalUrl" class="landing-input" style="margin-bottom: 0;" value="https://www.paypal.com/paypalme/nicolatrevi" placeholder="es. https://www.paypal.com/paypalme/nicolatrevi">
           </div>
           <div>
-            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Ko-fi:</label>
-            <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://www.buymeacoffee.com/tuonome">
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div>
-              <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Revolut.Me / Tag:</label>
-              <input type="text" id="cfgRevolutUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://revolut.me/tuonome">
-            </div>
-            <div>
-              <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Satispay:</label>
-              <input type="text" id="cfgSatispayUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://www.satispay.com/...">
-            </div>
+            <label style="font-size: 11.5px; color: #c084fc; font-weight: 600; display: block; margin-bottom: 3px;">Indirizzo Wallet Circuito Solana (SOL / USDC / USDT):</label>
+            <input type="text" id="cfgSolanaWallet" class="landing-input" style="margin-bottom: 0;" value="FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn" placeholder="es. FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn">
           </div>
           <div>
-            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">IBAN o Indirizzo Portafoglio Digitale (Wallet):</label>
-            <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" placeholder="es. IT60X... oppure 0x71C... (Crypto Wallet)">
+            <label style="font-size: 11.5px; color: #38bdf8; font-weight: 600; display: block; margin-bottom: 3px;">Coordinate IBAN Bonifico Bancario:</label>
+            <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" value="IT39Q0320502000000099239686" placeholder="es. IT39Q0320502000000099239686">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Stripe (opzionale):</label>
+            <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" value="https://www.paypal.com/paypalme/nicolatrevi" placeholder="es. https://www.buymeacoffee.com/tuonome">
           </div>
           <div>
             <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">ID Editore Google AdSense (Publisher ID):</label>
