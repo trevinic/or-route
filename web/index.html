@@ -4021,12 +4021,12 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
             <span>💳</span> Dona con PayPal (paypal.me/nicolatrevi) &nearr;
           </button>
 
-          <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px;" onclick="openSupportCoffeeModal('wallet')">
-            <span>🟣</span> Wallet Solana (SOL) &amp; Bonifico IBAN
+          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 11px 16px; font-size: 14px; border-radius: 6px;" onclick="executeDonationPayment('bmc')">
+            <span>☕</span> Buy Me a Coffee / Carta (buymeacoffee.com/ntrevi) &nearr;
           </button>
 
-          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px; border-radius: 6px;" onclick="copyWalletField('solana')">
-            <span>📋</span> Copia Indirizzo Solana con 1 Click
+          <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px;" onclick="openSupportCoffeeModal('wallet')">
+            <span>🟣</span> Wallet Solana (SOL) &amp; Bonifico IBAN
           </button>
 
           <div style="text-align: center; margin-top: 4px;">
@@ -4423,7 +4423,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1420"></script>
+  <script src="app.js?v=20261115_1435"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
@@ -4901,13 +4901,17 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
             <span>💳</span> Versamento Immediato con PayPal (paypal.me/nicolatrevi) &nearr;
           </button>
 
-          <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; border-radius: 8px;" onclick="switchSupportCoffeeTab('wallet')">
+          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 12px; font-size: 14.5px; border-radius: 8px;" onclick="executeDonationPayment('bmc')">
+            <span>☕</span> Buy Me a Coffee / Carta / Apple Pay (buymeacoffee.com/ntrevi) &nearr;
+          </button>
+
+          <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 11px; font-size: 13.5px; border-radius: 8px;" onclick="switchSupportCoffeeTab('wallet')">
             <span>🟣</span> Dona su Wallet Circuito Solana (SOL) o Bonifico IBAN &rarr;
           </button>
         </div>
 
         <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #94a3b8;">
-          🔒 <b>Transazione Sicura:</b> il versamento avviene direttamente sulla pagina ufficiale crittografata <code>paypal.me/nicolatrevi</code> oppure tramite trasferimento diretto sul circuito Solana / IBAN.
+          🔒 <b>Transazione Sicura:</b> il versamento avviene sulle pagine ufficiali crittografate <code>paypal.me/nicolatrevi</code> e <code>buymeacoffee.com/ntrevi</code> (Carte di Credito, Apple Pay, Google Pay) o tramite trasferimento diretto sul circuito Solana / IBAN.
         </div>
       </div>
 
@@ -4962,8 +4966,8 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
             <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" value="IT39Q0320502000000099239686" placeholder="es. IT39Q0320502000000099239686">
           </div>
           <div>
-            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Stripe (opzionale):</label>
-            <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" value="https://www.paypal.com/paypalme/nicolatrevi" placeholder="es. https://www.buymeacoffee.com/tuonome">
+            <label style="font-size: 11.5px; color: #fbbf24; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Carta di Credito:</label>
+            <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" value="https://buymeacoffee.com/ntrevi" placeholder="es. https://buymeacoffee.com/ntrevi">
           </div>
           <div>
             <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">ID Editore Google AdSense (Publisher ID):</label>

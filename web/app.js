@@ -9803,7 +9803,7 @@ document.addEventListener('keydown', function(e) {
 
 const MONETIZATION_CONFIG = {
   paypalUrl: 'https://www.paypal.com/paypalme/nicolatrevi',
-  bmcUrl: 'https://www.paypal.com/paypalme/nicolatrevi',
+  bmcUrl: 'https://buymeacoffee.com/ntrevi',
   solanaWallet: 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn',
   ibanAddress: 'IT39Q0320502000000099239686',
   walletTag: 'https://www.paypal.com/paypalme/nicolatrevi',
@@ -9821,8 +9821,8 @@ function loadMonetizationConfig() {
       if (parsed.paypalUrl && parsed.paypalUrl.includes('orroute')) {
         parsed.paypalUrl = 'https://www.paypal.com/paypalme/nicolatrevi';
       }
-      if (parsed.bmcUrl && parsed.bmcUrl.includes('orroute')) {
-        parsed.bmcUrl = 'https://www.paypal.com/paypalme/nicolatrevi';
+      if (!parsed.bmcUrl || parsed.bmcUrl.includes('orroute') || parsed.bmcUrl.includes('paypalme/nicolatrevi')) {
+        parsed.bmcUrl = 'https://buymeacoffee.com/ntrevi';
       }
       if (parsed.walletAddress && parsed.walletAddress === 'IT60X0542811101000000123456') {
         parsed.walletAddress = 'IT39Q0320502000000099239686';
@@ -9871,7 +9871,7 @@ function syncMonetizationFieldsUI() {
   if (inpWal) inpWal.value = ibanAddr;
 
   const inpBmc = document.getElementById('cfgBmcUrl');
-  if (inpBmc) inpBmc.value = MONETIZATION_CONFIG.bmcUrl || paypalLink;
+  if (inpBmc) inpBmc.value = MONETIZATION_CONFIG.bmcUrl || 'https://buymeacoffee.com/ntrevi';
 
   const inpAds = document.getElementById('cfgAdsenseId');
   if (inpAds) inpAds.value = MONETIZATION_CONFIG.adsensePublisherId || '';
@@ -9992,9 +9992,9 @@ function executeDonationPayment(provider) {
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
     showToast(`☕ Apertura PayPal (paypal.me/nicolatrevi) per donazione di ${amount}€... Grazie per il tuo supporto!`);
   } else if (provider === 'bmc') {
-    const targetUrl = MONETIZATION_CONFIG.bmcUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
+    const targetUrl = MONETIZATION_CONFIG.bmcUrl || 'https://buymeacoffee.com/ntrevi';
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    showToast(`☕ Apertura pagina di supporto... Grazie!`);
+    showToast(`☕ Apertura Buy Me a Coffee (buymeacoffee.com/ntrevi)... Grazie per il tuo supporto!`);
   }
 }
 
