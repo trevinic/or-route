@@ -9814,21 +9814,19 @@ const MONETIZATION_CONFIG = {
 
 function loadMonetizationConfig() {
   try {
-    const saved = localStorage.getItem('or_route_monetization_cfg');
+    // Rimuove eventuale vecchia cache v1 che poteva contenere una mail e attivare cmd=_donations (riservato a ONLUS)
+    localStorage.removeItem('or_route_monetization_cfg');
+    const saved = localStorage.getItem('or_route_monetization_v2');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Sovrascrive vecchi valori demo se presenti in cache
-      if (parsed.paypalUrl && parsed.paypalUrl.includes('orroute')) {
+      if (!parsed.paypalUrl || parsed.paypalUrl.includes('orroute') || parsed.paypalUrl.includes('@')) {
         parsed.paypalUrl = 'https://www.paypal.com/paypalme/nicolatrevi';
       }
       if (!parsed.bmcUrl || parsed.bmcUrl.includes('orroute') || parsed.bmcUrl.includes('paypalme/nicolatrevi')) {
         parsed.bmcUrl = 'https://buymeacoffee.com/ntrevi';
       }
-      if (parsed.walletAddress && parsed.walletAddress === 'IT60X0542811101000000123456') {
+      if (!parsed.walletAddress || parsed.walletAddress === 'IT60X0542811101000000123456') {
         parsed.walletAddress = 'IT39Q0320502000000099239686';
-      }
-      if (parsed.walletTag && parsed.walletTag === '@or-route-official') {
-        parsed.walletTag = 'https://www.paypal.com/paypalme/nicolatrevi';
       }
       if (!parsed.solanaWallet) {
         parsed.solanaWallet = 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
@@ -9897,11 +9895,11 @@ function saveMonetizationConfig() {
   if (ads) MONETIZATION_CONFIG.adsensePublisherId = ads;
 
   try {
-    localStorage.setItem('or_route_monetization_cfg', JSON.stringify(MONETIZATION_CONFIG));
+    localStorage.setItem('or_route_monetization_v2', JSON.stringify(MONETIZATION_CONFIG));
   } catch (e) {}
 
   syncMonetizationFieldsUI();
-  showToast('✅ Coordinate di monetizzazione (PayPal, Wallet Solana e IBAN) salvate!');
+  showToast('✅ Coordinate di monetizzazione (PayPal.Me, Buy Me a Coffee, Solana e IBAN) salvate!');
   switchSupportCoffeeTab('paypal');
 }
 
@@ -9985,12 +9983,14 @@ function executeDonationPayment(provider) {
     }
     let targetUrl = base;
     if (base.includes('paypal.me') || base.includes('paypalme')) {
-      targetUrl = `${base}/${amount}EUR`;
+      // PayPal.Me personale per invio diretto di denaro (senza passare per il modulo ONLUS _donations)
+      targetUrl = `${base}/${amount}`;
     } else if (base.includes('@')) {
-      targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(base)}&currency_code=EUR&amount=${amount}&item_name=${encodeURIComponent('Supporto Progetto OR-Route')}`;
+      // Usa _xclick (invio pagamento standard) e MAI _donations (che richiede conto ente no-profit/ONLUS)
+      targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(base)}&currency_code=EUR&amount=${amount}&item_name=${encodeURIComponent('Supporto Progetto OR-Route')}`;
     }
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    showToast(`☕ Apertura PayPal (paypal.me/nicolatrevi) per donazione di ${amount}€... Grazie per il tuo supporto!`);
+    showToast(`💳 Apertura PayPal.Me (${targetUrl}) per ricevere ${amount}€!`);
   } else if (provider === 'bmc') {
     const targetUrl = MONETIZATION_CONFIG.bmcUrl || 'https://buymeacoffee.com/ntrevi';
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
