@@ -37,56 +37,63 @@
         </div>
       </div>
       <div class="header-meta" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <!-- Tasto Home / Questionario Selettore Guidato -->
-        <button id="btnHeaderHome" class="btn-home active" onclick="switchMainTab('tab-selector', this)" title="Torna alla Home / Questionario Selettore Guidato Flotta">
-          <span style="font-size: 15px;">🏠</span> Home
-        </button>
-
-        <div class="header-model-selector" style="display: flex; align-items: center; gap: 8px;">
-          <label for="headerModelSelect" style="font-size: 12.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Modelli:</label>
-          <select id="headerModelSelect" class="header-select" onchange="switchModelFromDropdown(this.value)">
-            <option value="" disabled selected hidden>-- Scegli Modello --</option>
-            <option value="tab-cvrp">📦 1. CVRP (Consegne Merci & Corrieri)</option>
-            <option value="tab-vrptw">⏱️ 2. VRPTW (Finestre Orarie Tassative)</option>
-            <option value="tab-carp">🚛 3. CARP (Servizi Stradali & Rifiuti)</option>
-            <option value="tab-intermediate">🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)</option>
-            <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)</option>
-            <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
-            <option value="tab-pcarp">📅 7. PCARP (Raccolta Settimanale Differenziata)</option>
-            <option value="tab-carptw">⏱️🛣️ 8. CARPTW (Finestre Orarie su Strade & ZTL)</option>
-            <option value="tab-carpif">♻️🛣️ 9. CARPIF (Scarichi Intermedi TMB/Discarica)</option>
-            <option value="tab-dcarp">⚡🛣️ 10. DCARP (Dynamic CARP: Compiti Virtuali)</option>
-          </select>
-        </div>
-        <!-- Sezione Autenticazione & Scenari Salvali (SQLite) -->
-        <div id="headerAuthContainer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
-            👤 Accedi / Registrati
+        <!-- Sezione 1: Navigazione Rapida & Selezione Modelli -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="btnHeaderHome" class="btn-home active" onclick="switchMainTab('tab-selector', this)" title="Torna alla Home / Questionario Selettore Guidato Flotta">
+            <span style="font-size: 15px;">🏠</span> Home
           </button>
-          <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Login e Salvataggio Scenari">?</button>
+
+          <div class="header-model-selector" style="display: flex; align-items: center; gap: 8px;">
+            <label for="headerModelSelect" style="font-size: 12.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Modelli:</label>
+            <select id="headerModelSelect" class="header-select" onchange="switchModelFromDropdown(this.value)">
+              <option value="" disabled selected hidden>-- Scegli Modello --</option>
+              <option value="tab-cvrp">📦 1. CVRP (Consegne Merci & Corrieri)</option>
+              <option value="tab-vrptw">⏱️ 2. VRPTW (Finestre Orarie Tassative)</option>
+              <option value="tab-carp">🚛 3. CARP (Servizi Stradali & Rifiuti)</option>
+              <option value="tab-intermediate">🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)</option>
+              <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)</option>
+              <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
+              <option value="tab-pcarp">📅 7. PCARP (Raccolta Settimanale Differenziata)</option>
+              <option value="tab-carptw">⏱️🛣️ 8. CARPTW (Finestre Orarie su Strade & ZTL)</option>
+              <option value="tab-carpif">♻️🛣️ 9. CARPIF (Scarichi Intermedi TMB/Discarica)</option>
+              <option value="tab-dcarp">⚡🛣️ 10. DCARP (Dynamic CARP: Compiti Virtuali)</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Indicatore Scenario Attivo -->
-        <div id="headerActiveScenarioIndicator" style="display: none; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 12.5px; color: #10b981;">
-          <span>📌 Scenario:</span>
-          <strong id="headerActiveScenarioName">Predefinito</strong>
-          <button onclick="quickSaveActiveScenario()" title="Salva modifiche attuali in questo scenario" style="background:#10b981; color:#fff; border:none; border-radius:4px; padding:2px 7px; font-weight:700; cursor:pointer; font-size:11px; margin-left:4px;">💾 Salva</button>
-          <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Gestione Scenari Personali">?</button>
+        <!-- Divisore Visivo -->
+        <div style="height: 24px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
+
+        <!-- Sezione 2: Profilo Utente & Scenari Salvali (SQLite) -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <!-- Indicatore Scenario Attivo -->
+          <div id="headerActiveScenarioIndicator" style="display: none; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 12.5px; color: #10b981;">
+            <span>📌 Scenario:</span>
+            <strong id="headerActiveScenarioName">Predefinito</strong>
+            <button onclick="quickSaveActiveScenario()" title="Salva modifiche attuali in questo scenario" style="background:#10b981; color:#fff; border:none; border-radius:4px; padding:2px 7px; font-weight:700; cursor:pointer; font-size:11px; margin-left:4px;">💾 Salva</button>
+            <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Gestione Scenari Personali">?</button>
+          </div>
+
+          <div id="headerAuthContainer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
+              👤 Accedi / Registrati
+            </button>
+            <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Login e Salvataggio Scenari">?</button>
+          </div>
         </div>
 
-        <button class="btn btn-secondary btn-sm" onclick="exportPlatformSettings()" title="Scarica un file JSON di backup con tutte le impostazioni">
-          📥 Backup JSON
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importConfigFileInput').click()" title="Carica un file JSON di backup">
-          📤 Ripristina JSON
-        </button>
-        <input type="file" id="importConfigFileInput" accept=".json" style="display: none;" onchange="handleImportConfigFile(event)">
-        <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)">
-          📊 Calcola Risparmio ROI
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-faq', null)">
-          📚 FAQ
-        </button>
+        <!-- Divisore Visivo -->
+        <div style="height: 24px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
+
+        <!-- Sezione 3: Strumenti Globali & FAQ -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)" title="Calcola il risparmio economico e il Return on Investment">
+            📊 Calcola Risparmio ROI
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-faq', null)" title="Consulta le FAQ e la documentazione tecnica">
+            📚 FAQ
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -373,8 +380,8 @@
                 <button id="wizardCtaBtn" class="btn btn-primary" onclick="applyWizardParametersToModel()" style="font-weight: 700; padding: 12px 22px; font-size: 14.5px;">
                   ⚡ Inietta Questa Flotta nel Modello & Avvia Simulazione ➔
                 </button>
-                <button class="btn btn-secondary" onclick="exportPlatformSettings()" style="padding: 12px 18px;">
-                  💾 Salva Questa Configurazione (.json)
+                <button class="btn btn-secondary" onclick="openSaveScenarioModal()" style="padding: 12px 18px;" title="Salva questa flotta e configurazione nel tuo profilo utente">
+                  💾 Salva Scenario nel Profilo
                 </button>
               </div>
             </div>
@@ -2483,12 +2490,12 @@
           <div class="citation-card" style="border-left-color: #ec4899; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="background: rgba(236, 72, 153, 0.2); color: #f472b6; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 4px;">FASE 5</span>
-              <span style="font-size: 12px; color: var(--text-muted);">Salvataggio Configurazione & Report ROI</span>
+              <span style="font-size: 12px; color: var(--text-muted);">Salvataggio Scenari Cloud & Report ROI</span>
             </div>
-            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">💾 5. Salvataggio / Caricamento Configurazione & Calcolo ROI Flotta</h4>
+            <h4 style="font-size: 15.5px; color: var(--text-main); margin-bottom: 8px;">💾 5. Salvataggio Cloud nel Profilo Utente & Calcolo ROI Flotta</h4>
             <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-left: 20px;">
-              <li><b>Salva Configurazione</b>: clicca in alto a destra su <i>"📥 Salva Configurazione"</i> per scaricare sul tuo disco locale il file JSON con tutti i nodi, i clienti, i veicoli e le tariffe configurate.</li>
-              <li><b>Carica Configurazione</b>: in qualsiasi momento puoi ricaricare il file salvato con <i>"📤 Carica Configurazione"</i> per riprendere la sessione di lavoro.</li>
+              <li><b>Salvataggio Scenari Cloud</b>: effettua l'accesso con il tuo account (tasto <i>"👤 Accedi"</i> in alto) e clicca su <i>"💾 Salva Scenario"</i> per archiviare in sicurezza sul database server SQLite le tue configurazioni di flotta, parametri e nodi stradali.</li>
+              <li><b>Gestione Scenari</b>: clicca su <i>"📁 I Miei Scenari"</i> per visualizzare la lista dei tuoi scenari salvati, ricaricarli all'istante o duplicarli per simulare varianti operative senza dover gestire file JSON manuali.</li>
               <li><b>Calcolatore Risparmio ROI</b>: apri la scheda <b>"💰 Calcolatore Risparmio ROI Flotta"</b> per stimare la riduzione annua del consumo carburante, il risparmio economico complessivo (€/anno) e le tonnellate di CO2 evitate certificate secondo gli standard ESG Scope 1.</li>
               <li><b>Salvataggio in PDF</b>: premi il pulsante <i>"🖨️ Stampa / Salva Guida in PDF"</i> per stampare o archiviare l'intero manuale operativo e la dispensa scientifica.</li>
             </ul>
@@ -2824,7 +2831,7 @@
               Quando salvi uno scenario (pulsante <b>"💾 Salva Scenario"</b>), la piattaforma memorizza l'intero stato operativo del problema:
               <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
                 <li><b>Rete Stradale & Topologia GIS</b>: lo stradario completo scaricato da OpenStreetMap o modificato manualmente (tutte le vie, nodi, coordinate GPS reali, sensi unici e lunghezze metriche).</li>
-                <li><b>Domande di Rifiuto (kg)</b>: i quantitativi di spazzatura impostati per ciascuna via, inclusi eventuali override manuali o calibrazioni da formulari di pesata aziendali.</li>
+                <li><b>Domande di Rifiuto (qt)</b>: i quantitativi di spazzatura impostati per ciascuna via in quintali, inclusi eventuali override manuali o calibrazioni da formulari di pesata aziendali.</li>
                 <li><b>Flotta Veicoli</b>: il numero di compattatori a disposizione, la portata massima ($Q_k$), il costo fisso giornaliero di ingaggio e il costo chilometrico.</li>
                 <li><b>Cantiere / Deposito</b>: l'indirizzo e le coordinate geografiche esatte della sede aziendale con il relativo raccordo viario (R0).</li>
                 <li><b>Modello e Parametri</b>: il modello matematico di riferimento (CARP, CVRP, VRPTW, MDVRP, PCARP, CARPTW, CARPIF, DCARP) e i fattori di velocità operativa.</li>
@@ -3856,7 +3863,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261108_1800"></script>
+  <script src="app.js?v=20261115_1000"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
