@@ -10020,7 +10020,7 @@ function toggleWizardGuideBody() {
     if (btn) btn.innerText = '🔼 Comprimi Guida';
   } else {
     content.style.display = 'none';
-    if (btn) btn.innerText = '🔽 Espandi Guida Interattiva';
+    if (btn) btn.innerText = '🔽 Espandi Guida';
   }
 }
 
