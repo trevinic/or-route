@@ -9814,39 +9814,16 @@ const MONETIZATION_CONFIG = {
 
 function loadMonetizationConfig() {
   try {
-    // Rimuove eventuale vecchia cache v1 che poteva contenere una mail e attivare cmd=_donations (riservato a ONLUS)
     localStorage.removeItem('or_route_monetization_cfg');
-    const saved = localStorage.getItem('or_route_monetization_v2');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (!parsed.paypalUrl || parsed.paypalUrl.includes('orroute') || parsed.paypalUrl.includes('@')) {
-        parsed.paypalUrl = 'https://www.paypal.com/paypalme/nicolatrevi';
-      }
-      if (!parsed.bmcUrl || parsed.bmcUrl.includes('orroute') || parsed.bmcUrl.includes('paypalme/nicolatrevi')) {
-        parsed.bmcUrl = 'https://buymeacoffee.com/ntrevi';
-      }
-      if (!parsed.walletAddress || parsed.walletAddress === 'IT60X0542811101000000123456') {
-        parsed.walletAddress = 'IT39Q0320502000000099239686';
-      }
-      if (!parsed.solanaWallet) {
-        parsed.solanaWallet = 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
-      }
-      if (!parsed.ethPolygonWallet) {
-        parsed.ethPolygonWallet = '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09';
-      }
-      Object.assign(MONETIZATION_CONFIG, parsed);
-    }
-  } catch (e) {
-    console.warn('[MONETIZATION] Errore caricamento config locale:', e);
-  }
+    localStorage.removeItem('or_route_monetization_v2');
+  } catch (e) {}
   syncMonetizationFieldsUI();
 }
 
 function syncMonetizationFieldsUI() {
-  const solanaAddr = MONETIZATION_CONFIG.solanaWallet || 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
-  const ethPolyAddr = MONETIZATION_CONFIG.ethPolygonWallet || '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09';
-  const ibanAddr = MONETIZATION_CONFIG.walletAddress || 'IT39Q0320502000000099239686';
-  const paypalLink = MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
+  const solanaAddr = MONETIZATION_CONFIG.solanaWallet;
+  const ethPolyAddr = MONETIZATION_CONFIG.ethPolygonWallet;
+  const ibanAddr = MONETIZATION_CONFIG.walletAddress;
 
   const solEl = document.getElementById('solanaWalletDisplay');
   if (solEl) solEl.innerText = solanaAddr;
@@ -9868,53 +9845,6 @@ function syncMonetizationFieldsUI() {
 
   const inlineIbanEl = document.getElementById('inlineIbanDisplay');
   if (inlineIbanEl) inlineIbanEl.innerText = ibanAddr;
-
-  const inpPaypal = document.getElementById('cfgPaypalUrl');
-  if (inpPaypal) inpPaypal.value = paypalLink;
-
-  const inpSol = document.getElementById('cfgSolanaWallet');
-  if (inpSol) inpSol.value = solanaAddr;
-
-  const inpEthPoly = document.getElementById('cfgEthPolygonWallet');
-  if (inpEthPoly) inpEthPoly.value = ethPolyAddr;
-
-  const inpWal = document.getElementById('cfgWalletAddress');
-  if (inpWal) inpWal.value = ibanAddr;
-
-  const inpBmc = document.getElementById('cfgBmcUrl');
-  if (inpBmc) inpBmc.value = MONETIZATION_CONFIG.bmcUrl || 'https://buymeacoffee.com/ntrevi';
-
-  const inpAds = document.getElementById('cfgAdsenseId');
-  if (inpAds) inpAds.value = MONETIZATION_CONFIG.adsensePublisherId || '';
-}
-
-function saveMonetizationConfig() {
-  const paypal = document.getElementById('cfgPaypalUrl')?.value.trim();
-  const sol = document.getElementById('cfgSolanaWallet')?.value.trim();
-  const ethPoly = document.getElementById('cfgEthPolygonWallet')?.value.trim();
-  const wal = document.getElementById('cfgWalletAddress')?.value.trim();
-  const bmc = document.getElementById('cfgBmcUrl')?.value.trim();
-  const ads = document.getElementById('cfgAdsenseId')?.value.trim();
-
-  if (paypal) {
-    MONETIZATION_CONFIG.paypalUrl = paypal.startsWith('http') || paypal.includes('@') ? paypal : 'https://' + paypal;
-  }
-  if (sol) MONETIZATION_CONFIG.solanaWallet = sol;
-  if (ethPoly) MONETIZATION_CONFIG.ethPolygonWallet = ethPoly;
-  if (wal) {
-    MONETIZATION_CONFIG.walletAddress = wal;
-    MONETIZATION_CONFIG.ibanAddress = wal;
-  }
-  if (bmc) MONETIZATION_CONFIG.bmcUrl = bmc;
-  if (ads) MONETIZATION_CONFIG.adsensePublisherId = ads;
-
-  try {
-    localStorage.setItem('or_route_monetization_v2', JSON.stringify(MONETIZATION_CONFIG));
-  } catch (e) {}
-
-  syncMonetizationFieldsUI();
-  showToast('✅ Coordinate di monetizzazione (PayPal, Buy Me a Coffee, Solana, Ethereum, Polygon e IBAN) salvate!');
-  switchSupportCoffeeTab('paypal');
 }
 
 function selectCoffeeAmount(amount, btnEl) {
@@ -9961,24 +9891,18 @@ function closeSupportCoffeeModal() {
 function switchSupportCoffeeTab(tabName) {
   const bPaypal = document.getElementById('coffeeTabBtnPaypal');
   const bWallet = document.getElementById('coffeeTabBtnWallet');
-  const bConfig = document.getElementById('coffeeTabBtnConfig');
 
   const pPaypal = document.getElementById('coffeePanelPaypal');
   const pWallet = document.getElementById('coffeePanelWallet');
-  const pConfig = document.getElementById('coffeePanelConfig');
   const amountBox = document.getElementById('coffeeAmountSelectorBox');
 
-  [bPaypal, bWallet, bConfig].forEach(b => { if (b) b.classList.remove('active'); });
-  [pPaypal, pWallet, pConfig].forEach(p => { if (p) p.style.display = 'none'; });
+  [bPaypal, bWallet].forEach(b => { if (b) b.classList.remove('active'); });
+  [pPaypal, pWallet].forEach(p => { if (p) p.style.display = 'none'; });
 
   if (tabName === 'wallet') {
     if (bWallet) bWallet.classList.add('active');
     if (pWallet) pWallet.style.display = 'block';
     if (amountBox) amountBox.style.display = 'block';
-  } else if (tabName === 'config') {
-    if (bConfig) bConfig.classList.add('active');
-    if (pConfig) pConfig.style.display = 'block';
-    if (amountBox) amountBox.style.display = 'none';
   } else {
     if (bPaypal) bPaypal.classList.add('active');
     if (pPaypal) pPaypal.style.display = 'block';

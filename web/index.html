@@ -4035,12 +4035,6 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px;" onclick="openSupportCoffeeModal('wallet')">
             <span>🟣</span> Portafoglio Digitale (Solana / ETH / Polygon / IBAN)
           </button>
-
-          <div style="text-align: center; margin-top: 4px;">
-            <a href="javascript:void(0)" onclick="openSupportCoffeeModal('config')" style="font-size: 11px; color: #64748b; text-decoration: none;">
-              ⚙️ Configura coordinate PayPal / Portafoglio Digitale del dominio
-            </a>
-          </div>
         </div>
       </div>
     </section>
@@ -4419,7 +4413,6 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <li>PuLP &amp; COIN-OR CBC Solver</li>
           <li>OpenStreetMap &amp; OSMnx GIS</li>
           <li>SIAM Vehicle Routing Literature</li>
-          <li><a href="javascript:void(0)" onclick="openSupportCoffeeModal('config')" style="color:#38bdf8; text-decoration:none;">⚙️ Configura Dominio, AdSense &amp; PayPal</a></li>
         </ul>
       </div>
     </div>
@@ -4430,7 +4423,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1452"></script>
+  <script src="app.js?v=20261115_1455"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
@@ -4879,7 +4872,6 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
       <div class="auth-tabs-nav" style="margin-bottom: 16px;">
         <button type="button" id="coffeeTabBtnPaypal" class="auth-tab-btn active" onclick="switchSupportCoffeeTab('paypal')">💳 PayPal &amp; Caffè</button>
         <button type="button" id="coffeeTabBtnWallet" class="auth-tab-btn" onclick="switchSupportCoffeeTab('wallet')">📱 Portafoglio Digitale</button>
-        <button type="button" id="coffeeTabBtnConfig" class="auth-tab-btn" onclick="switchSupportCoffeeTab('config')">⚙️ Imposta Coordinate</button>
       </div>
 
       <!-- Selettore Importo Comune ai Tab Pagamento -->
@@ -4959,44 +4951,6 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <span id="walletAddressDisplay" style="overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;">IT39Q0320502000000099239686</span>
           <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap; padding: 4px 10px;" onclick="copyWalletField('iban')">📋 Copia IBAN</button>
         </div>
-      </div>
-
-      <!-- TAB 3: CONFIGURAZIONE COORDINATE PROPRIETARIO SITO -->
-      <div id="coffeePanelConfig" style="display: none;">
-        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px;">
-          Coordinate ufficiali configurate per il dominio pubblico (vengono salvate e applicate a tutti i pulsanti della piattaforma):
-        </p>
-
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
-          <div>
-            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link PayPal.Me:</label>
-            <input type="text" id="cfgPaypalUrl" class="landing-input" style="margin-bottom: 0;" value="https://www.paypal.com/paypalme/nicolatrevi" placeholder="es. https://www.paypal.com/paypalme/nicolatrevi">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #fbbf24; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Carta di Credito:</label>
-            <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" value="https://buymeacoffee.com/ntrevi" placeholder="es. https://buymeacoffee.com/ntrevi">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #c084fc; font-weight: 600; display: block; margin-bottom: 3px;">Indirizzo Wallet Circuito Solana (SOL):</label>
-            <input type="text" id="cfgSolanaWallet" class="landing-input" style="margin-bottom: 0;" value="FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn" placeholder="es. FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #818cf8; font-weight: 600; display: block; margin-bottom: 3px;">Indirizzo Wallet Circuito Ethereum &amp; Polygon (0x...):</label>
-            <input type="text" id="cfgEthPolygonWallet" class="landing-input" style="margin-bottom: 0;" value="0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09" placeholder="es. 0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #38bdf8; font-weight: 600; display: block; margin-bottom: 3px;">Coordinate IBAN Bonifico Bancario:</label>
-            <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" value="IT39Q0320502000000099239686" placeholder="es. IT39Q0320502000000099239686">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">ID Editore Google AdSense (Publisher ID):</label>
-            <input type="text" id="cfgAdsenseId" class="landing-input" style="margin-bottom: 0;" placeholder="es. ca-pub-1234567890123456">
-          </div>
-        </div>
-
-        <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center; font-weight: 700;" onclick="saveMonetizationConfig()">
-          💾 Salva Coordinate Monetizzazione &amp; Portafoglio
-        </button>
       </div>
 
       <div style="display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
