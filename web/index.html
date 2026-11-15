@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Foglio di Stile Personalizzato -->
-  <link rel="stylesheet" href="style.css?v=20261108_1800">
+  <link rel="stylesheet" href="style.css?v=20261115_1100">
 
   <!-- Libreria Cartografica Interattiva Leaflet GIS (OSM Stradario) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
@@ -29,7 +29,7 @@
        ========================================================================= -->
   <header class="app-header">
     <div class="header-container">
-      <div class="logo-group" onclick="switchMainTab('tab-selector', null)" style="cursor: pointer;" title="Torna alla Home / Questionario Selettore Guidato">
+      <div class="logo-group" onclick="switchMainTab('tab-selector', null)" style="cursor: pointer;" title="Torna alla Landing Page Principale">
         <div class="logo-badge">📐</div>
         <div class="logo-text">
           <h1>OR-<span class="highlight">Route</span></h1>
@@ -39,7 +39,7 @@
       <div class="header-meta" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <!-- Sezione 1: Navigazione Rapida & Selezione Modelli -->
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button id="btnHeaderHome" class="btn-home active" onclick="switchMainTab('tab-selector', this)" title="Torna alla Home / Questionario Selettore Guidato Flotta">
+          <button id="btnHeaderHome" class="btn-home active" onclick="switchMainTab('tab-selector', this)" title="Torna alla Landing Page Principale (3 Aree Operative)">
             <span style="font-size: 15px;">🏠</span> Home
           </button>
 
@@ -64,7 +64,7 @@
         <!-- Divisore Visivo -->
         <div style="height: 24px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
 
-        <!-- Sezione 2: Profilo Utente & Scenari Salvali (SQLite) -->
+        <!-- Sezione 2: Profilo Utente & Scenari Salvati (SQLite) -->
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <!-- Indicatore Scenario Attivo -->
           <div id="headerActiveScenarioIndicator" style="display: none; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 12.5px; color: #10b981;">
@@ -85,13 +85,19 @@
         <!-- Divisore Visivo -->
         <div style="height: 24px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
 
-        <!-- Sezione 3: Strumenti Globali & FAQ -->
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- Sezione 3: Strumenti Globali, FAQ, Partner & Buy Me a Coffee -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)" title="Calcola il risparmio economico e il Return on Investment">
-            📊 Calcola Risparmio ROI
+            📊 Calcola ROI
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" title="Scopri convenzioni e offerte partner per la tua flotta">
+            🤝 Partner
           </button>
           <button class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-faq', null)" title="Consulta le FAQ e la documentazione tecnica">
             📚 FAQ
+          </button>
+          <button class="btn-coffee-header" onclick="openSupportCoffeeModal()" title="Sostieni il progetto gratuito con una donazione libera su PayPal o Portafoglio Digitale">
+            <span>☕</span> Offrimi un Caffè
           </button>
         </div>
       </div>
@@ -102,8 +108,8 @@
        2. BANNER PUBBLICITARIO GOOGLE ADSENSE (LEADERBOARD TOP)
        ========================================================================= -->
   <div class="main-wrapper" style="padding-bottom: 0;">
-    <div class="ad-container">
-      <span class="ad-label">Pubblicità / Annuncio Google AdSense</span>
+    <div class="ad-container" style="margin: 8px 0 12px 0;">
+      <span class="ad-label">Spazio Sponsorizzato &bull; Google AdSense</span>
       <div class="ad-leaderboard">
         <!-- Google AdSense Responsive Leaderboard Unit -->
         <ins class="adsbygoogle"
@@ -116,7 +122,7 @@
              (adsbygoogle = window.adsbygoogle || []).push({});
         </script>
         <span style="font-size: 11.5px; color: var(--text-muted);">
-          [Slot Pubblicitario AdSense 728x90 Leaderboard &mdash; Visibile agli utenti del sito gratuito]
+          📢 [Spazio Pubblicitario Google AdSense 728x90 Leaderboard &mdash; Configura il tuo ID Editore <code>ca-pub-...</code> per monetizzare il traffico del dominio]
         </span>
       </div>
     </div>
@@ -124,40 +130,373 @@
 
 
   <!-- =========================================================================
-       4. CONTENUTO PRINCIPALE (SEZIONI MULTI-MODELLO)
+       4. CONTENUTO PRINCIPALE (LANDING PAGE + SEZIONI MULTI-MODELLO)
        ========================================================================= -->
   <main class="main-wrapper">
 
     <!-- ---------------------------------------------------------------------
-         SEZIONE 0: WIZARD INTERATTIVO "TROVA IL TUO MODELLO"
+         SEZIONE 0: LANDING PAGE CON 3 AREE OPERATIVE + WIZARD GUIDATO
          --------------------------------------------------------------------- -->
     <section id="tab-selector">
-      <div class="card">
+
+      <!-- HERO SECTION ACCATTIVANTE -->
+      <div class="landing-hero">
+        <div class="landing-hero-badge-row">
+          <span class="landing-hero-pill">
+            <span>🚀</span> Suite Cloud di Ricerca Operativa &bull; 100% Accesso Gratuito
+          </span>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="font-size: 12px;">
+              🔥 Convenzioni & Partner Flotta
+            </button>
+            <button type="button" class="btn-coffee-header" onclick="openSupportCoffeeModal()" style="font-size: 12px; padding: 5px 12px;">
+              ☕ Supporta il Progetto (PayPal / Wallet)
+            </button>
+          </div>
+        </div>
+
+        <h2 class="landing-hero-title">
+          Ottimizza i Percorsi della Tua Flotta e Riduci i Costi fino al <span class="grad-emerald">35% con Algoritmi Matematici Esatti</span>
+        </h2>
+
+        <p class="landing-hero-sub">
+          Benvenuto in <b>OR-Route</b>: la piattaforma professionale basata su solutori <b>MILP (COIN-OR CBC &amp; PuLP)</b> e cartografia stradale reale <b>OpenStreetMap GIS</b> per aziende di logistica, corrieri espresso e igiene ambientale RSU. Scegli una delle <b>3 aree operative</b> qui sotto per iniziare subito:
+        </p>
+
+        <div class="landing-trust-strip">
+          <div class="landing-trust-item">
+            <span style="color: #34d399;">🧮</span> <b>10 Modelli Matematici</b> (Node &amp; Arc Routing)
+          </div>
+          <div class="landing-trust-item">
+            <span style="color: #38bdf8;">🗺️</span> <b>Mappe Reali OpenStreetMap</b> &amp; Fogli di Viaggio Autista
+          </div>
+          <div class="landing-trust-item">
+            <span style="color: #c084fc;">🔐</span> <b>Salvataggio Sessioni Cloud</b> &amp; Backup Locale (.json)
+          </div>
+          <div class="landing-trust-item">
+            <span style="color: #fbbf24;">🌿</span> <b>Calcolo Risparmio ROI</b> &amp; Riduzione Emissioni $CO_2$
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           LE 3 AREE PRINCIPALI DELLA LANDING PAGE (TRIPTYCH HUB)
+           ===================================================================== -->
+      <div class="landing-3areas-grid">
+
+        <!-- ===================================================================
+             AREA 1: COMPILA LA GUIDA PER LA SCELTA DEL MODELLO DI OTTIMIZZAZIONE
+             =================================================================== -->
+        <div class="landing-area-card area-1-guide">
+          <div>
+            <div class="area-step-header">
+              <span class="area-step-badge badge-1">AREA 1 &bull; PERCORSO GUIDATO</span>
+              <div class="area-icon-circle" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">🧭</div>
+            </div>
+
+            <h3 class="area-card-title">1. Compila la Guida per la Scelta del Modello</h3>
+            <p class="area-card-desc">
+              Non sai quale algoritmo matematico si adatta meglio alla tua azienda? Rispondi a <b>7 domande operative</b> e calibra il tuo parco mezzi per ottenere il modello ideale.
+            </p>
+
+            <ul class="area-feature-list">
+              <li class="area-feature-item">
+                <span class="feat-icon">🎯</span>
+                <div>
+                  <b style="color: #f8fafc; display: block;">Diagnosi Guidata dei Vincoli</b>
+                  Consegne a clienti singoli o raccolta lungo strade, finestre orarie ZTL, soste intermedie e multi-deposito.
+                </div>
+              </li>
+              <li class="area-feature-item">
+                <span class="feat-icon">🚛</span>
+                <div>
+                  <b style="color: #f8fafc; display: block;">Configuratore Flotta Eterogenea</b>
+                  Calcola in automatico il costo fisso per turno (autisti, operatori, ammortamento) e la tariffa media €/km.
+                </div>
+              </li>
+              <li class="area-feature-item">
+                <span class="feat-icon">⚡</span>
+                <div>
+                  <b style="color: #f8fafc; display: block;">Iniezione Diretta su Mappa GIS</b>
+                  Trasferisce con 1 click tutti i veicoli configurati direttamente nel modello matematico consigliato.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <!-- Live Status Box del Wizard -->
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <span style="font-size: 10.5px; text-transform: uppercase; color: #94a3b8; font-weight: 700; display: block;">Raccomandazione Attuale Guida:</span>
+                <strong id="landingArea1RecBadge" style="font-size: 13px; color: #34d399;">CARP (Servizi Stradali &amp; RSU)</strong>
+              </div>
+              <span style="font-size: 18px;">✨</span>
+            </div>
+
+            <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center; font-weight: 800; padding: 12px 16px; font-size: 14px; margin-bottom: 8px;" onclick="openAndScrollToWizard('step1')">
+              🧭 Compila la Guida Passo-Passo &darr;
+            </button>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" style="justify-content: center;" onclick="openAndScrollToWizard('fleet')">
+                🚛 Calibra Costi Flotta
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" style="justify-content: center;" onclick="openAndScrollToWizard('matrix')">
+                📊 Confronta Modelli
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             AREA 2: SCEGLI GIÀ IL MODELLO DIRETTAMENTE
+             =================================================================== -->
+        <div class="landing-area-card area-2-direct">
+          <div>
+            <div class="area-step-header">
+              <span class="area-step-badge badge-2">AREA 2 &bull; ACCESSO DIRETTO</span>
+              <div class="area-icon-circle" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">⚡</div>
+            </div>
+
+            <h3 class="area-card-title">2. Scegli Già il Modello Direttamente</h3>
+            <p class="area-card-desc">
+              Conosci già il modello di Ricerca Operativa che ti occorre? Salta il questionario ed entra subito nella dashboard di calcolo e cartografia GIS:
+            </p>
+
+            <!-- Filtri rapidi per categoria modelli -->
+            <div class="area-model-filter-tabs">
+              <button type="button" class="area-model-filter-btn active" onclick="filterLandingDirectModels('all', this)">Tutti (10)</button>
+              <button type="button" class="area-model-filter-btn" onclick="filterLandingDirectModels('node', this)">📦 Logistica &amp; Corrieri (5)</button>
+              <button type="button" class="area-model-filter-btn" onclick="filterLandingDirectModels('arc', this)">🚛 Rifiuti RSU &amp; Strade (5)</button>
+            </div>
+
+            <!-- Griglia Cliccabile dei 10 Modelli Matematici -->
+            <div class="landing-direct-models-grid" id="landingDirectModelsGrid">
+              <!-- Modelli su Nodi (Logistica / Corrieri) -->
+              <button type="button" class="direct-model-btn node-model" data-cat="node" onclick="switchMainTab('tab-cvrp', null)">
+                <div class="dm-top"><span>📦 1. CVRP</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Consegne Merci &amp; Portata Max</div>
+              </button>
+
+              <button type="button" class="direct-model-btn node-model" data-cat="node" onclick="switchMainTab('tab-vrptw', null)">
+                <div class="dm-top"><span>⏱️ 2. VRPTW</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Finestre Orarie Tassative</div>
+              </button>
+
+              <button type="button" class="direct-model-btn arc-model" data-cat="arc" onclick="switchMainTab('tab-carp', null)">
+                <div class="dm-top"><span>🚛 3. CARP</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Raccolta RSU &amp; Pulizia Vie</div>
+              </button>
+
+              <button type="button" class="direct-model-btn node-model" data-cat="node" onclick="switchMainTab('tab-intermediate', null)">
+                <div class="dm-top"><span>🔋 4. EV-VRP / IF</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Flotte Elettriche &amp; Ricariche</div>
+              </button>
+
+              <button type="button" class="direct-model-btn node-model" data-cat="node" onclick="switchMainTab('tab-vrppd', null)">
+                <div class="dm-top"><span>📦🔄 5. VRPPD</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Ritiri &amp; Consegne Accoppiati</div>
+              </button>
+
+              <button type="button" class="direct-model-btn node-model" data-cat="node" onclick="switchMainTab('tab-mdvrp', null)">
+                <div class="dm-top"><span>🏢🏢 6. MDVRP</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Multi-Deposito &amp; Più Sedi</div>
+              </button>
+
+              <button type="button" class="direct-model-btn arc-model" data-cat="arc" onclick="switchMainTab('tab-pcarp', null)">
+                <div class="dm-top"><span>📅 7. PCARP</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Raccolta Settimanale Lun-Sab</div>
+              </button>
+
+              <button type="button" class="direct-model-btn arc-model" data-cat="arc" onclick="switchMainTab('tab-carptw', null)">
+                <div class="dm-top"><span>⏱️🛣️ 8. CARPTW</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Orari Tassativi su Strade/ZTL</div>
+              </button>
+
+              <button type="button" class="direct-model-btn arc-model" data-cat="arc" onclick="switchMainTab('tab-carpif', null)">
+                <div class="dm-top"><span>♻️🛣️ 9. CARPIF</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Scarichi Intermedi TMB/Discarica</div>
+              </button>
+
+              <button type="button" class="direct-model-btn arc-model" data-cat="arc" onclick="switchMainTab('tab-dcarp', null)">
+                <div class="dm-top"><span>⚡🛣️ 10. DCARP</span> <span>&rarr;</span></div>
+                <div class="dm-sub">Real-Time &amp; Emergenze Stradali</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Selettore Rapido Dropdown Alternativo -->
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+            <label for="landingDirectModelSelect" style="font-size: 11.5px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 6px;">
+              Oppure seleziona dal menu completo e avvia:
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <select id="landingDirectModelSelect" class="header-select" style="flex: 1; padding: 9px 10px;">
+                <option value="tab-carp">🚛 3. CARP — Raccolta RSU &amp; Servizi Stradali</option>
+                <option value="tab-cvrp">📦 1. CVRP — Consegne Merci &amp; Corrieri</option>
+                <option value="tab-vrptw">⏱️ 2. VRPTW — Finestre Orarie Tassative</option>
+                <option value="tab-intermediate">🔋 4. EV-VRP / IF — Scarichi &amp; Ricariche</option>
+                <option value="tab-vrppd">📦🔄 5. VRPPD — Ritiri &amp; Consegne Accoppiati</option>
+                <option value="tab-mdvrp">🏢🏢 6. MDVRP — Multi-Deposito</option>
+                <option value="tab-pcarp">📅 7. PCARP — Raccolta Settimanale</option>
+                <option value="tab-carptw">⏱️🛣️ 8. CARPTW — Orari Strade &amp; ZTL</option>
+                <option value="tab-carpif">♻️🛣️ 9. CARPIF — Scarichi Intermedi TMB</option>
+                <option value="tab-dcarp">⚡🛣️ 10. DCARP — Dinamico Real-Time</option>
+              </select>
+              <button type="button" class="btn btn-blue" style="white-space: nowrap; font-weight: 700;" onclick="launchSelectedModelFromLanding()">
+                🚀 Apri &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             AREA 3: ACCEDI PER RICOMINCIARE DALLE SESSIONI SALVATE
+             =================================================================== -->
+        <div class="landing-area-card area-3-sessions">
+          <div>
+            <div class="area-step-header">
+              <span class="area-step-badge badge-3">AREA 3 &bull; SESSIONI SALVATE</span>
+              <div class="area-icon-circle" style="border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">🔐</div>
+            </div>
+
+            <h3 class="area-card-title">3. Accedi per Ricominciare dalle Sessioni Salvate</h3>
+            <p class="area-card-desc">
+              Riprendi il tuo lavoro da dove l'avevi lasciato: carica le tue mappe comunali, le flotte e i turni salvati nel tuo profilo personale o da un file locale.
+            </p>
+
+            <!-- STATO A: UTENTE NON AUTENTICATO (ACCESSO RAPIDO INLINE) -->
+            <div id="landingArea3GuestBox" class="landing-quick-login-box">
+              <div style="font-size: 12px; font-weight: 700; color: #c084fc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                <span>🔑 Accesso Rapido Account Cloud</span>
+                <a href="javascript:void(0)" onclick="openAuthModal('register')" style="color: #38bdf8; font-size: 11.5px; text-decoration: none;">+ Crea Account</a>
+              </div>
+
+              <div id="landingQuickLoginError" class="auth-error-msg" style="display: none; padding: 6px 10px; font-size: 12px; margin-bottom: 8px;"></div>
+
+              <input type="text" id="landingQuickUser" class="landing-input" placeholder="Nome utente o email (es. mario.rossi)" onkeydown="if(event.key==='Enter') submitLandingQuickLogin()">
+              <input type="password" id="landingQuickPass" class="landing-input" placeholder="Password ••••••••" onkeydown="if(event.key==='Enter') submitLandingQuickLogin()">
+
+              <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px; font-size: 13.5px; margin-top: 2px;" onclick="submitLandingQuickLogin()">
+                🔓 Accedi e Carica le Tue Sessioni
+              </button>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: #94a3b8;">
+                <span>Nuovo su OR-Route?</span>
+                <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 11.5px;" onclick="openAuthModal('register')">
+                  📝 Registrati Gratis
+                </button>
+              </div>
+            </div>
+
+            <!-- STATO B: UTENTE AUTENTICATO (ELENCO SESSIONI SALVATE PRONTE AL RIPRISTINO) -->
+            <div id="landingArea3LoggedBox" style="display: none;">
+              <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <div>
+                  <span style="font-size: 11px; color: #34d399; font-weight: 700; display: block;">🟢 SESSIONE UTENTE ATTIVA</span>
+                  <strong id="landingLoggedUsername" style="font-size: 14.5px; color: #f8fafc;">Utente</strong>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openScenariosModal()" style="font-size: 11.5px;">
+                  📁 Tutte (<span id="landingLoggedScenarioCount">0</span>)
+                </button>
+              </div>
+
+              <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px;">
+                🕒 Ultime Sessioni Salvate (Clicca per ricominciare):
+              </div>
+
+              <div id="landingRecentScenariosList" style="max-height: 195px; overflow-y: auto; margin-bottom: 12px; padding-right: 2px;">
+                <!-- Popolato dinamicamente da app.js -->
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                <button type="button" class="btn btn-blue btn-sm" style="justify-content: center;" onclick="openScenariosModal()">
+                  📂 Apri Archivio Sessioni
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" style="justify-content: center;" onclick="openSaveScenarioModal()">
+                  💾 Salva Lavoro Attuale
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ripristino & Salvataggio Sessione tramite File Locale (.JSON) -->
+          <div style="background: rgba(15, 23, 42, 0.75); border: 1px dashed rgba(148, 163, 184, 0.3); border-radius: 8px; padding: 11px 12px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <span>💻 Backup Sessione su File Locale (.json)</span>
+              <span style="font-size: 10.5px; color: #38bdf8;">Senza Login</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" style="justify-content: center; font-size: 11.5px;" onclick="triggerSessionFileImport()" title="Carica un file .json di sessione salvato sul tuo computer">
+                📤 Carica File .JSON
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" style="justify-content: center; font-size: 11.5px;" onclick="exportCurrentSessionToJson()" title="Esporta l'intera sessione corrente in un file .json sul tuo PC">
+                📥 Esporta .JSON
+              </button>
+            </div>
+            <input type="file" id="landingSessionFileInput" accept=".json,application/json" style="display: none;" onchange="handleSessionFileImport(event)">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- =====================================================================
+           SLOT GOOGLE ADSENSE IN-ARTICLE (TRA LE 3 AREE E LA GUIDA INTERATTIVA)
+           ===================================================================== -->
+      <div class="ad-container" style="margin: 0 0 26px 0;">
+        <span class="ad-label">Annuncio Sponsorizzato &bull; Google AdSense In-Feed</span>
+        <div class="ad-leaderboard" style="min-height: 80px;">
+          <ins class="adsbygoogle"
+               style="display:block"
+               data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+               data-ad-slot="5566778899"
+               data-ad-format="fluid"
+               data-ad-layout-key="-fb+5w+4e-db+86"></ins>
+          <script>
+               (adsbygoogle = window.adsbygoogle || []).push({});
+          </script>
+          <span style="font-size: 11.5px; color: var(--text-muted);">
+            📢 [Banner Google AdSense In-Article &mdash; Posizionamento ad alto CTR sotto le 3 aree della Landing Page]
+          </span>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           APPROFONDIMENTO AREA 1: WIZARD GUIDA SCELTA MODELLO & CONFIGURATORE FLOTTA
+           ===================================================================== -->
+      <div class="card" id="wizardGuideContainer">
         <div class="card-header">
           <div class="card-title">
             <span class="icon">🧭</span>
-            <span>Selettore Guidato & Configuratore Flotta Eterogenea</span>
+            <span>Area 1 &mdash; Guida Interattiva per la Scelta del Modello &amp; Configuratore Flotta</span>
           </div>
-          <span class="badge-free">Consulenza Intelligente & Calibrazione Costi</span>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="badge-free">Consulenza Intelligente &amp; Calibrazione Costi</span>
+            <button type="button" id="btnToggleWizardBody" class="btn btn-secondary btn-sm" onclick="toggleWizardGuideBody()">
+              🔼 Comprimi Guida
+            </button>
+          </div>
         </div>
 
-        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-          Ogni azienda di trasporti, logistica o igiene ambientale ha vincoli operativi e un parco mezzi eterogeneo. Rispondi alle domande per individuare il <b>modello matematico ottimale</b> e configura in <b>Parte 2</b> le <b>diverse tipologie di veicoli</b> (furgoni, medi 2 assi, bilici pesanti) con le rispettive <b>specifiche di costo fisso, personale e consumo chilometrico</b>.
-        </p>
+        <div id="wizardCollapsibleContent">
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Ogni azienda di trasporti, logistica o igiene ambientale ha vincoli operativi e un parco mezzi eterogeneo. Rispondi alle domande per individuare il <b>modello matematico ottimale</b> e configura in <b>Parte 2</b> le <b>diverse tipologie di veicoli</b> (furgoni, medi 2 assi, bilici pesanti) con le rispettive <b>specifiche di costo fisso, personale e consumo chilometrico</b>.
+          </p>
 
-        <div class="wizard-box">
-          <div style="font-size: 13px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-            PARTE 1 &mdash; STRATEGIA OPERATIVA E TIPO DI SERVIZIO
-          </div>
+          <div class="wizard-box" id="wizardStep1Anchor">
+            <div style="font-size: 13px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+              PARTE 1 &mdash; STRATEGIA OPERATIVA E TIPO DI SERVIZIO
+            </div>
 
-          <!-- Step 1 -->
-          <div class="wizard-step">
-            <label style="font-weight: 700; font-size: 14.5px;">1. Dove deve operare la tua flotta?</label>
-            <div class="wizard-options">
-              <div class="option-btn" onclick="selectWizardOption('type', 'points', this)">
-                <div class="option-title">📍 Presso singoli Clienti / Punti</div>
-                <div class="option-desc">Consegne a negozi, farmacie, e-commerce, supermercati o interventi tecnici a domicilio.</div>
-              </div>
+            <!-- Step 1 -->
+            <div class="wizard-step">
+              <label style="font-weight: 700; font-size: 14.5px;">1. Dove deve operare la tua flotta?</label>
+              <div class="wizard-options">
+                <div class="option-btn" onclick="selectWizardOption('type', 'points', this)">
+                  <div class="option-title">📍 Presso singoli Clienti / Punti</div>
+                  <div class="option-desc">Consegne a negozi, farmacie, e-commerce, supermercati o interventi tecnici a domicilio.</div>
+                </div>
               <div class="option-btn selected" onclick="selectWizardOption('type', 'streets', this)">
                 <div class="option-title">🛣️ Lungo Intere Strade / Reti Viarie</div>
                 <div class="option-desc">Raccolta rifiuti porta a porta, spazzatrici stradali, sgombero neve, ispezione condotte.</div>
@@ -258,7 +597,7 @@
           <!-- =========================================================================
                PARTE 2: COSTRUTTORE FLOTTA ETEROGENEA MULTI-TIPOLOGIA
                ========================================================================= -->
-          <div style="font-size: 13px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin: 32px 0 12px 0; padding-top: 20px; border-top: 1px dashed rgba(255,255,255,0.15);">
+          <div id="wizardFleetAnchor" style="font-size: 13px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin: 32px 0 12px 0; padding-top: 20px; border-top: 1px dashed rgba(255,255,255,0.15);">
             PARTE 2 &mdash; COMPOSIZIONE FLOTTA ETEROGENEA & SPECIFICHE DI COSTO PER TIPOLOGIA DI MEZZO
           </div>
 
@@ -388,9 +727,9 @@
           </div>
         </div>
 
-        <!-- Matrice Comparativa dei Modelli Matematici -->
-        <h3 style="font-size: 16px; margin: 24px 0 14px 0; color: var(--text-main);">
-          📊 Matrice Comparativa dei Modelli di Ricerca Operativa per Fleet Management
+        <!-- Matrice Comparativa dei 10 Modelli Matematici -->
+        <h3 id="wizardMatrixAnchor" style="font-size: 16px; margin: 24px 0 14px 0; color: var(--text-main);">
+          📊 Matrice Comparativa Completa dei 10 Modelli di Ricerca Operativa per Fleet Management
         </h3>
         <div class="table-responsive">
           <table class="opt-table">
@@ -401,53 +740,93 @@
                 <th>Elemento Servito</th>
                 <th>Vincoli Chiave</th>
                 <th>Risparmio Medio</th>
+                <th style="text-align: center;">Accesso Diretto</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><b>CVRP</b></td>
-                <td>Corrieri, Food & Beverage, Forniture B2B</td>
+                <td><b>📦 1. CVRP</b></td>
+                <td>Corrieri, Food &amp; Beverage, Forniture B2B</td>
                 <td>Nodi discreti (Clienti)</td>
                 <td>Portata veicoli, sottogiri MTZ</td>
                 <td><span class="code-tag" style="color:#34d399;">18% - 24% km</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-cvrp', null)">Apri &rarr;</button></td>
               </tr>
               <tr>
-                <td><b>VRPTW</b></td>
+                <td><b>⏱️ 2. VRPTW</b></td>
                 <td>GDO, Farmaceutico, Tecnici a Domicilio</td>
                 <td>Nodi discreti con orari</td>
                 <td>Finestre temporali [a_i, b_i], tempi sosta</td>
                 <td><span class="code-tag" style="color:#38bdf8;">22% - 30% tempi</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-vrptw', null)">Apri &rarr;</button></td>
               </tr>
               <tr>
-                <td><b>CARP</b></td>
+                <td><b>🚛 3. CARP</b></td>
                 <td>Igiene Urbana RSU, Pulizia Strade, Neve</td>
                 <td>Archi / Tratte viarie</td>
                 <td>Eliminazione passaggi a vuoto, Single-Commodity Flow</td>
                 <td><span class="code-tag" style="color:#fbbf24;">25% - 35% deadhead</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carp', null)">Apri &rarr;</button></td>
               </tr>
               <tr>
-                <td><b>WCVRPTW-IF / EV-VRP</b></td>
-                <td>Smaltimento Rifiuti Pesanti, Flotte Elettriche</td>
+                <td><b>🔋 4. EV-VRP / IF</b></td>
+                <td>Flotte Elettriche, Smaltimento con Tappe</td>
                 <td>Nodi intermedi multipli</td>
                 <td>Ripristino portata/batteria agli impianti intermedi</td>
                 <td><span class="code-tag" style="color:#ec4899;">Ottimizzazione cicli</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-intermediate', null)">Apri &rarr;</button></td>
               </tr>
               <tr>
-                <td><b>VRPPD</b></td>
-                <td>Corrieri Espresso, Ritiri & Consegne Accoppiati</td>
+                <td><b>📦🔄 5. VRPPD</b></td>
+                <td>Corrieri Espresso, Ritiri &amp; Consegne Accoppiati</td>
                 <td>Coppie Ritiro-Consegna</td>
                 <td>Precedenza P_i &rarr; D_i, accoppiamento veicolo, carico dinamico</td>
                 <td><span class="code-tag" style="color:#a78bfa;">25% - 40% km</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-vrppd', null)">Apri &rarr;</button></td>
               </tr>
               <tr>
-                <td><b>MDVRP</b></td>
+                <td><b>🏢🏢 6. MDVRP</b></td>
                 <td>Aziende con più Magazzini, Depositi Distribuiti</td>
                 <td>Clienti da più depositi</td>
                 <td>Partenza e rientro nello stesso Home Depot, clusterizzazione ottimale</td>
                 <td><span class="code-tag" style="color:#06b6d4;">20% - 30% km flotta</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-mdvrp', null)">Apri &rarr;</button></td>
+              </tr>
+              <tr>
+                <td><b>📅 7. PCARP</b></td>
+                <td>Raccolta Differenziata Settimanale Lun-Sab</td>
+                <td>Archi multi-periodo</td>
+                <td>Calendario frazioni (Umido, Carta, Plastica, Vetro, Secco)</td>
+                <td><span class="code-tag" style="color:#34d399;">Bilanciamento 6gg</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-pcarp', null)">Apri &rarr;</button></td>
+              </tr>
+              <tr>
+                <td><b>⏱️🛣️ 8. CARPTW</b></td>
+                <td>Spazzamento &amp; RSU con Varchi ZTL / Scuole</td>
+                <td>Archi con fasce orarie</td>
+                <td>Sincronizzazione cronologica vie e rispetto tassativo ZTL</td>
+                <td><span class="code-tag" style="color:#38bdf8;">0% violazioni ZTL</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carptw', null)">Apri &rarr;</button></td>
+              </tr>
+              <tr>
+                <td><b>♻️🛣️ 9. CARPIF</b></td>
+                <td>Grandi Comuni con Scarichi Intermedi TMB</td>
+                <td>Archi + Impianti TMB</td>
+                <td>Svuotamenti multipli compattatore durante lo stesso turno</td>
+                <td><span class="code-tag" style="color:#fbbf24;">+40% autonomia turno</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carpif', null)">Apri &rarr;</button></td>
+              </tr>
+              <tr>
+                <td><b>⚡🛣️ 10. DCARP</b></td>
+                <td>Gestione Emergenze Real-Time &amp; Guasti Mezzi</td>
+                <td>Archi dinamici + GPS</td>
+                <td>Compiti virtuali e ricalcolo istantaneo su imprevisti stradali</td>
+                <td><span class="code-tag" style="color:#f97316;">Resilienza Real-Time</span></td>
+                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-dcarp', null)">Apri &rarr;</button></td>
               </tr>
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     </section>
@@ -3403,91 +3782,225 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
     </section>
 
     <!-- =========================================================================
-         5. SEZIONE COMMERCIALI & PROMOZIONI DI AFFILIAZIONE (NASCOSTA TEMPORANEAMENTE)
+         5. SEZIONE COMMERCIALE: LINK REFERENZIALI & PARTNER DI AFFILIAZIONE
          ========================================================================= -->
-    <section id="partner-section" class="affiliate-section" style="display: none;">
-      <span class="affiliate-badge">🔥 Offerte & Promozioni Partner per la Tua Flotta</span>
+    <section id="partner-section" class="affiliate-section">
+      <span class="affiliate-badge">🔥 Link Referenziali &amp; Convenzioni Partner per Flotte</span>
       
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">
-          Strumenti e Convenzioni Selezionate per la Gestione Flotte
-        </h2>
-        <p style="color: var(--text-muted); font-size: 13.5px;">
-          OR-Route collabora con i leader di settore della mobilità aziendale per offrirti sconti esclusivi, canoni agevolati e prove gratuite:
-        </p>
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 22px;">
+        <div>
+          <h2 style="font-size: 21px; font-weight: 800; letter-spacing: -0.5px; color: #f8fafc;">
+            Strumenti, Servizi e Convenzioni Selezionate per la Tua Flotta
+          </h2>
+          <p style="color: var(--text-muted); font-size: 13.5px; margin-top: 4px;">
+            Sfrutta i link referenziali ufficiali di OR-Route per ottenere canoni gratuiti, sconti carburante e dispositivi GPS in prova gratuita (sostenendo contemporaneamente lo sviluppo gratuito della piattaforma):
+          </p>
+        </div>
+
+        <div class="area-model-filter-tabs" style="margin-bottom: 0;">
+          <button type="button" class="area-model-filter-btn active" onclick="filterPartnerCards('all', this)">Tutti i Partner (6)</button>
+          <button type="button" class="area-model-filter-btn" onclick="filterPartnerCards('fuel', this)">⛽ Carburante &amp; EV</button>
+          <button type="button" class="area-model-filter-btn" onclick="filterPartnerCards('gps', this)">🛰️ Telematica &amp; GPS</button>
+          <button type="button" class="area-model-filter-btn" onclick="filterPartnerCards('tech', this)">🔧 Officina &amp; Hardware</button>
+        </div>
       </div>
 
-      <div class="grid-3col">
+      <div class="grid-3col" id="partnerCardsGrid">
         <!-- Partner 1: Carte Carburante Aziendali -->
-        <div class="partner-card">
+        <div class="partner-card" data-pcat="fuel">
           <div>
             <div class="partner-header">
               <div class="partner-icon">💳</div>
               <div>
-                <b style="font-size: 15px;">Carte Carburante Multimarca</b>
-                <div style="font-size: 11.5px; color: var(--text-muted);">DKV Mobility / Edenred / Eni</div>
+                <b style="font-size: 15px;">Carte Carburante &amp; Telepedaggio</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">DKV Mobility / Edenred / Telepass Flotte</div>
               </div>
             </div>
             <p style="font-size: 13px; color: var(--text-secondary);">
-              Fattura unica mensile per il recupero IVA al 100%, pagamento pedaggi autostradali e ricarica flotta elettrica in oltre 68.000 stazioni in Europa.
+              Fattura elettronica unica mensile per il recupero IVA al 100%, pagamento pedaggi autostradali europei e ricarica flotta elettrica in oltre 68.000 stazioni.
             </p>
-            <div class="partner-deal">🎁 Promo Partner: Canone gratuito primi 6 mesi</div>
+            <div class="partner-deal">🎁 Link Referenziale: Canone gratuito primi 6 mesi + Sconto alla pompa</div>
           </div>
           <div style="margin-top: 18px;">
-            <a href="https://www.dkv-mobility.com" target="_blank" rel="noopener sponsored" class="btn btn-blue btn-sm" style="width: 100%; justify-content: center;">
+            <a id="refLinkFuelCard" href="https://www.dkv-mobility.com/?ref=or-route&utm_source=or-route" target="_blank" rel="noopener sponsored" class="btn btn-blue btn-sm" style="width: 100%; justify-content: center;">
               Richiedi Convenzione Flotta &nearr;
             </a>
           </div>
         </div>
 
         <!-- Partner 2: Telematica & GPS Tracker -->
-        <div class="partner-card">
+        <div class="partner-card" data-pcat="gps">
           <div>
             <div class="partner-header">
               <div class="partner-icon">🛰️</div>
               <div>
-                <b style="font-size: 15px;">Telematica & GPS Avanzato</b>
+                <b style="font-size: 15px;">Telematica GPS &amp; Tachigrafo Remoto</b>
                 <div style="font-size: 11.5px; color: var(--text-muted);">Samsara / Verizon Connect / Webfleet</div>
               </div>
             </div>
             <p style="font-size: 13px; color: var(--text-secondary);">
-              Localizzazione GPS in tempo reale, scarico tachigrafo digitale da remoto, monitoraggio stile di guida e riduzione sinistri fino al 23%.
+              Localizzazione satellitare in tempo reale per modelli DCARP, scarico tachigrafo digitale da remoto, monitoraggio consumi e riduzione sinistri fino al 23%.
             </p>
-            <div class="partner-deal">🎁 Promo Partner: Demo gratuita + Dispositivo di prova</div>
+            <div class="partner-deal">🎁 Link Referenziale: 30 Giorni di Demo Gratuita + Tracker in prova</div>
           </div>
           <div style="margin-top: 18px;">
-            <a href="https://www.samsara.com" target="_blank" rel="noopener sponsored" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+            <a id="refLinkTelematics" href="https://www.samsara.com/?ref=or-route&utm_source=or-route" target="_blank" rel="noopener sponsored" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
               Attiva Demo Gratuita 30 Giorni &nearr;
             </a>
           </div>
         </div>
 
         <!-- Partner 3: Manutenzione & Pneumatici Flotta -->
-        <div class="partner-card">
+        <div class="partner-card" data-pcat="tech">
           <div>
             <div class="partner-header">
               <div class="partner-icon">🔧</div>
               <div>
-                <b style="font-size: 15px;">Pneumatici & Officina Flotte</b>
-                <div style="font-size: 11.5px; color: var(--text-muted);">Euromaster / Norauto Pro</div>
+                <b style="font-size: 15px;">Pneumatici &amp; Officina Autocarri</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Euromaster / Norauto Pro / Driver</div>
               </div>
             </div>
             <p style="font-size: 13px; color: var(--text-secondary);">
-              Prezzi bloccati per treni gomme, check-up di sicurezza gratuiti, cambio gomme stagionale prioritario per evitare fermi mezzo prolungati.
+              Listini bloccati per treni gomme furgoni e compattatori RSU, assistenza stradale H24 e cambio gomme stagionale prioritario per azzerare i fermi macchina.
             </p>
-            <div class="partner-deal">🎁 Promo Partner: Sconto 15% sul listino pneumatici</div>
+            <div class="partner-deal">🎁 Link Referenziale: Sconto 15% immediato sul listino pneumatici</div>
           </div>
           <div style="margin-top: 18px;">
-            <a href="https://www.euromaster-pneumatici.it" target="_blank" rel="noopener sponsored" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;">
+            <a id="refLinkTires" href="https://www.euromaster-pneumatici.it/?ref=or-route&utm_source=or-route" target="_blank" rel="noopener sponsored" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;">
               Scarica Coupon Sconto Flotta &nearr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Partner 4: Infrastrutture di Ricarica EV Aziendali -->
+        <div class="partner-card" data-pcat="fuel">
+          <div>
+            <div class="partner-header">
+              <div class="partner-icon">⚡</div>
+              <div>
+                <b style="font-size: 15px;">Wallbox &amp; Hub Ricarica Flotte EV</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Wallbox Business / Enel X Way / Plenitude</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+              Progettazione e installazione di colonnine fast-charge DC nel deposito aziendale con bilanciamento dinamico dei carichi per furgoni e mezzi elettrici.
+            </p>
+            <div class="partner-deal">🎁 Link Referenziale: Sopralluogo tecnico gratuito + Incentivi PNRR</div>
+          </div>
+          <div style="margin-top: 18px;">
+            <a id="refLinkEvChargers" href="https://wallbox.com/it_it/business?ref=or-route&utm_source=or-route" target="_blank" rel="noopener sponsored" class="btn btn-blue btn-sm" style="width: 100%; justify-content: center;">
+              Richiedi Preventivo Hub EV &nearr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Partner 5: Hardware di Bordo & Tablet Rugged per Autisti -->
+        <div class="partner-card" data-pcat="tech">
+          <div>
+            <div class="partner-header">
+              <div class="partner-icon">📱</div>
+              <div>
+                <b style="font-size: 15px;">Tablet Rugged &amp; Supporti Cabina</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Amazon Business / Dispositivi Bordo Mezzo</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+              Tablet corazzati IP68 antiurto, supporti ventosa/plancia per camion e lettori RFID/Barcode ideali per consultare i Fogli di Viaggio OR-Route in cabina.
+            </p>
+            <div class="partner-deal">🎁 Link Affiliato: Selezione Hardware Flotta scontata per P.IVA</div>
+          </div>
+          <div style="margin-top: 18px;">
+            <a id="refLinkHardware" href="https://www.amazon.it/b?node=14760100031&tag=orroute-21" target="_blank" rel="noopener sponsored" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;">
+              Esplora Kit Bordo Autista &nearr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Partner 6: Hosting Cloud, VPS & Domini per Piattaforme Aziendali -->
+        <div class="partner-card" data-pcat="gps">
+          <div>
+            <div class="partner-header">
+              <div class="partner-icon">☁️</div>
+              <div>
+                <b style="font-size: 15px;">Cloud VPS, Domini &amp; Server Dedicati</b>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Hostinger / DigitalOcean / Aruba Cloud</div>
+              </div>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">
+              Vuoi un'istanza privata ad alte prestazioni con dominio aziendale dedicato e solver matematico multi-core? Attiva un server VPS con credito omaggio.
+            </p>
+            <div class="partner-deal">🎁 Link Referenziale: Dominio gratuito + Bonus fino a 200€ Cloud</div>
+          </div>
+          <div style="margin-top: 18px;">
+            <a id="refLinkCloud" href="https://www.hostinger.it/?ref=or-route&utm_source=or-route" target="_blank" rel="noopener sponsored" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+              Riscatta Bonus Server &amp; Dominio &nearr;
             </a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Banner Pubblicitario Footer (Nascosto Temporaneamente) -->
-    <div class="ad-container" style="display: none; margin-top: 30px;">
+    <!-- =========================================================================
+         5B. SEZIONE "BUY ME A COFFEE" & DONAZIONI LIBERE (PAYPAL / PORTAFOGLIO DIGITALE)
+         ========================================================================= -->
+    <section id="coffeeSupportSection" class="coffee-support-section">
+      <div style="display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 24px; align-items: center;" class="grid-2col">
+        <div>
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(245, 158, 11, 0.16); border: 1px solid rgba(245, 158, 11, 0.45); color: #fbbf24; font-size: 11.5px; font-weight: 800; padding: 4px 12px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            <span>☕</span> Supporta il Progetto Indipendente &bull; Buy Me a Coffee
+          </div>
+
+          <h2 style="font-size: 22px; font-weight: 800; color: #f8fafc; margin-bottom: 8px; letter-spacing: -0.4px;">
+            OR-Route ti ha fatto risparmiare tempo e chilometri? Offrici un Caffè!
+          </h2>
+
+          <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px;">
+            Manteniamo questa piattaforma di <b>Ricerca Operativa e Cartografia GIS aperta, gratuita e priva di paywall</b> per ingegneri, fleet manager, pubbliche amministrazioni e studenti. Se gli algoritmi ti sono stati utili, puoi fare una <b>libera donazione</b> tramite <b>PayPal</b> o <b>Portafoglio Digitale (Revolut, Satispay, Wallet)</b> per contribuire ai costi dei server e del dominio:
+          </p>
+
+          <!-- Selettore Importo Rapido Donazione -->
+          <div class="coffee-tier-pills" id="inlineCoffeeTiers">
+            <button type="button" class="coffee-tier-btn" onclick="selectCoffeeAmount(3, this)">☕ 3€ <small style="font-weight:500; opacity:0.85;">(1 Caffè)</small></button>
+            <button type="button" class="coffee-tier-btn active" onclick="selectCoffeeAmount(5, this)">🥐 5€ <small style="font-weight:500; opacity:0.85;">(Colazione)</small></button>
+            <button type="button" class="coffee-tier-btn" onclick="selectCoffeeAmount(15, this)">🚀 15€ <small style="font-weight:500; opacity:0.85;">(Boost Server)</small></button>
+            <button type="button" class="coffee-tier-btn" onclick="selectCoffeeAmount(30, this)">🏆 30€ <small style="font-weight:500; opacity:0.85;">(Sponsor Flotta)</small></button>
+            <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(10, 17, 32, 0.9); border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 10px; border-radius: 8px;">
+              <span style="font-size: 12px; color: #fbbf24; font-weight: 700;">Altro €:</span>
+              <input type="number" id="inlineCustomCoffeeAmount" min="1" max="1000" step="1" value="5" style="width: 58px; background: transparent; border: none; color: #fff; font-weight: 800; font-size: 13.5px; outline: none; text-align: center;" onchange="setCustomCoffeeAmount(this.value)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Pannello Azioni Versamento Diretto (PayPal / BuyMeACoffee / Digital Wallet) -->
+        <div style="background: rgba(10, 16, 30, 0.88); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Importo Donazione Libera:</span>
+            <strong id="coffeeSelectedAmountBadge" style="font-size: 20px; color: #fbbf24; font-weight: 800;">5,00 €</strong>
+          </div>
+
+          <button type="button" class="btn btn-paypal-donate" style="width: 100%; justify-content: center; padding: 11px 16px; font-size: 14px;" onclick="executeDonationPayment('paypal')">
+            <span>💳</span> Dona Ora con PayPal &nearr;
+          </button>
+
+          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 11px 16px; font-size: 14px; border-radius: 6px;" onclick="executeDonationPayment('bmc')">
+            <span>☕</span> Buy Me a Coffee / Carta &nearr;
+          </button>
+
+          <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px;" onclick="openSupportCoffeeModal('wallet')">
+            <span>📱</span> Portafoglio Digitale (Revolut / Satispay / IBAN)
+          </button>
+
+          <div style="text-align: center; margin-top: 4px;">
+            <a href="javascript:void(0)" onclick="openSupportCoffeeModal('config')" style="font-size: 11px; color: #64748b; text-decoration: none;">
+              ⚙️ Configura coordinate PayPal / Portafoglio Digitale del dominio
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Banner Pubblicitario Footer (Google AdSense Multiplex / Leaderboard) -->
+    <div class="ad-container" style="margin-top: 28px;">
       <span class="ad-label">Pubblicità / Annuncio Google AdSense</span>
       <div class="ad-leaderboard">
         <ins class="adsbygoogle"
@@ -3500,7 +4013,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
              (adsbygoogle = window.adsbygoogle || []).push({});
         </script>
         <span style="font-size: 11.5px; color: var(--text-muted);">
-          [Slot Pubblicitario AdSense 728x90 In-Article &mdash; Alta visualizzazione]
+          📢 [Slot Pubblicitario Google AdSense 728x90 Footer &mdash; Visibile in calce a tutte le sezioni della piattaforma]
         </span>
       </div>
     </div>
@@ -3833,37 +4346,45 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <span style="font-size: 20px;">📐</span>
           <b style="font-size: 16px; color: var(--text-main);">OR-Route</b>
         </div>
-        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6;">
-          Piattaforma gratuita e aperta dedicata all'applicazione della Ricerca Operativa industriale (Operational Research & MILP Solvers) per la riduzione dei costi e delle emissioni delle flotte aziendali.
+        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px;">
+          Piattaforma gratuita e aperta dedicata all'applicazione della Ricerca Operativa industriale (Operational Research &amp; MILP Solvers) per la riduzione dei costi e delle emissioni delle flotte aziendali.
         </p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-coffee-header" onclick="openSupportCoffeeModal()" style="font-size: 12px; padding: 6px 12px;">
+            ☕ Offrimi un Caffè (PayPal / Wallet)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="font-size: 12px;">
+            🤝 Partner &amp; Affiliazioni
+          </button>
+        </div>
       </div>
       <div>
-        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Modelli Disponibili</h4>
-        <ul style="list-style: none; font-size: 12.5px; line-height: 1.8;">
-          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-cvrp', document.getElementById('tabBtnCvrp'))" style="color:var(--text-muted); text-decoration:none;">CVRP (Logistica Merci)</a></li>
-          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-vrptw', document.getElementById('tabBtnVrptw'))" style="color:var(--text-muted); text-decoration:none;">VRPTW (Finestre Orarie)</a></li>
-          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-carp', document.getElementById('tabBtnCarp'))" style="color:var(--text-muted); text-decoration:none;">CARP (Servizi Stradali)</a></li>
-          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-intermediate', document.getElementById('tabBtnIntermediate'))" style="color:var(--text-muted); text-decoration:none;">EV-VRP (Flotte Elettriche)</a></li>
+        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Accesso Rapido Piattaforma</h4>
+        <ul style="list-style: none; font-size: 12.5px; line-height: 1.9;">
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-selector', null); openAndScrollToWizard('step1');" style="color:var(--text-muted); text-decoration:none;">🧭 1. Compila Guida Scelta Modello</a></li>
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-selector', null);" style="color:var(--text-muted); text-decoration:none;">⚡ 2. Scegli Modello Direttamente (10 Modelli)</a></li>
+          <li><a href="javascript:void(0)" onclick="openScenariosModal();" style="color:var(--text-muted); text-decoration:none;">🔐 3. Accedi alle Sessioni Salvate</a></li>
+          <li><a href="javascript:void(0)" onclick="switchMainTab('tab-roi', null);" style="color:var(--text-muted); text-decoration:none;">📊 Calcolatore Risparmio ROI &amp; ESG</a></li>
         </ul>
       </div>
       <div>
-        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Motori & Risorse</h4>
+        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Motori &amp; Risorse</h4>
         <ul style="list-style: none; font-size: 12.5px; line-height: 1.8;">
-          <li>PuLP & COIN-OR CBC Solver</li>
-          <li>OpenStreetMap & OSMnx</li>
+          <li>PuLP &amp; COIN-OR CBC Solver</li>
+          <li>OpenStreetMap &amp; OSMnx GIS</li>
           <li>SIAM Vehicle Routing Literature</li>
-          <li>COIN-OR Operations Research Initiative</li>
+          <li><a href="javascript:void(0)" onclick="openSupportCoffeeModal('config')" style="color:#38bdf8; text-decoration:none;">⚙️ Configura Dominio, AdSense &amp; PayPal</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
       <div>&copy; 2026 OR-Route &mdash; Piattaforma Aperta di Ricerca Operativa per Flotte Aziendali e Servizi RSU.</div>
-      <div>Progetto Open-Source per la Logistica Sostenibile e Pubblica Amministrazione.</div>
+      <div>Sostenuta da Google AdSense, Link Referenziali Partner e Donazioni Libere degli Utenti.</div>
     </div>
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1000"></script>
+  <script src="app.js?v=20261115_1100"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
@@ -4290,6 +4811,147 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn btn-secondary" onclick="closeEditScenarioModal()">Annulla</button>
         <button class="btn btn-blue" onclick="submitEditScenario()">Salva Modifiche</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Fluttuante "Buy Me a Coffee / Donazione Libera" -->
+  <button type="button" class="floating-coffee-widget" onclick="openSupportCoffeeModal()" title="Sostieni OR-Route con un caffè su PayPal o Portafoglio Digitale">
+    <span class="coffee-cup-icon">☕</span>
+    <span>Offrimi un Caffè</span>
+  </button>
+
+  <!-- Modal "Buy Me a Coffee" & Donazioni Libere (PayPal / Portafoglio Digitale / Config) -->
+  <div id="modalSupportCoffee" class="modal-overlay" style="display: none; z-index: 12500;">
+    <div class="modal-card" style="max-width: 560px; border: 1.5px solid rgba(245, 158, 11, 0.5); background: #0d1527;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #ea580c); display: flex; align-items: center; justify-content: center; font-size: 21px;">☕</div>
+          <div>
+            <h3 style="margin: 0; color: #fbbf24; font-size: 18px; font-weight: 800;">Supporta OR-Route &bull; Buy Me a Coffee</h3>
+            <small style="color: #94a3b8; font-size: 11.5px;">Donazione libera tramite PayPal o Portafoglio Digitale</small>
+          </div>
+        </div>
+        <button onclick="closeSupportCoffeeModal()" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Tabs Metodo di Donazione -->
+      <div class="auth-tabs-nav" style="margin-bottom: 16px;">
+        <button type="button" id="coffeeTabBtnPaypal" class="auth-tab-btn active" onclick="switchSupportCoffeeTab('paypal')">💳 PayPal &amp; Caffè</button>
+        <button type="button" id="coffeeTabBtnWallet" class="auth-tab-btn" onclick="switchSupportCoffeeTab('wallet')">📱 Portafoglio Digitale</button>
+        <button type="button" id="coffeeTabBtnConfig" class="auth-tab-btn" onclick="switchSupportCoffeeTab('config')">⚙️ Imposta Coordinate</button>
+      </div>
+
+      <!-- Selettore Importo Comune ai Tab Pagamento -->
+      <div id="coffeeAmountSelectorBox" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: 700; color: #cbd5e1; text-transform: uppercase;">1. Scegli l'importo della donazione libera:</span>
+          <strong id="modalCoffeeAmountLabel" style="font-size: 18px; color: #fbbf24; font-weight: 800;">5,00 €</strong>
+        </div>
+        <div class="coffee-tier-pills" style="margin: 0;">
+          <button type="button" class="coffee-tier-btn" onclick="selectCoffeeAmount(3, this)">☕ 3€</button>
+          <button type="button" class="coffee-tier-btn active" onclick="selectCoffeeAmount(5, this)">🥐 5€</button>
+          <button type="button" class="coffee-tier-btn" onclick="selectCoffeeAmount(10, this)">🍕 10€</button>
+          <button type="button" class="coffee-tier-btn" onclick="selectCoffeeAmount(25, this)">🚀 25€</button>
+          <input type="number" id="modalCustomCoffeeAmount" min="1" max="1000" step="1" value="5" class="cell-inp" style="width: 75px; text-align: center; font-weight: 800; color: #fbbf24;" onchange="setCustomCoffeeAmount(this.value)" title="Inserisci un importo personalizzato in Euro">
+        </div>
+      </div>
+
+      <!-- TAB 1: PAYPAL & BUY ME A COFFEE -->
+      <div id="coffeePanelPaypal">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 14px;">
+          Scegli il canale rapido che preferisci per inviare il tuo contributo e sostenere i costi dei server di calcolo MILP e delle mappe OpenStreetMap:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+          <button type="button" class="btn btn-paypal-donate" style="width: 100%; justify-content: center; padding: 12px; font-size: 14.5px;" onclick="executeDonationPayment('paypal')">
+            <span>💳</span> Versamento Immediato con PayPal (PayPal.Me) &nearr;
+          </button>
+
+          <button type="button" class="btn-coffee-header" style="width: 100%; justify-content: center; padding: 12px; font-size: 14.5px; border-radius: 8px;" onclick="executeDonationPayment('bmc')">
+            <span>☕</span> Dona su Buy Me a Coffee / Carta / Apple Pay &nearr;
+          </button>
+        </div>
+
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #94a3b8;">
+          🔒 <b>Transazione Sicura:</b> il versamento avviene direttamente sulle pagine ufficiali crittografate di PayPal o Buy Me a Coffee senza alcuna commissione aggiuntiva per il donatore.
+        </div>
+      </div>
+
+      <!-- TAB 2: PORTAFOGLIO DIGITALE (REVOLUT / SATISPAY / CRYPTO / IBAN) -->
+      <div id="coffeePanelWallet" style="display: none;">
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 12px;">
+          Puoi inviare una donazione istantanea dal tuo smartphone o home banking verso uno dei seguenti <b>Portafogli Digitali</b>:
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+          <button type="button" class="btn btn-blue" style="justify-content: center; padding: 10px;" onclick="executeDonationPayment('revolut')">
+            ⚡ Apri Revolut.Me &nearr;
+          </button>
+          <button type="button" class="btn btn-primary" style="justify-content: center; padding: 10px;" onclick="executeDonationPayment('satispay')">
+            📲 Paga con Satispay &nearr;
+          </button>
+        </div>
+
+        <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px;">
+          📌 Tag Revolut / PayPal / Satispay Rapido:
+        </div>
+        <div class="wallet-address-box">
+          <span id="walletTagDisplay" style="overflow: hidden; text-overflow: ellipsis;">@or-route-official</span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyWalletField('tag')">📋 Copia Tag</button>
+        </div>
+
+        <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px;">
+          🏦 Coordinate IBAN / Portafoglio Digitale (USDT / BTC / ETH):
+        </div>
+        <div class="wallet-address-box">
+          <span id="walletAddressDisplay" style="overflow: hidden; text-overflow: ellipsis;">IT60X0542811101000000123456</span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyWalletField('address')">📋 Copia Indirizzo</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: CONFIGURAZIONE COORDINATE PROPRIETARIO SITO -->
+      <div id="coffeePanelConfig" style="display: none;">
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px;">
+          Personalizza i tuoi link di incasso per il dominio pubblico (vengono salvati e applicati istantaneamente a tutti i pulsanti della piattaforma):
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+          <div>
+            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link PayPal.Me o Email PayPal:</label>
+            <input type="text" id="cfgPaypalUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://www.paypal.com/paypalme/tuonome">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Ko-fi:</label>
+            <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://www.buymeacoffee.com/tuonome">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Revolut.Me / Tag:</label>
+              <input type="text" id="cfgRevolutUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://revolut.me/tuonome">
+            </div>
+            <div>
+              <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link Satispay:</label>
+              <input type="text" id="cfgSatispayUrl" class="landing-input" style="margin-bottom: 0;" placeholder="es. https://www.satispay.com/...">
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">IBAN o Indirizzo Portafoglio Digitale (Wallet):</label>
+            <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" placeholder="es. IT60X... oppure 0x71C... (Crypto Wallet)">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">ID Editore Google AdSense (Publisher ID):</label>
+            <input type="text" id="cfgAdsenseId" class="landing-input" style="margin-bottom: 0;" placeholder="es. ca-pub-1234567890123456">
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center; font-weight: 700;" onclick="saveMonetizationConfig()">
+          💾 Salva Coordinate Monetizzazione &amp; Portafoglio
+        </button>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeSupportCoffeeModal()">Chiudi</button>
       </div>
     </div>
   </div>

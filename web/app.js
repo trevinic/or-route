@@ -664,6 +664,12 @@ function evaluateWizard() {
       if (ctaBtn) ctaBtn.innerText = '⚡ Inietta Questa Flotta nel Modello CVRP Logistica ➔';
     }
   }
+
+  // Sincronizza il badge di anteprima in Area 1 della Landing Page
+  const recBadge = document.getElementById('landingArea1RecBadge');
+  if (recBadge && title) {
+    recBadge.innerText = title.innerText.replace('🎯 Modello Consigliato: ', '');
+  }
 }
 
 async function applyWizardParametersToModel() {
@@ -8766,7 +8772,12 @@ function updateAuthUI() {
       <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
         👤 Accedi / Registrati
       </button>
+      <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Login e Salvataggio Scenari">?</button>
     `;
+  }
+
+  if (typeof updateLandingArea3SessionUI === 'function') {
+    updateLandingArea3SessionUI();
   }
 }
 
@@ -9781,5 +9792,537 @@ window.goToFaqSectionFromPrompt = goToFaqSectionFromPrompt;
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' || e.key === 'Esc') {
     closeFaqHelpModal();
+    closeSupportCoffeeModal();
   }
 });
+
+
+// =========================================================================
+// LANDING PAGE A 3 AREE, MONETIZZAZIONE, LINK REFERENZIALI & BUY ME A COFFEE
+// =========================================================================
+
+const MONETIZATION_CONFIG = {
+  paypalUrl: 'https://www.paypal.com/paypalme/orroute',
+  bmcUrl: 'https://www.buymeacoffee.com/orroute',
+  revolutUrl: 'https://revolut.me/orroute',
+  satispayUrl: 'https://www.satispay.com',
+  walletTag: '@or-route-official',
+  walletAddress: 'IT60X0542811101000000123456',
+  adsensePublisherId: 'ca-pub-XXXXXXXXXXXXXXXX',
+  selectedDonationEur: 5
+};
+
+function loadMonetizationConfig() {
+  try {
+    const saved = localStorage.getItem('or_route_monetization_cfg');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.assign(MONETIZATION_CONFIG, parsed);
+    }
+  } catch (e) {
+    console.warn('[MONETIZATION] Errore caricamento config locale:', e);
+  }
+  syncMonetizationFieldsUI();
+}
+
+function syncMonetizationFieldsUI() {
+  const tagEl = document.getElementById('walletTagDisplay');
+  if (tagEl) tagEl.innerText = MONETIZATION_CONFIG.walletTag || '@or-route-official';
+
+  const addrEl = document.getElementById('walletAddressDisplay');
+  if (addrEl) addrEl.innerText = MONETIZATION_CONFIG.walletAddress || 'IT60X0542811101000000123456';
+
+  const inpPaypal = document.getElementById('cfgPaypalUrl');
+  if (inpPaypal) inpPaypal.value = MONETIZATION_CONFIG.paypalUrl || '';
+
+  const inpBmc = document.getElementById('cfgBmcUrl');
+  if (inpBmc) inpBmc.value = MONETIZATION_CONFIG.bmcUrl || '';
+
+  const inpRev = document.getElementById('cfgRevolutUrl');
+  if (inpRev) inpRev.value = MONETIZATION_CONFIG.revolutUrl || '';
+
+  const inpSat = document.getElementById('cfgSatispayUrl');
+  if (inpSat) inpSat.value = MONETIZATION_CONFIG.satispayUrl || '';
+
+  const inpWal = document.getElementById('cfgWalletAddress');
+  if (inpWal) inpWal.value = MONETIZATION_CONFIG.walletAddress || '';
+
+  const inpAds = document.getElementById('cfgAdsenseId');
+  if (inpAds) inpAds.value = MONETIZATION_CONFIG.adsensePublisherId || '';
+}
+
+function saveMonetizationConfig() {
+  const paypal = document.getElementById('cfgPaypalUrl')?.value.trim();
+  const bmc = document.getElementById('cfgBmcUrl')?.value.trim();
+  const rev = document.getElementById('cfgRevolutUrl')?.value.trim();
+  const sat = document.getElementById('cfgSatispayUrl')?.value.trim();
+  const wal = document.getElementById('cfgWalletAddress')?.value.trim();
+  const ads = document.getElementById('cfgAdsenseId')?.value.trim();
+
+  if (paypal) MONETIZATION_CONFIG.paypalUrl = paypal;
+  if (bmc) MONETIZATION_CONFIG.bmcUrl = bmc;
+  if (rev) {
+    MONETIZATION_CONFIG.revolutUrl = rev;
+    const parts = rev.split('/');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart) MONETIZATION_CONFIG.walletTag = lastPart.startsWith('@') ? lastPart : '@' + lastPart;
+  }
+  if (sat) MONETIZATION_CONFIG.satispayUrl = sat;
+  if (wal) MONETIZATION_CONFIG.walletAddress = wal;
+  if (ads) MONETIZATION_CONFIG.adsensePublisherId = ads;
+
+  try {
+    localStorage.setItem('or_route_monetization_cfg', JSON.stringify(MONETIZATION_CONFIG));
+  } catch (e) {}
+
+  syncMonetizationFieldsUI();
+  showToast('✅ Coordinate di monetizzazione (PayPal, Portafoglio Digitale e AdSense) salvate!');
+  switchSupportCoffeeTab('paypal');
+}
+
+function selectCoffeeAmount(amount, btnEl) {
+  const val = Math.max(1, parseFloat(amount) || 5);
+  MONETIZATION_CONFIG.selectedDonationEur = val;
+
+  // Aggiorna bottoni attivi sia nella card inline sia nel modal
+  if (btnEl && btnEl.parentElement) {
+    btnEl.parentElement.querySelectorAll('.coffee-tier-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+  }
+
+  const inlineInp = document.getElementById('inlineCustomCoffeeAmount');
+  if (inlineInp) inlineInp.value = val;
+
+  const modalInp = document.getElementById('modalCustomCoffeeAmount');
+  if (modalInp) modalInp.value = val;
+
+  const formatted = val.toFixed(2).replace('.', ',') + ' €';
+  const badge1 = document.getElementById('coffeeSelectedAmountBadge');
+  if (badge1) badge1.innerText = formatted;
+
+  const badge2 = document.getElementById('modalCoffeeAmountLabel');
+  if (badge2) badge2.innerText = formatted;
+}
+
+function setCustomCoffeeAmount(rawVal) {
+  const val = Math.max(1, parseFloat(rawVal) || 5);
+  selectCoffeeAmount(val, null);
+}
+
+function openSupportCoffeeModal(defaultTab = 'paypal') {
+  loadMonetizationConfig();
+  const modal = document.getElementById('modalSupportCoffee');
+  if (modal) modal.style.display = 'flex';
+  switchSupportCoffeeTab(defaultTab);
+}
+
+function closeSupportCoffeeModal() {
+  const modal = document.getElementById('modalSupportCoffee');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchSupportCoffeeTab(tabName) {
+  const bPaypal = document.getElementById('coffeeTabBtnPaypal');
+  const bWallet = document.getElementById('coffeeTabBtnWallet');
+  const bConfig = document.getElementById('coffeeTabBtnConfig');
+
+  const pPaypal = document.getElementById('coffeePanelPaypal');
+  const pWallet = document.getElementById('coffeePanelWallet');
+  const pConfig = document.getElementById('coffeePanelConfig');
+  const amountBox = document.getElementById('coffeeAmountSelectorBox');
+
+  [bPaypal, bWallet, bConfig].forEach(b => { if (b) b.classList.remove('active'); });
+  [pPaypal, pWallet, pConfig].forEach(p => { if (p) p.style.display = 'none'; });
+
+  if (tabName === 'wallet') {
+    if (bWallet) bWallet.classList.add('active');
+    if (pWallet) pWallet.style.display = 'block';
+    if (amountBox) amountBox.style.display = 'block';
+  } else if (tabName === 'config') {
+    if (bConfig) bConfig.classList.add('active');
+    if (pConfig) pConfig.style.display = 'block';
+    if (amountBox) amountBox.style.display = 'none';
+  } else {
+    if (bPaypal) bPaypal.classList.add('active');
+    if (pPaypal) pPaypal.style.display = 'block';
+    if (amountBox) amountBox.style.display = 'block';
+  }
+}
+
+function executeDonationPayment(provider) {
+  loadMonetizationConfig();
+  const amount = MONETIZATION_CONFIG.selectedDonationEur || 5;
+
+  if (provider === 'paypal') {
+    let base = (MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/orroute').replace(/\/+$/, '');
+    let targetUrl = base;
+    if (base.includes('paypal.me') || base.includes('paypalme')) {
+      targetUrl = `${base}/${amount}EUR`;
+    } else if (base.includes('@')) {
+      targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(base)}&currency_code=EUR&amount=${amount}&item_name=${encodeURIComponent('Supporto Progetto OR-Route')}`;
+    }
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    showToast(`☕ Apertura PayPal per donazione libera di ${amount}€... Grazie per il tuo supporto!`);
+  } else if (provider === 'bmc') {
+    const targetUrl = MONETIZATION_CONFIG.bmcUrl || 'https://www.buymeacoffee.com/orroute';
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    showToast(`☕ Apertura pagina Buy Me a Coffee... Grazie per il supporto!`);
+  } else if (provider === 'revolut') {
+    const targetUrl = MONETIZATION_CONFIG.revolutUrl || 'https://revolut.me/orroute';
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    showToast(`⚡ Apertura Revolut.Me per versamento di ${amount}€!`);
+  } else if (provider === 'satispay') {
+    const targetUrl = MONETIZATION_CONFIG.satispayUrl || 'https://www.satispay.com';
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    showToast(`📲 Apertura Satispay per versamento rapido!`);
+  }
+}
+
+function copyWalletField(fieldType) {
+  const textToCopy = (fieldType === 'tag')
+    ? (MONETIZATION_CONFIG.walletTag || '@or-route-official')
+    : (MONETIZATION_CONFIG.walletAddress || 'IT60X0542811101000000123456');
+
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    showToast(`📋 Copiato negli appunti: ${textToCopy}`);
+  }).catch(() => {
+    showToast(`Valore: ${textToCopy}`);
+  });
+}
+
+// ==========================================
+// FUNZIONI AREA 1: APERTURA E SCROLL ALLA GUIDA WIZARD
+// ==========================================
+function openAndScrollToWizard(sectionTarget = 'step1') {
+  const content = document.getElementById('wizardCollapsibleContent');
+  const btnToggle = document.getElementById('btnToggleWizardBody');
+  if (content && content.style.display === 'none') {
+    content.style.display = 'block';
+    if (btnToggle) btnToggle.innerText = '🔼 Comprimi Guida';
+  }
+
+  let anchorId = 'wizardStep1Anchor';
+  if (sectionTarget === 'fleet') anchorId = 'wizardFleetAnchor';
+  else if (sectionTarget === 'matrix') anchorId = 'wizardMatrixAnchor';
+
+  const targetEl = document.getElementById(anchorId) || document.getElementById('wizardGuideContainer');
+  if (targetEl) {
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const card = document.getElementById('wizardGuideContainer');
+    if (card) {
+      card.classList.remove('wizard-highlight-focus');
+      void card.offsetWidth;
+      card.classList.add('wizard-highlight-focus');
+    }
+  }
+}
+
+function toggleWizardGuideBody() {
+  const content = document.getElementById('wizardCollapsibleContent');
+  const btn = document.getElementById('btnToggleWizardBody');
+  if (!content) return;
+
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    if (btn) btn.innerText = '🔼 Comprimi Guida';
+  } else {
+    content.style.display = 'none';
+    if (btn) btn.innerText = '🔽 Espandi Guida Interattiva';
+  }
+}
+
+// ==========================================
+// FUNZIONI AREA 2: FILTRO E AVVIO DIRETTO DEI 10 MODELLI
+// ==========================================
+function filterLandingDirectModels(category, btnEl) {
+  if (btnEl && btnEl.parentElement) {
+    btnEl.parentElement.querySelectorAll('.area-model-filter-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+  }
+
+  const grid = document.getElementById('landingDirectModelsGrid');
+  if (!grid) return;
+
+  grid.querySelectorAll('.direct-model-btn').forEach(card => {
+    const itemCat = card.getAttribute('data-cat');
+    if (category === 'all' || itemCat === category) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function launchSelectedModelFromLanding() {
+  const sel = document.getElementById('landingDirectModelSelect');
+  const targetTab = sel ? sel.value : 'tab-carp';
+  if (targetTab) {
+    switchMainTab(targetTab, null);
+    showToast(`🚀 Modello avviato! Configura i parametri o premi Risolvi.`);
+  }
+}
+
+// ==========================================
+// FUNZIONI AREA 3: ACCESSO RAPIDO & RIPRISTINO SESSIONI SALVATE
+// ==========================================
+async function submitLandingQuickLogin() {
+  const userInp = document.getElementById('landingQuickUser');
+  const passInp = document.getElementById('landingQuickPass');
+  const errBox = document.getElementById('landingQuickLoginError');
+
+  const username = userInp ? userInp.value.trim() : '';
+  const password = passInp ? passInp.value.trim() : '';
+
+  if (errBox) errBox.style.display = 'none';
+
+  if (!username || !password) {
+    if (errBox) {
+      errBox.innerText = 'Inserisci nome utente/email e password.';
+      errBox.style.display = 'block';
+    } else {
+      showToast('Inserisci nome utente e password.');
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      if (errBox) {
+        errBox.innerText = data.error || 'Credenziali non valide.';
+        errBox.style.display = 'block';
+      }
+      return;
+    }
+
+    State.authToken = data.token;
+    State.currentUser = data.user;
+    localStorage.setItem('or_route_token', data.token);
+
+    if (userInp) userInp.value = '';
+    if (passInp) passInp.value = '';
+
+    await fetchUserScenarios();
+    updateAuthUI();
+    showToast(`✅ Bentornato, ${data.user.username}! Le tue sessioni salvate sono pronte nell'Area 3.`);
+  } catch (err) {
+    if (errBox) {
+      errBox.innerText = 'Errore di comunicazione con il server.';
+      errBox.style.display = 'block';
+    }
+  }
+}
+
+function updateLandingArea3SessionUI() {
+  const guestBox = document.getElementById('landingArea3GuestBox');
+  const loggedBox = document.getElementById('landingArea3LoggedBox');
+  const userLabel = document.getElementById('landingLoggedUsername');
+  const countLabel = document.getElementById('landingLoggedScenarioCount');
+  const listContainer = document.getElementById('landingRecentScenariosList');
+
+  if (!guestBox || !loggedBox) return;
+
+  if (!State.currentUser) {
+    guestBox.style.display = 'block';
+    loggedBox.style.display = 'none';
+    return;
+  }
+
+  guestBox.style.display = 'none';
+  loggedBox.style.display = 'block';
+
+  const scenarios = State.userScenarios || [];
+  if (userLabel) userLabel.innerText = State.currentUser.username;
+  if (countLabel) countLabel.innerText = scenarios.length;
+
+  if (!listContainer) return;
+
+  if (scenarios.length === 0) {
+    listContainer.innerHTML = `
+      <div style="background: rgba(10, 17, 32, 0.7); border: 1px dashed rgba(255,255,255,0.12); border-radius: 8px; padding: 14px; text-align: center; font-size: 12px; color: #94a3b8;">
+        Nessuna sessione ancora salvata nel profilo.<br>
+        <button type="button" class="btn btn-blue btn-sm" style="margin-top: 8px; font-size: 11.5px;" onclick="openSaveScenarioModal()">
+          💾 Salva la Tua Prima Sessione
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const recent = scenarios.slice(0, 4);
+  let html = '';
+  recent.forEach(s => {
+    const m = (s.model_type || 'carp').toUpperCase();
+    const isActive = (State.activeScenarioId === s.id);
+    html += `
+      <div class="landing-recent-session-item" style="${isActive ? 'border-color:#10b981; background:rgba(16,185,129,0.1);' : ''}">
+        <div style="min-width: 0; flex: 1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="code-tag" style="font-size: 10px; padding: 1px 5px;">${escapeHtml(m)}</span>
+            <strong style="font-size: 12.5px; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${escapeHtml(s.name)}</strong>
+          </div>
+          <div style="font-size: 10.5px; color: #94a3b8; margin-top: 2px;">
+            ${s.place_name ? '📍 ' + escapeHtml(s.place_name) + ' • ' : ''}ID #${s.id}
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="padding: 4px 10px; font-size: 11.5px; white-space: nowrap;" onclick="loadScenarioById(${s.id})" title="Ricomincia subito il lavoro da questa sessione">
+          ▶️ Riprendi
+        </button>
+      </div>
+    `;
+  });
+  listContainer.innerHTML = html;
+}
+
+// ==========================================
+// BACKUP SESSIONE SU FILE LOCALE (.JSON)
+// ==========================================
+function triggerSessionFileImport() {
+  const inp = document.getElementById('landingSessionFileInput');
+  if (inp) {
+    inp.value = '';
+    inp.click();
+  }
+}
+
+async function exportCurrentSessionToJson() {
+  try {
+    const info = await getCurrentActiveModelInfo();
+    const exportBundle = {
+      platform: 'OR-Route',
+      version: '3.0',
+      exported_at: new Date().toISOString(),
+      active_tab: State.activeTab || 'tab-carp',
+      model_type: info.modelType,
+      wizard_answers: wizardAnswers,
+      config: info.config
+    };
+
+    const blob = new Blob([JSON.stringify(exportBundle, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `or_route_sessione_${info.modelType}_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`📥 Sessione di lavoro esportata in formato .JSON (${a.download})!`);
+  } catch (err) {
+    showToast('Errore durante l\'esportazione del file JSON: ' + err.message);
+  }
+}
+
+function handleSessionFileImport(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      State.hasImportedConfigFile = true;
+
+      if (parsed.wizard_answers && typeof parsed.wizard_answers === 'object') {
+        Object.assign(wizardAnswers, parsed.wizard_answers);
+        renderWizardFleetTable();
+        evaluateWizard();
+      }
+
+      const model = (parsed.model_type || (parsed.streets ? 'carp' : 'cvrp')).toLowerCase();
+      const cfg = parsed.config || parsed;
+
+      if (model === 'carp') {
+        State.carpConfig = cfg;
+        try { await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) }); } catch (_) {}
+        if (typeof renderCarpTables === 'function') renderCarpTables();
+        switchMainTab('tab-carp', null);
+      } else if (model === 'cvrp') {
+        State.cvrpConfig = cfg;
+        if (typeof renderCvrpTables === 'function') renderCvrpTables();
+        switchMainTab('tab-cvrp', null);
+      } else if (model === 'vrptw') {
+        State.vrptwConfig = cfg;
+        if (typeof renderVrptwTables === 'function') renderVrptwTables();
+        switchMainTab('tab-vrptw', null);
+      } else if (model === 'pcarp') {
+        State.pcarpConfig = cfg;
+        if (typeof renderPcarpTables === 'function') renderPcarpTables();
+        switchMainTab('tab-pcarp', null);
+      } else if (model === 'carptw') {
+        State.carptwConfig = cfg;
+        if (typeof renderCarptwTables === 'function') renderCarptwTables();
+        switchMainTab('tab-carptw', null);
+      } else if (model === 'carpif') {
+        State.carpifConfig = cfg;
+        if (typeof renderCarpifTables === 'function') renderCarpifTables();
+        switchMainTab('tab-carpif', null);
+      } else if (model === 'dcarp') {
+        State.dcarpConfig = cfg;
+        if (typeof renderDcarpTables === 'function') renderDcarpTables();
+        switchMainTab('tab-dcarp', null);
+      } else if (model === 'ev_vrp' || model === 'intermediate') {
+        State.evConfig = cfg;
+        if (typeof renderEvTables === 'function') renderEvTables();
+        switchMainTab('tab-intermediate', null);
+      } else if (model === 'vrppd') {
+        State.vrppdConfig = cfg;
+        if (typeof renderVrppdTables === 'function') renderVrppdTables();
+        switchMainTab('tab-vrppd', null);
+      } else if (model === 'mdvrp') {
+        State.mdvrpConfig = cfg;
+        if (typeof renderMdvrpTables === 'function') renderMdvrpTables();
+        switchMainTab('tab-mdvrp', null);
+      }
+
+      showToast(`✅ Sessione "${file.name}" ripristinata con successo! Modello ${model.toUpperCase()} pronto.`);
+    } catch (err) {
+      showToast('⚠️ File JSON non valido: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ==========================================
+// NAVIGAZIONE & FILTRI SEZIONE PARTNER / AFFILIAZIONI
+// ==========================================
+function scrollToPartnerSection() {
+  const sec = document.getElementById('partner-section');
+  if (sec) {
+    sec.style.display = 'block';
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function filterPartnerCards(category, btnEl) {
+  if (btnEl && btnEl.parentElement) {
+    btnEl.parentElement.querySelectorAll('.area-model-filter-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+  }
+
+  const grid = document.getElementById('partnerCardsGrid');
+  if (!grid) return;
+
+  grid.querySelectorAll('.partner-card').forEach(card => {
+    const pcat = card.getAttribute('data-pcat');
+    if (category === 'all' || pcat === category) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// Inizializza configurazione monetizzazione al caricamento
+window.addEventListener('DOMContentLoaded', () => {
+  loadMonetizationConfig();
+  updateLandingArea3SessionUI();
+});
+
