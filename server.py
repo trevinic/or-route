@@ -16,6 +16,7 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import time
+import datetime
 from typing import Dict, Any
 
 from carp_model import solve_carp_from_config
@@ -416,6 +417,16 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     self.wfile.write(f.read())
                 return
 
+        elif path in ("/contatti", "/contatti.html", "/contact", "/contact.html"):
+            contact_path = os.path.join(WEB_DIR, "contatti.html")
+            if os.path.exists(contact_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                with open(contact_path, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+
         elif path == "/api/config":
             cfg = load_config()
             self.send_response(200)
@@ -634,8 +645,57 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         body = raw_body.decode("utf-8") if raw_body else "{}"
 
 
+        # --------------------- INVIO CONTATTI & SUGGERIMENTI ---------------------
+        if path == "/api/contact":
+            try:
+                data = json.loads(body)
+                name = data.get("name", "").strip()
+                email = data.get("email", "").strip()
+                category = data.get("category", "").strip()
+                company = data.get("company", "").strip()
+                model_ref = data.get("model", "").strip()
+                subject = data.get("subject", "").strip()
+                message = data.get("message", "").strip()
+
+                if not email or not message:
+                    self.send_json(400, {"success": False, "error": "Email e messaggio sono campi obbligatori."})
+                    return
+
+                contact_entry = {
+                    "timestamp": datetime.datetime.now().isoformat(),
+                    "name": name,
+                    "email": email,
+                    "company": company,
+                    "category": category,
+                    "model_ref": model_ref,
+                    "subject": subject,
+                    "message": message,
+                    "target_email": "or.route2026@gmail.com"
+                }
+
+                submissions_file = os.path.join(BASE_DIR, "data", "contact_submissions.json")
+                os.makedirs(os.path.dirname(submissions_file), exist_ok=True)
+                existing = []
+                if os.path.exists(submissions_file):
+                    try:
+                        with open(submissions_file, "r", encoding="utf-8") as f:
+                            existing = json.load(f)
+                    except Exception:
+                        existing = []
+                existing.append(contact_entry)
+                with open(submissions_file, "w", encoding="utf-8") as f:
+                    json.dump(existing, f, indent=2, ensure_ascii=False)
+
+                self.send_json(200, {
+                    "success": True,
+                    "message": "Richiesta registrata con successo e archiviata per or.route2026@gmail.com"
+                })
+            except Exception as e:
+                self.send_json(500, {"success": False, "error": f"Errore interno registrazione richiesta: {e}"})
+            return
+
         # --------------------- AUTH & SCENARI UTENTE (LOCALE SQLITE) ---------------------
-        if path == "/api/auth/register":
+        elif path == "/api/auth/register":
             try:
                 data = json.loads(body)
                 token, user_dict, err = auth_db.register_user(

@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contatti, Assistenza &amp; Suggerimenti &mdash; OR-Route</title>
+  <meta name="description" content="Invia le tue richieste, segnalazioni o suggerimenti per la piattaforma OR-Route di Ricerca Operativa e ottimizzazione flotte. Recapito diretto a or.route2026@gmail.com">
+
+  <!-- Google Fonts: Outfit & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Foglio di Stile Base della Piattaforma -->
+  <link rel="stylesheet" href="style.css?v=20261115_1420">
+
+  <style>
+    /* Stili dedicati per la pagina Contatti & Suggerimenti */
+    .contact-hero {
+      text-align: center;
+      padding: 40px 20px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .contact-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #60a5fa;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      margin-bottom: 16px;
+    }
+    .contact-hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+    .contact-hero h1 span {
+      background: linear-gradient(135deg, #38bdf8 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .contact-hero p {
+      font-size: 15.5px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Layout a 2 Colonne */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 28px;
+      max-width: 1200px;
+      margin: 20px auto 50px;
+      padding: 0 20px;
+    }
+
+    @media (max-width: 920px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .contact-hero h1 {
+        font-size: 26px;
+      }
+    }
+
+    /* Box Principale Form */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .form-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #10b981, #6366f1);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .form-group-custom {
+      margin-bottom: 20px;
+    }
+    .form-group-custom label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 7px;
+    }
+    .form-group-custom label .req {
+      color: #f43f5e;
+      margin-left: 3px;
+    }
+    .form-group-custom .hint {
+      display: block;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .inp-custom, .select-custom, .textarea-custom {
+      width: 100%;
+      background: #090e1a;
+      border: 1px solid #1f2e4d;
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+    .inp-custom:focus, .select-custom:focus, .textarea-custom:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      background: #0d1527;
+    }
+    .textarea-custom {
+      min-height: 140px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    /* Badge Categorie Interattive */
+    .category-pills {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .category-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #090e1a;
+      border: 1px solid #1f2e4d;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .category-pill:hover {
+      border-color: rgba(56, 189, 248, 0.5);
+      background: #10192e;
+      color: var(--text-main);
+    }
+    .category-pill.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.14);
+      color: #38bdf8;
+      font-weight: 600;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+    .category-pill input {
+      display: none;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) {
+      .form-row-2 {
+        grid-template-columns: 1fr;
+      }
+      .category-pills {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Privacy Checkbox */
+    .privacy-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 22px 0;
+      padding: 12px 14px;
+      background: rgba(14, 22, 38, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+    .privacy-check input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: #10b981;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* Azioni Form */
+    .form-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .btn-submit-main {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-submit-main:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    }
+    .btn-submit-main:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-mailto-fallback {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-mailto-fallback:hover {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-color: #334155;
+    }
+
+    /* Feedback Alert Boxes */
+    .alert-box {
+      display: none;
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .alert-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #34d399;
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #f87171;
+    }
+    .alert-loading {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #38bdf8;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Sidebar Cards */
+    .sidebar-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .side-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .side-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .email-display-box {
+      background: #080d18;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+    .email-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #38bdf8;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .btn-copy {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .btn-copy:hover {
+      background: #334155;
+      color: #38bdf8;
+    }
+
+    .info-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .info-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.45;
+    }
+    .info-list li span.icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* FAQ Accordion rapido */
+    .faq-mini-item {
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: #090e1a;
+      overflow: hidden;
+    }
+    .faq-mini-item summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      list-style: none;
+      user-select: none;
+    }
+    .faq-mini-item summary::-webkit-details-marker {
+      display: none;
+    }
+    .faq-mini-item summary::after {
+      content: '+';
+      font-size: 16px;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .faq-mini-item[open] summary::after {
+      content: '−';
+    }
+    .faq-mini-item p {
+      padding: 0 14px 14px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+      max-width: 1200px;
+      margin: 16px auto 0;
+      padding: 0 20px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .breadcrumbs a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .breadcrumbs a:hover {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. HEADER DELLA PIATTAFORMA (COERENTE CON INDEX.HTML)
+       ========================================================================= -->
+  <header class="app-header">
+    <div class="header-container">
+      <a href="index.html" class="logo-group" style="text-decoration: none; cursor: pointer; flex-shrink: 0;" title="Torna alla Home Page di OR-Route">
+        <div class="logo-badge">📍</div>
+        <div class="logo-text">
+          <h1>OR-<span class="highlight">Route</span></h1>
+          <div class="logo-sub">Ricerca Operativa &amp; Algoritmi Flotte</div>
+        </div>
+      </a>
+
+      <div class="header-meta">
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <a href="index.html" class="btn btn-home" style="text-decoration: none;" title="Torna all'applicazione e ai solutori">
+            <span>🏠</span> Torna alla Piattaforma
+          </a>
+
+          <a href="index.html#modelli" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+            ⚡ I 10 Modelli
+          </a>
+
+          <a href="contatti.html" class="btn btn-blue btn-sm active" style="text-decoration: none;" title="Sei nella pagina contatti e supporto">
+            📩 Contatti &amp; Suggerimenti
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Breadcrumbs -->
+  <div class="breadcrumbs">
+    <a href="index.html">🏠 Home</a>
+    <span>&rsaquo;</span>
+    <span style="color: var(--text-main); font-weight: 600;">Contatti, Richieste &amp; Suggerimenti</span>
+  </div>
+
+  <!-- Hero Header -->
+  <section class="contact-hero">
+    <div class="contact-badge">
+      <span>📬</span> Canale Diretto &amp; Supporto Tecnico
+    </div>
+    <h1>Hai una <span>Richiesta</span> o un <span>Suggerimento</span>?</h1>
+    <p>
+      Il team di <strong>OR-Route</strong> è a tua disposizione per supporto sui modelli matematici di Ricerca Operativa,
+      nuove funzionalità desiderate, personalizzazioni industriali per la tua flotta o collaborazioni scientifiche.
+    </p>
+  </section>
+
+  <!-- =========================================================================
+       2. CONTENUTO PRINCIPALE (GRIGLIA FORM + SIDEBAR)
+       ========================================================================= -->
+  <main class="contact-grid">
+
+    <!-- COLONNA SINISTRA: FORM DI COMPILAZIONE -->
+    <section class="form-card">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+          <span>📝</span> Modulo di Invio Richiesta
+        </h2>
+        <span style="font-size: 12px; color: var(--text-muted);"><span style="color:#f43f5e;">*</span> Campi obbligatori</span>
+      </div>
+
+      <!-- Alert di stato -->
+      <div id="alertSuccess" class="alert-box alert-success">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 22px;">✅</span>
+          <div>
+            <strong>Messaggio inviato con successo!</strong>
+            <p style="margin-top: 4px; font-size: 13px;">
+              La tua richiesta è stata trasmessa a <strong>or.route2026@gmail.com</strong>.
+              Ti risponderemo all'indirizzo email specificato nel più breve tempo possibile (entro 24-48h lavorative).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div id="alertError" class="alert-box alert-error">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 22px;">⚠️</span>
+          <div>
+            <strong>Impossibile inviare tramite il modulo web diretto.</strong>
+            <p style="margin-top: 4px; font-size: 13px;">
+              Si è verificato un temporaneo problema di rete o blocco browser. Puoi comunque inviare immediatamente
+              la tua richiesta precompilata cliccando sul pulsante sottostante <em>"Apri nel tuo Client Email"</em>
+              oppure scrivendo direttamente a <strong>or.route2026@gmail.com</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div id="alertLoading" class="alert-box alert-loading">
+        <div class="spinner"></div>
+        <div>
+          <strong>Trasmissione in corso a or.route2026@gmail.com...</strong>
+          <span style="display: block; font-size: 12px; opacity: 0.85;">Attendi un istante, stiamo recapitando la tua richiesta.</span>
+        </div>
+      </div>
+
+      <!-- FORM HTML COMPLETO -->
+      <form id="contactForm" action="https://formsubmit.co/or.route2026@gmail.com" method="POST" novalidate>
+        <!-- Campi di configurazione FormSubmit.co -->
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_subject" id="formSubjectHidden" value="[OR-Route] Nuova Richiesta / Suggerimento dal Form Web">
+        <input type="hidden" name="_autoresponse" value="Grazie per aver contattato OR-Route! Abbiamo ricevuto la tua comunicazione e il nostro team ti risponderà al più presto. (Destinatario: or.route2026@gmail.com)">
+
+        <!-- 1. Categoria del messaggio (Pills interattive) -->
+        <div class="form-group-custom">
+          <label>Seleziona il Motivo del Contatto <span class="req">*</span></label>
+          <div class="category-pills">
+            <label class="category-pill active" onclick="selectCategory('Suggerimento', this)">
+              <input type="radio" name="categoria" value="Suggerimento" checked>
+              <span>💡 Suggerimento</span>
+            </label>
+            <label class="category-pill" onclick="selectCategory('Richiesta Assistenza', this)">
+              <input type="radio" name="categoria" value="Richiesta Assistenza">
+              <span>❓ Assistenza Tecnica</span>
+            </label>
+            <label class="category-pill" onclick="selectCategory('Segnalazione Bug', this)">
+              <input type="radio" name="categoria" value="Segnalazione Bug">
+              <span>🐛 Segnalazione Bug</span>
+            </label>
+            <label class="category-pill" onclick="selectCategory('Personalizzazione Flotta', this)">
+              <input type="radio" name="categoria" value="Personalizzazione Flotta">
+              <span>🏢 Flotta Aziendale</span>
+            </label>
+            <label class="category-pill" onclick="selectCategory('Collaborazione', this)">
+              <input type="radio" name="categoria" value="Collaborazione">
+              <span>🤝 Partnership / Ricerca</span>
+            </label>
+            <label class="category-pill" onclick="selectCategory('Altro Feedback', this)">
+              <input type="radio" name="categoria" value="Altro Feedback">
+              <span>💬 Altro Feedback</span>
+            </label>
+          </div>
+          <span class="hint">Indica la tipologia per instradare la richiesta allo specialista più adatto.</span>
+        </div>
+
+        <!-- 2. Nome & Email -->
+        <div class="form-row-2">
+          <div class="form-group-custom">
+            <label for="userName">Il Tuo Nome e Cognome <span class="req">*</span></label>
+            <input type="text" id="userName" name="nome" class="inp-custom" placeholder="es. Ing. Marco Rossi" required>
+          </div>
+          <div class="form-group-custom">
+            <label for="userEmail">Il Tuo Indirizzo Email <span class="req">*</span></label>
+            <input type="email" id="userEmail" name="email" class="inp-custom" placeholder="es. marco.rossi@azienda.it" required>
+            <span class="hint">Riceverai qui la nostra risposta.</span>
+          </div>
+        </div>
+
+        <!-- 3. Azienda & Modello di Riferimento -->
+        <div class="form-row-2">
+          <div class="form-group-custom">
+            <label for="userCompany">Azienda, Ente o Università <span style="font-size:11px; color:var(--text-muted); font-weight:normal;">(Opzionale)</span></label>
+            <input type="text" id="userCompany" name="azienda_ente" class="inp-custom" placeholder="es. Logistica Nord Srl, Università...">
+          </div>
+          <div class="form-group-custom">
+            <label for="modelSelect">Modello Matematico di Interesse <span style="font-size:11px; color:var(--text-muted); font-weight:normal;">(Opzionale)</span></label>
+            <select id="modelSelect" name="modello_interessato" class="select-custom">
+              <option value="Generale">-- Tutti i Modelli / Piattaforma Generale --</option>
+              <option value="CVRP - Merci e Logistica B2B">📦 1. CVRP (Merci e Logistica B2B)</option>
+              <option value="VRPTW - Fasce Orarie Tassative">⏱️ 2. VRPTW (Fasce Orarie Tassative)</option>
+              <option value="CARP - Spazzamento Strade e RSU">🚛 3. CARP (Servizi Stradali e RSU)</option>
+              <option value="EV-VRP - Flotte Elettriche & Ricariche">🔋 4. EV-VRP (Flotte Elettriche & Tappe)</option>
+              <option value="VRPPD - Ritiri e Consegne Accoppiati">📦🔄 5. VRPPD (Pickup & Delivery)</option>
+              <option value="MDVRP - Multi-Deposito">🏬 6. MDVRP (Multi-Deposito e Rimesse)</option>
+              <option value="PCARP - Pianificazione Settimanale RSU">📅 7. PCARP (Periodico RSU)</option>
+              <option value="CARPTW - Finestre Orarie & ZTL">⏱️🛣️ 8. CARPTW (Finestre Orarie ZTL)</option>
+              <option value="CARPIF - Impianti Intermedi Discariche">♻️ 9. CARPIF (Impianti e Discariche)</option>
+              <option value="DCARP - Riorganizzazione Dinamica">⚡ 10. DCARP (Guasti & Riassegnazione)</option>
+              <option value="Cartografia GIS OpenStreetMap">🗺️ Motore Cartografico GIS / OSM</option>
+              <option value="Calcolatore Risparmio ROI & ESG">📊 Calcolatore ROI & Emissioni ESG</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4. Oggetto della Richiesta -->
+        <div class="form-group-custom">
+          <label for="formSubject">Oggetto del Messaggio <span class="req">*</span></label>
+          <input type="text" id="formSubject" name="oggetto" class="inp-custom" placeholder="es. Suggerimento per l'introduzione di vincoli sul peso massimo per asse" required>
+        </div>
+
+        <!-- 5. Messaggio Dettagliato -->
+        <div class="form-group-custom">
+          <label for="formMessage">Descrizione Dettagliata della Richiesta o Suggerimento <span class="req">*</span></label>
+          <textarea id="formMessage" name="messaggio" class="textarea-custom" placeholder="Descrivi chiaramente la tua richiesta, il problema riscontrato o il suggerimento per la piattaforma:&#10;&#10;• Qual è la tua esigenza o caso d'uso operativo?&#10;• Quali vincoli o algoritmi vorresti vedere implementati?&#10;• Eventuali parametri usati (n° veicoli, tappe, città)..." required></textarea>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+            <span class="hint">Più dettagli fornisci, più precisa sarà la risposta del nostro team.</span>
+            <span id="charCounter" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">0 caratteri</span>
+          </div>
+        </div>
+
+        <!-- 6. Informativa Privacy -->
+        <div class="privacy-check">
+          <input type="checkbox" id="privacyConsent" required checked>
+          <label for="privacyConsent" style="cursor: pointer;">
+            Dichiaro di aver preso visione dell'informativa e acconsento al trattamento dei dati personali forniti (nome ed email)
+            esclusivamente per la ricezione e la gestione della risposta alla presente comunicazione, in conformità al GDPR.
+          </label>
+        </div>
+
+        <!-- 7. Pulsanti d'Azione -->
+        <div class="form-actions">
+          <button type="submit" id="btnSubmit" class="btn-submit-main">
+            <span style="font-size: 18px;">✉️</span> Invia a or.route2026@gmail.com
+          </button>
+
+          <a id="btnMailto" href="mailto:or.route2026@gmail.com" class="btn-mailto-fallback" title="Genera un'email precompilata nel tuo client (Outlook, Thunderbird, Apple Mail, Webmail)">
+            <span>📫</span> Oppure compila e apri direttamente nel tuo Client Email
+          </a>
+        </div>
+      </form>
+    </section>
+
+    <!-- COLONNA DESTRA: INFORMAZIONI DI CONTATTO & FAQ RAPIDE -->
+    <aside class="sidebar-col">
+
+      <!-- Scheda Recapito Diretto -->
+      <div class="side-card">
+        <h3><span>📮</span> Recapito Ufficiale</h3>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">
+          Per comunicazioni dirette, invio di dataset di test (file GeoJSON, matrici di costo, report logistici)
+          o richieste urgenti:
+        </p>
+
+        <div class="email-display-box">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📧</span>
+            <span class="email-text" id="officialEmailText">or.route2026@gmail.com</span>
+          </div>
+          <button type="button" class="btn-copy" onclick="copyEmailToClipboard()" id="btnCopyEmail" title="Copia l'indirizzo negli appunti">
+            <span>📋</span> Copia
+          </button>
+        </div>
+
+        <ul class="info-list">
+          <li>
+            <span class="icon">⏱️</span>
+            <div>
+              <strong>Tempo medio di risposta:</strong><br>
+              Entro 24 &ndash; 48 ore lavorative da parte del team di Ricerca Operativa.
+            </div>
+          </li>
+          <li>
+            <span class="icon">💻</span>
+            <div>
+              <strong>Sviluppo &amp; Contributi Open Source:</strong><br>
+              Puoi aprire segnalazioni o richiedere pull request anche su
+              <a href="https://github.com/trevinic/or-route" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">GitHub Repository</a>.
+            </div>
+          </li>
+          <li>
+            <span class="icon">🔒</span>
+            <div>
+              <strong>Riservatezza dei Dati:</strong><br>
+              Non condividiamo indirizzi o dettagli industriali con terze parti. Comunicazioni 100% confidenziali.
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Scheda "Come Strutturare un Suggerimento Efficace" -->
+      <div class="side-card" style="background: linear-gradient(180deg, #131d31 0%, #0e1626 100%);">
+        <h3><span>💡</span> Suggerimenti per la Community</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+          OR-Route cresce grazie alle esigenze concrete di fleet manager, ricercatori e autisti.
+          Se proponi una nuova funzionalità, considera di includere:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; color: var(--text-secondary);">
+          <div style="display:flex; gap:8px;">
+            <span style="color:#10b981; font-weight:700;">1.</span>
+            <span><strong>Il contesto reale:</strong> Tipo di merce trasportata, tipologia di veicoli o vincolo normativo.</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <span style="color:#10b981; font-weight:700;">2.</span>
+            <span><strong>La formulazione desiderata:</strong> Minimizzare chilometri, ore straordinario o veicoli impiegati.</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <span style="color:#10b981; font-weight:700;">3.</span>
+            <span><strong>Esempi o dataset:</strong> Pochi punti fittizi o città per validare il solutore MILP.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Accordion FAQ -->
+      <div class="side-card">
+        <h3><span>❓</span> Domande Frequenti sui Contatti</h3>
+
+        <details class="faq-mini-item" open>
+          <summary>Il servizio di supporto o suggerimento è gratuito?</summary>
+          <p>
+            Sì! OR-Route è una piattaforma aperta e gratuita creata per democratizzare l'accesso agli algoritmi di Ricerca Operativa industriale.
+            Tutti i suggerimenti e le richieste di chiarimento sui modelli sono benvenuti e gestiti liberamente.
+          </p>
+        </details>
+
+        <details class="faq-mini-item">
+          <summary>Posso richiedere un algoritmo personalizzato per la mia flotta?</summary>
+          <p>
+            Certamente. Se la tua azienda ha vincoli specifici (es. ZTL orarie dinamiche, temperature controllate per surgelati,
+            o trasbordi rimorchio-motrice), inviaci una descrizione dettagliata tramite questo form per valutare la fattibilità e la modellazione.
+          </p>
+        </details>
+
+        <details class="faq-mini-item">
+          <summary>Cosa succede dopo aver inviato il modulo?</summary>
+          <p>
+            Il modulo invia una notifica istantanea all'indirizzo <strong>or.route2026@gmail.com</strong>.
+            Riceverai una copia di conferma e ti ricontatteremo direttamente all'indirizzo email che hai indicato.
+          </p>
+        </details>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- =========================================================================
+       3. FOOTER
+       ========================================================================= -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+          <span style="font-size: 20px;">📍</span>
+          <b style="font-size: 16px; color: var(--text-main);">OR-Route &mdash; Supporto &amp; Contatti</b>
+        </div>
+        <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px;">
+          Piattaforma gratuita e aperta dedicata all'applicazione della Ricerca Operativa industriale (Operational Research &amp; MILP Solvers) per la riduzione dei costi e delle emissioni delle flotte aziendali.
+        </p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <a href="mailto:or.route2026@gmail.com" class="btn btn-secondary btn-sm" style="font-size: 12px; text-decoration: none;">
+            ✉️ Scrivi a or.route2026@gmail.com
+          </a>
+          <a href="index.html" class="btn btn-blue btn-sm" style="font-size: 12px; text-decoration: none;">
+            🏠 Torna ai Solutori
+          </a>
+        </div>
+      </div>
+      <div>
+        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Accesso Rapido Piattaforma</h4>
+        <ul style="list-style: none; font-size: 12.5px; line-height: 1.9;">
+          <li><a href="index.html" style="color:var(--text-muted); text-decoration:none;">⚡ Tutti i 10 Modelli di Ricerca Operativa</a></li>
+          <li><a href="index.html" style="color:var(--text-muted); text-decoration:none;">📊 Calcolatore Risparmio ROI &amp; ESG</a></li>
+          <li><a href="contatti.html" style="color:#38bdf8; text-decoration:none; font-weight:600;">📩 Pagina Contatti &amp; Suggerimenti</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-size: 13.5px; color: var(--text-main); margin-bottom: 10px;">Motori &amp; Solutori</h4>
+        <ul style="list-style: none; font-size: 12.5px; line-height: 1.8;">
+          <li>PuLP &amp; COIN-OR CBC Solver</li>
+          <li>OpenStreetMap &amp; OSMnx GIS</li>
+          <li>SIAM Vehicle Routing Literature</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>&copy; 2026 OR-Route &mdash; Piattaforma Aperta di Ricerca Operativa per Flotte Aziendali e Servizi RSU.</div>
+      <div>Canale Supporto &amp; Suggerimenti Ufficiale: <a href="mailto:or.route2026@gmail.com" style="color:#38bdf8;">or.route2026@gmail.com</a></div>
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       4. LOGICA JAVASCRIPT PER VALIDAZIONE, INVIO AJAX E FALLBACK MAILTO
+       ========================================================================= -->
+  <script>
+    let selectedCategory = "Suggerimento";
+
+    function selectCategory(cat, element) {
+      selectedCategory = cat;
+      document.querySelectorAll('.category-pill').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      const radio = element.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+      updateMailtoLink();
+    }
+
+    // Contatore caratteri per il messaggio
+    const msgInput = document.getElementById('formMessage');
+    const charCounter = document.getElementById('charCounter');
+    msgInput.addEventListener('input', () => {
+      charCounter.textContent = `${msgInput.value.length} caratteri`;
+      updateMailtoLink();
+    });
+
+    // Aggiornamento dinamico del link mailto con i campi inseriti
+    const userNameInput = document.getElementById('userName');
+    const userEmailInput = document.getElementById('userEmail');
+    const userCompanyInput = document.getElementById('userCompany');
+    const modelSelect = document.getElementById('modelSelect');
+    const formSubjectInput = document.getElementById('formSubject');
+    const btnMailto = document.getElementById('btnMailto');
+
+    [userNameInput, userEmailInput, userCompanyInput, modelSelect, formSubjectInput].forEach(inp => {
+      inp.addEventListener('input', updateMailtoLink);
+      inp.addEventListener('change', updateMailtoLink);
+    });
+
+    function updateMailtoLink() {
+      const targetEmail = "or.route2026@gmail.com";
+      const cat = selectedCategory || "Suggerimento";
+      const name = userNameInput.value.trim() || "[Nome non specificato]";
+      const email = userEmailInput.value.trim() || "[Email non specificata]";
+      const company = userCompanyInput.value.trim() || "N/D";
+      const model = modelSelect.value || "Generale";
+      const subjRaw = formSubjectInput.value.trim() || `Richiesta / Suggerimento OR-Route (${cat})`;
+      const fullSubject = `[OR-Route - ${cat}] ${subjRaw}`;
+      const msg = msgInput.value.trim() || "[Nessun testo aggiuntivo inserito]";
+
+      const bodyText = `Salve Team OR-Route,\n\n` +
+        `Invio una comunicazione tramite la piattaforma OR-Route:\n\n` +
+        `• Tipologia: ${cat}\n` +
+        `• Referente: ${name}\n` +
+        `• Email di risposta: ${email}\n` +
+        `• Azienda/Ente: ${company}\n` +
+        `• Modello di Riferimento: ${model}\n\n` +
+        `--- DETTAGLIO MESSAGGIO ---\n${msg}\n\n` +
+        `---------------------------\n` +
+        `Inviato da: ${name} (${email})\n` +
+        `Piattaforma OR-Route Ricerca Operativa`;
+
+      btnMailto.href = `mailto:${targetEmail}?subject=${encodeURIComponent(fullSubject)}&body=${encodeURIComponent(bodyText)}`;
+    }
+
+    // Copia email negli appunti
+    function copyEmailToClipboard() {
+      const email = "or.route2026@gmail.com";
+      const btn = document.getElementById('btnCopyEmail');
+      navigator.clipboard.writeText(email).then(() => {
+        btn.innerHTML = '<span>✅</span> Copiato!';
+        btn.style.borderColor = '#10b981';
+        btn.style.color = '#10b981';
+        setTimeout(() => {
+          btn.innerHTML = '<span>📋</span> Copia';
+          btn.style.borderColor = '#334155';
+          btn.style.color = '#f8fafc';
+        }, 2500);
+      }).catch(err => {
+        alert("Indirizzo email: " + email);
+      });
+    }
+
+    // Gestione Invio Form via AJAX con fallback robusto
+    const contactForm = document.getElementById('contactForm');
+    const alertSuccess = document.getElementById('alertSuccess');
+    const alertError = document.getElementById('alertError');
+    const alertLoading = document.getElementById('alertLoading');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    contactForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // Validazione base
+      const name = userNameInput.value.trim();
+      const email = userEmailInput.value.trim();
+      const subject = formSubjectInput.value.trim();
+      const message = msgInput.value.trim();
+      const privacy = document.getElementById('privacyConsent').checked;
+
+      if (!name || !email || !subject || !message) {
+        alert("Per favore compila tutti i campi obbligatori contrassegnati dall'asterisco (*).");
+        return;
+      }
+
+      if (!privacy) {
+        alert("È necessario acconsentire al trattamento dei dati di contatto per poter inviare la richiesta.");
+        return;
+      }
+
+      // Validazione formato email semplice
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        alert("Inserisci un indirizzo email valido per consentirci di risponderti.");
+        userEmailInput.focus();
+        return;
+      }
+
+      // Imposta oggetto personalizzato per la notifica via email
+      const dynamicSubject = `[OR-Route - ${selectedCategory}] ${subject} (da ${name})`;
+      document.getElementById('formSubjectHidden').value = dynamicSubject;
+
+      // Mostra stato di caricamento
+      alertSuccess.style.display = 'none';
+      alertError.style.display = 'none';
+      alertLoading.style.display = 'flex';
+      btnSubmit.disabled = true;
+
+      // Payload dati
+      const payload = {
+        name: name,
+        email: email,
+        company: userCompanyInput.value.trim() || "N/D",
+        category: selectedCategory,
+        model: modelSelect.value,
+        subject: subject,
+        message: message,
+        _subject: dynamicSubject,
+        _replyto: email,
+        _captcha: "false",
+        _template: "table"
+      };
+
+      let sentSuccessfully = false;
+
+      // 1. Tenta invio a backend locale /api/contact per backup su disco
+      try {
+        await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (backendErr) {
+        // Backend opzionale o offline: proseguiamo comunque con FormSubmit
+        console.warn("Backend locale non disponibile per archiviazione, procedo con FormSubmit:", backendErr);
+      }
+
+      // 2. Invio principale diretto verso or.route2026@gmail.com tramite FormSubmit AJAX
+      try {
+        const response = await fetch("https://formsubmit.co/ajax/or.route2026@gmail.com", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const resData = await response.json().catch(() => ({}));
+          sentSuccessfully = true;
+        } else {
+          console.warn("FormSubmit ha risposto con codice:", response.status);
+          // Se la risposta AJAX ha restituito errore (es. primo invio con attivazione richiesta),
+          // proviamo l'invio form standard POST come fallback trasparente
+          sentSuccessfully = false;
+        }
+      } catch (netErr) {
+        console.error("Errore fetch FormSubmit:", netErr);
+        sentSuccessfully = false;
+      }
+
+      alertLoading.style.display = 'none';
+      btnSubmit.disabled = false;
+
+      if (sentSuccessfully) {
+        alertSuccess.style.display = 'block';
+        contactForm.reset();
+        selectedCategory = "Suggerimento";
+        document.querySelectorAll('.category-pill').forEach((el, idx) => {
+          if (idx === 0) el.classList.add('active');
+          else el.classList.remove('active');
+        });
+        charCounter.textContent = "0 caratteri";
+        updateMailtoLink();
+        alertSuccess.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        // Mostra alert di errore con link mailto visibile
+        alertError.style.display = 'block';
+        alertError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+
+    // Inizializza il link mailto al caricamento
+    updateMailtoLink();
+  </script>
+</body>
+</html>

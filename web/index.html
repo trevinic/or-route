@@ -84,7 +84,7 @@
         <!-- Divisore Visivo -->
         <div style="height: 20px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
 
-        <!-- Sezione 3: Strumenti Globali (Calcola ROI & FAQ) -->
+        <!-- Sezione 3: Strumenti Globali (Calcola ROI, FAQ & Contatti) -->
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex-shrink: 0;">
           <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)" title="Calcola il risparmio economico, il ROI e consulta la Matrice Comparativa dei 10 Modelli">
             📊 Calcola ROI
@@ -92,6 +92,9 @@
           <button class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-faq', null)" title="Consulta le FAQ e la documentazione tecnica">
             📚 FAQ
           </button>
+          <a href="contatti.html" class="btn btn-secondary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Invia richieste, segnalazioni o suggerimenti per la piattaforma">
+            📩 Contatti &amp; Suggerimenti
+          </a>
         </div>
       </div>
     </div>
@@ -4403,6 +4406,9 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="font-size: 12px;">
             🤝 Partner &amp; Affiliazioni
           </button>
+          <a href="contatti.html" class="btn btn-secondary btn-sm" style="font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            📩 Contatti &amp; Suggerimenti
+          </a>
         </div>
       </div>
       <div>
@@ -4412,6 +4418,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <li><a href="javascript:void(0)" onclick="switchMainTab('tab-selector', null);" style="color:var(--text-muted); text-decoration:none;">⚡ 2. Scegli Modello Direttamente (10 Modelli)</a></li>
           <li><a href="javascript:void(0)" onclick="openScenariosModal();" style="color:var(--text-muted); text-decoration:none;">🔐 3. Accedi alle Sessioni Salvate</a></li>
           <li><a href="javascript:void(0)" onclick="switchMainTab('tab-roi', null);" style="color:var(--text-muted); text-decoration:none;">📊 Calcolatore Risparmio ROI &amp; ESG</a></li>
+          <li><a href="contatti.html" style="color:#38bdf8; text-decoration:none; font-weight:600;">📩 Contatti, Richieste &amp; Suggerimenti</a></li>
         </ul>
       </div>
       <div>
