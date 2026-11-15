@@ -3991,26 +3991,33 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
             </div>
           </div>
 
-          <!-- Coordinate Dirette Rapide (Solana & IBAN) -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
-            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <!-- Coordinate Dirette Rapide (Solana, Ethereum/Polygon & IBAN) -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;">
+            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
               <div style="min-width: 0;">
-                <div style="font-size: 10.5px; color: #c084fc; font-weight: 700; text-transform: uppercase;">🟣 Wallet Solana (SOL / USDC)</div>
-                <div id="inlineSolanaDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn</div>
+                <div style="font-size: 10px; color: #c084fc; font-weight: 700; text-transform: uppercase;">🟣 Solana (SOL)</div>
+                <div id="inlineSolanaDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn</div>
               </div>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; flex-shrink: 0;" onclick="copyWalletField('solana')">📋 Copia</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 3px 7px; font-size: 10.5px; flex-shrink: 0;" onclick="copyWalletField('solana')">📋</button>
             </div>
-            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
               <div style="min-width: 0;">
-                <div style="font-size: 10.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">🏦 Coordinate IBAN</div>
-                <div id="inlineIbanDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">IT39Q0320502000000099239686</div>
+                <div style="font-size: 10px; color: #818cf8; font-weight: 700; text-transform: uppercase;">🔷 Ethereum / Polygon</div>
+                <div id="inlineEthDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09</div>
               </div>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 11px; flex-shrink: 0;" onclick="copyWalletField('iban')">📋 Copia</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 3px 7px; font-size: 10.5px; flex-shrink: 0;" onclick="copyWalletField('ethereum')">📋</button>
+            </div>
+            <div style="background: rgba(10, 17, 32, 0.85); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <div style="min-width: 0;">
+                <div style="font-size: 10px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">🏦 Bonifico IBAN</div>
+                <div id="inlineIbanDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">IT39Q0320502000000099239686</div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 3px 7px; font-size: 10.5px; flex-shrink: 0;" onclick="copyWalletField('iban')">📋</button>
             </div>
           </div>
         </div>
 
-        <!-- Pannello Azioni Versamento Diretto (PayPal / Solana / IBAN) -->
+        <!-- Pannello Azioni Versamento Diretto (PayPal / BuyMeACoffee / Portafoglio Digitale) -->
         <div style="background: rgba(10, 16, 30, 0.88); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Importo Donazione Libera:</span>
@@ -4026,7 +4033,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           </button>
 
           <button type="button" class="btn btn-wallet-donate" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 13.5px;" onclick="openSupportCoffeeModal('wallet')">
-            <span>🟣</span> Wallet Solana (SOL) &amp; Bonifico IBAN
+            <span>🟣</span> Portafoglio Digitale (Solana / ETH / Polygon / IBAN)
           </button>
 
           <div style="text-align: center; margin-top: 4px;">
@@ -4423,7 +4430,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1445"></script>
+  <script src="app.js?v=20261115_1452"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
@@ -4915,34 +4922,42 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
         </div>
       </div>
 
-      <!-- TAB 2: PORTAFOGLIO DIGITALE (SOLANA WALLET / IBAN / PAYPAL) -->
+      <!-- TAB 2: PORTAFOGLIO DIGITALE (SOLANA / ETHEREUM / POLYGON / IBAN) -->
       <div id="coffeePanelWallet" style="display: none;">
         <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 12px;">
-          Puoi inviare una donazione istantanea tramite <b>Wallet Circuito Solana (SOL / USDC / USDT)</b>, <b>Bonifico Bancario IBAN</b> o <b>PayPal</b>:
+          Invia il tuo contributo direttamente verso uno dei seguenti circuiti <b>Portafoglio Digitale (Solana, Ethereum, Polygon)</b> o tramite <b>Bonifico Bancario IBAN</b>:
         </p>
 
-        <div style="font-size: 11.5px; font-weight: 700; color: #c084fc; margin-bottom: 5px;">
-          🟣 Indirizzo Wallet Circuito Solana (SOL / USDC / USDT):
+        <div style="font-size: 11.5px; font-weight: 700; color: #c084fc; margin-bottom: 4px;">
+          🟣 Circuito Solana (SOL / USDC / USDT):
         </div>
-        <div class="wallet-address-box" style="border-color: rgba(168, 85, 247, 0.45); color: #e9d5ff;">
+        <div class="wallet-address-box" style="border-color: rgba(168, 85, 247, 0.45); color: #e9d5ff; margin-bottom: 8px; padding: 8px 12px;">
           <span id="solanaWalletDisplay" style="overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;">FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn</span>
-          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap;" onclick="copyWalletField('solana')">📋 Copia Wallet Solana</button>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap; padding: 4px 10px;" onclick="copyWalletField('solana')">📋 Copia Solana</button>
         </div>
 
-        <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 5px;">
+        <div style="font-size: 11.5px; font-weight: 700; color: #818cf8; margin-bottom: 4px;">
+          🔷 Circuito Ethereum (ERC-20 / ETH / USDT / USDC):
+        </div>
+        <div class="wallet-address-box" style="border-color: rgba(99, 102, 241, 0.45); color: #e0e7ff; margin-bottom: 8px; padding: 8px 12px;">
+          <span id="ethWalletDisplay" style="overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;">0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap; padding: 4px 10px;" onclick="copyWalletField('ethereum')">📋 Copia Ethereum</button>
+        </div>
+
+        <div style="font-size: 11.5px; font-weight: 700; color: #a855f7; margin-bottom: 4px;">
+          🟣 Circuito Polygon (Polygon POS / POL / MATIC / USDC / USDT):
+        </div>
+        <div class="wallet-address-box" style="border-color: rgba(168, 85, 247, 0.4); color: #f3e8ff; margin-bottom: 8px; padding: 8px 12px;">
+          <span id="polygonWalletDisplay" style="overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;">0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap; padding: 4px 10px;" onclick="copyWalletField('polygon')">📋 Copia Polygon</button>
+        </div>
+
+        <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">
           🏦 Coordinate IBAN Bonifico Bancario (SEPA / Istantaneo):
         </div>
-        <div class="wallet-address-box">
-          <span id="walletAddressDisplay" style="overflow: hidden; text-overflow: ellipsis;">IT39Q0320502000000099239686</span>
-          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap;" onclick="copyWalletField('iban')">📋 Copia IBAN</button>
-        </div>
-
-        <div style="font-size: 11.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px;">
-          💳 Link Diretto PayPal.Me:
-        </div>
-        <div class="wallet-address-box">
-          <span id="walletTagDisplay" style="overflow: hidden; text-overflow: ellipsis;">https://www.paypal.com/paypalme/nicolatrevi</span>
-          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap;" onclick="copyWalletField('paypal')">📋 Copia PayPal</button>
+        <div class="wallet-address-box" style="margin-bottom: 4px; padding: 8px 12px;">
+          <span id="walletAddressDisplay" style="overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;">IT39Q0320502000000099239686</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space: nowrap; padding: 4px 10px;" onclick="copyWalletField('iban')">📋 Copia IBAN</button>
         </div>
       </div>
 
@@ -4954,20 +4969,24 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
 
         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
           <div>
-            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link PayPal.Me o Email PayPal:</label>
+            <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">Link PayPal.Me:</label>
             <input type="text" id="cfgPaypalUrl" class="landing-input" style="margin-bottom: 0;" value="https://www.paypal.com/paypalme/nicolatrevi" placeholder="es. https://www.paypal.com/paypalme/nicolatrevi">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #c084fc; font-weight: 600; display: block; margin-bottom: 3px;">Indirizzo Wallet Circuito Solana (SOL / USDC / USDT):</label>
-            <input type="text" id="cfgSolanaWallet" class="landing-input" style="margin-bottom: 0;" value="FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn" placeholder="es. FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn">
-          </div>
-          <div>
-            <label style="font-size: 11.5px; color: #38bdf8; font-weight: 600; display: block; margin-bottom: 3px;">Coordinate IBAN Bonifico Bancario:</label>
-            <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" value="IT39Q0320502000000099239686" placeholder="es. IT39Q0320502000000099239686">
           </div>
           <div>
             <label style="font-size: 11.5px; color: #fbbf24; font-weight: 600; display: block; margin-bottom: 3px;">Link Buy Me a Coffee / Carta di Credito:</label>
             <input type="text" id="cfgBmcUrl" class="landing-input" style="margin-bottom: 0;" value="https://buymeacoffee.com/ntrevi" placeholder="es. https://buymeacoffee.com/ntrevi">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #c084fc; font-weight: 600; display: block; margin-bottom: 3px;">Indirizzo Wallet Circuito Solana (SOL):</label>
+            <input type="text" id="cfgSolanaWallet" class="landing-input" style="margin-bottom: 0;" value="FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn" placeholder="es. FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #818cf8; font-weight: 600; display: block; margin-bottom: 3px;">Indirizzo Wallet Circuito Ethereum &amp; Polygon (0x...):</label>
+            <input type="text" id="cfgEthPolygonWallet" class="landing-input" style="margin-bottom: 0;" value="0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09" placeholder="es. 0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; color: #38bdf8; font-weight: 600; display: block; margin-bottom: 3px;">Coordinate IBAN Bonifico Bancario:</label>
+            <input type="text" id="cfgWalletAddress" class="landing-input" style="margin-bottom: 0;" value="IT39Q0320502000000099239686" placeholder="es. IT39Q0320502000000099239686">
           </div>
           <div>
             <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 600; display: block; margin-bottom: 3px;">ID Editore Google AdSense (Publisher ID):</label>

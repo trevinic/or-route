@@ -9805,8 +9805,8 @@ const MONETIZATION_CONFIG = {
   paypalUrl: 'https://www.paypal.com/paypalme/nicolatrevi',
   bmcUrl: 'https://buymeacoffee.com/ntrevi',
   solanaWallet: 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn',
+  ethPolygonWallet: '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09',
   ibanAddress: 'IT39Q0320502000000099239686',
-  walletTag: 'https://www.paypal.com/paypalme/nicolatrevi',
   walletAddress: 'IT39Q0320502000000099239686',
   adsensePublisherId: 'ca-pub-XXXXXXXXXXXXXXXX',
   selectedDonationEur: 5
@@ -9831,6 +9831,9 @@ function loadMonetizationConfig() {
       if (!parsed.solanaWallet) {
         parsed.solanaWallet = 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
       }
+      if (!parsed.ethPolygonWallet) {
+        parsed.ethPolygonWallet = '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09';
+      }
       Object.assign(MONETIZATION_CONFIG, parsed);
     }
   } catch (e) {
@@ -9841,6 +9844,7 @@ function loadMonetizationConfig() {
 
 function syncMonetizationFieldsUI() {
   const solanaAddr = MONETIZATION_CONFIG.solanaWallet || 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
+  const ethPolyAddr = MONETIZATION_CONFIG.ethPolygonWallet || '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09';
   const ibanAddr = MONETIZATION_CONFIG.walletAddress || 'IT39Q0320502000000099239686';
   const paypalLink = MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
 
@@ -9850,20 +9854,29 @@ function syncMonetizationFieldsUI() {
   const inlineSolEl = document.getElementById('inlineSolanaDisplay');
   if (inlineSolEl) inlineSolEl.innerText = solanaAddr;
 
+  const ethEl = document.getElementById('ethWalletDisplay');
+  if (ethEl) ethEl.innerText = ethPolyAddr;
+
+  const polyEl = document.getElementById('polygonWalletDisplay');
+  if (polyEl) polyEl.innerText = ethPolyAddr;
+
+  const inlineEthEl = document.getElementById('inlineEthDisplay');
+  if (inlineEthEl) inlineEthEl.innerText = ethPolyAddr;
+
   const addrEl = document.getElementById('walletAddressDisplay');
   if (addrEl) addrEl.innerText = ibanAddr;
 
   const inlineIbanEl = document.getElementById('inlineIbanDisplay');
   if (inlineIbanEl) inlineIbanEl.innerText = ibanAddr;
 
-  const tagEl = document.getElementById('walletTagDisplay');
-  if (tagEl) tagEl.innerText = paypalLink;
-
   const inpPaypal = document.getElementById('cfgPaypalUrl');
   if (inpPaypal) inpPaypal.value = paypalLink;
 
   const inpSol = document.getElementById('cfgSolanaWallet');
   if (inpSol) inpSol.value = solanaAddr;
+
+  const inpEthPoly = document.getElementById('cfgEthPolygonWallet');
+  if (inpEthPoly) inpEthPoly.value = ethPolyAddr;
 
   const inpWal = document.getElementById('cfgWalletAddress');
   if (inpWal) inpWal.value = ibanAddr;
@@ -9878,15 +9891,16 @@ function syncMonetizationFieldsUI() {
 function saveMonetizationConfig() {
   const paypal = document.getElementById('cfgPaypalUrl')?.value.trim();
   const sol = document.getElementById('cfgSolanaWallet')?.value.trim();
+  const ethPoly = document.getElementById('cfgEthPolygonWallet')?.value.trim();
   const wal = document.getElementById('cfgWalletAddress')?.value.trim();
   const bmc = document.getElementById('cfgBmcUrl')?.value.trim();
   const ads = document.getElementById('cfgAdsenseId')?.value.trim();
 
   if (paypal) {
     MONETIZATION_CONFIG.paypalUrl = paypal.startsWith('http') || paypal.includes('@') ? paypal : 'https://' + paypal;
-    MONETIZATION_CONFIG.walletTag = MONETIZATION_CONFIG.paypalUrl;
   }
   if (sol) MONETIZATION_CONFIG.solanaWallet = sol;
+  if (ethPoly) MONETIZATION_CONFIG.ethPolygonWallet = ethPoly;
   if (wal) {
     MONETIZATION_CONFIG.walletAddress = wal;
     MONETIZATION_CONFIG.ibanAddress = wal;
@@ -9899,7 +9913,7 @@ function saveMonetizationConfig() {
   } catch (e) {}
 
   syncMonetizationFieldsUI();
-  showToast('✅ Coordinate di monetizzazione (PayPal.Me, Buy Me a Coffee, Solana e IBAN) salvate!');
+  showToast('✅ Coordinate di monetizzazione (PayPal, Buy Me a Coffee, Solana, Ethereum, Polygon e IBAN) salvate!');
   switchSupportCoffeeTab('paypal');
 }
 
@@ -10006,12 +10020,15 @@ function copyWalletField(fieldType) {
   if (fieldType === 'solana') {
     textToCopy = MONETIZATION_CONFIG.solanaWallet || 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
     label = 'Wallet Solana (SOL)';
-  } else if (fieldType === 'iban' || fieldType === 'address') {
+  } else if (fieldType === 'ethereum') {
+    textToCopy = MONETIZATION_CONFIG.ethPolygonWallet || '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09';
+    label = 'Wallet Ethereum (ERC-20)';
+  } else if (fieldType === 'polygon') {
+    textToCopy = MONETIZATION_CONFIG.ethPolygonWallet || '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09';
+    label = 'Wallet Polygon (MATIC/POL)';
+  } else {
     textToCopy = MONETIZATION_CONFIG.walletAddress || 'IT39Q0320502000000099239686';
     label = 'IBAN';
-  } else {
-    textToCopy = MONETIZATION_CONFIG.paypalUrl || 'https://www.paypal.com/paypalme/nicolatrevi';
-    label = 'Link PayPal';
   }
 
   navigator.clipboard.writeText(textToCopy).then(() => {
