@@ -18,7 +18,7 @@
 * **🗺️ Mappe GIS Interattive & Canvas**: rendering con tratteggio a colori per ciascun veicolo, frecce animate di percorrenza e controllo strati satellitari ortofoto.
 * **💰 Calcolatore ROI & Emissioni ESG (Scope 1)**: stima dei risparmi annui di carburante e calcolo delle tonnellate di $CO_2$ evitate secondo lo standard internazionale GHG Protocol (fattore 2,65 kg $CO_2$/l).
 * **💾 Sovranità dei Dati**: salvataggio locale, esportazione e importazione in formato JSON senza lock-in di fornitori esterni.
-* **📚 Dispensa Teorica & 11 FAQ**: formulazioni matematiche rigorose MILP, bibliografia scientifica ufficiale e manuale d'uso operativo in 5 fasi.
+* **📚 Dispensa Teorica & 21 FAQ**: formulazioni matematiche rigorose MILP, bibliografia scientifica ufficiale e manuale d'uso operativo in 5 fasi.
 
 ---
 
