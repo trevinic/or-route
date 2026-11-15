@@ -84,8 +84,7 @@ Per la documentazione tecnica esaustiva, le formulazioni algebriche complete e l
 ## 📬 Contatti, Assistenza & Suggerimenti
 
 Per richieste commerciali, supporto sull'ottimizzazione delle flotte aziendali, segnalazione bug o suggerimenti per nuovi modelli di Ricerca Operativa:
-* **Email Ufficiale:** [`or.route2026@gmail.com`](mailto:or.route2026@gmail.com)
-* **Modulo Web Contatti:** accessibile direttamente all'URL `/contatti.html` dalla piattaforma.
+* **Modulo Web Contatti:** accessibile direttamente all'URL `/contatti.html` dalla piattaforma con recapito protetto.
 * **GitHub Issues:** [https://github.com/trevinic/or-route/issues](https://github.com/trevinic/or-route/issues)
 
 ---

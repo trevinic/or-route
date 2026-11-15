@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contatti, Assistenza &amp; Suggerimenti &mdash; OR-Route</title>
-  <meta name="description" content="Invia le tue richieste, segnalazioni o suggerimenti per la piattaforma OR-Route di Ricerca Operativa e ottimizzazione flotte. Recapito diretto a or.route2026@gmail.com">
+  <meta name="description" content="Invia le tue richieste, segnalazioni o suggerimenti per la piattaforma OR-Route di Ricerca Operativa e ottimizzazione flotte aziendali.">
 
   <!-- Google Fonts: Outfit & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -532,7 +532,7 @@
           <div>
             <strong>Messaggio inviato con successo!</strong>
             <p style="margin-top: 4px; font-size: 13px;">
-              La tua richiesta è stata trasmessa a <strong>or.route2026@gmail.com</strong>.
+              La tua richiesta è stata trasmessa al team di supporto OR-Route.
               Ti risponderemo all'indirizzo email specificato nel più breve tempo possibile (entro 24-48h lavorative).
             </p>
           </div>
@@ -543,11 +543,9 @@
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <span style="font-size: 22px;">⚠️</span>
           <div>
-            <strong>Impossibile inviare tramite il modulo web diretto.</strong>
+            <strong>Impossibile inviare il messaggio.</strong>
             <p style="margin-top: 4px; font-size: 13px;">
-              Si è verificato un temporaneo problema di rete o blocco browser. Puoi comunque inviare immediatamente
-              la tua richiesta precompilata cliccando sul pulsante sottostante <em>"Apri nel tuo Client Email"</em>
-              oppure scrivendo direttamente a <strong>or.route2026@gmail.com</strong>.
+              Si è verificato un problema di rete o blocco temporaneo. Per favore verifica la connessione e riprova tra qualche istante.
             </p>
           </div>
         </div>
@@ -556,18 +554,20 @@
       <div id="alertLoading" class="alert-box alert-loading">
         <div class="spinner"></div>
         <div>
-          <strong>Trasmissione in corso a or.route2026@gmail.com...</strong>
-          <span style="display: block; font-size: 12px; opacity: 0.85;">Attendi un istante, stiamo recapitando la tua richiesta.</span>
+          <strong>Invio del messaggio in corso...</strong>
+          <span style="display: block; font-size: 12px; opacity: 0.85;">Attendi un istante, stiamo trasmettendo la tua richiesta.</span>
         </div>
       </div>
 
       <!-- FORM HTML COMPLETO -->
-      <form id="contactForm" action="https://formsubmit.co/or.route2026@gmail.com" method="POST" novalidate>
+      <form id="contactForm" method="POST" novalidate>
+        <!-- Campo Honeypot Antispam per Bot (Invisibile per gli utenti) -->
+        <input type="text" name="_honey" style="display:none !important;" tabindex="-1" autocomplete="off">
         <!-- Campi di configurazione FormSubmit.co -->
         <input type="hidden" name="_captcha" value="false">
         <input type="hidden" name="_template" value="table">
         <input type="hidden" name="_subject" id="formSubjectHidden" value="[OR-Route] Nuova Richiesta / Suggerimento dal Form Web">
-        <input type="hidden" name="_autoresponse" value="Grazie per aver contattato OR-Route! Abbiamo ricevuto la tua comunicazione e il nostro team ti risponderà al più presto. (Destinatario: or.route2026@gmail.com)">
+        <input type="hidden" name="_autoresponse" value="Grazie per aver contattato OR-Route! Abbiamo ricevuto la tua comunicazione e il nostro team ti risponderà al più presto.">
 
         <!-- 1. Categoria del messaggio (Pills interattive) -->
         <div class="form-group-custom">
@@ -668,12 +668,8 @@
         <!-- 7. Pulsanti d'Azione -->
         <div class="form-actions">
           <button type="submit" id="btnSubmit" class="btn-submit-main">
-            <span style="font-size: 18px;">✉️</span> Invia a or.route2026@gmail.com
+            <span style="font-size: 18px;">✉️</span> Invia Messaggio
           </button>
-
-          <a id="btnMailto" href="mailto:or.route2026@gmail.com" class="btn-mailto-fallback" title="Genera un'email precompilata nel tuo client (Outlook, Thunderbird, Apple Mail, Webmail)">
-            <span>📫</span> Oppure compila e apri direttamente nel tuo Client Email
-          </a>
         </div>
       </form>
     </section>
@@ -681,45 +677,34 @@
     <!-- COLONNA DESTRA: INFORMAZIONI DI CONTATTO & FAQ RAPIDE -->
     <aside class="sidebar-col">
 
-      <!-- Scheda Recapito Diretto -->
+      <!-- Scheda Canale Diretto & Supporto (Senza esposizione email pubblica contro bot spam) -->
       <div class="side-card">
-        <h3><span>📮</span> Recapito Ufficiale</h3>
-        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">
-          Per comunicazioni dirette, invio di dataset di test (file GeoJSON, matrici di costo, report logistici)
-          o richieste urgenti:
+        <h3><span>🛡️</span> Canale Protetto &amp; Supporto</h3>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+          Tutte le richieste e i suggerimenti inviati tramite questo modulo vengono inoltrati direttamente al team di Ricerca Operativa e sviluppo algoritmi.
         </p>
-
-        <div class="email-display-box">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">📧</span>
-            <span class="email-text" id="officialEmailText">or.route2026@gmail.com</span>
-          </div>
-          <button type="button" class="btn-copy" onclick="copyEmailToClipboard()" id="btnCopyEmail" title="Copia l'indirizzo negli appunti">
-            <span>📋</span> Copia
-          </button>
-        </div>
 
         <ul class="info-list">
           <li>
             <span class="icon">⏱️</span>
             <div>
               <strong>Tempo medio di risposta:</strong><br>
-              Entro 24 &ndash; 48 ore lavorative da parte del team di Ricerca Operativa.
+              Entro 24 &ndash; 48 ore lavorative all'indirizzo email specificato nel modulo.
+            </div>
+          </li>
+          <li>
+            <span class="icon">🔒</span>
+            <div>
+              <strong>Riservatezza &amp; Protezione Spam:</strong><br>
+              Nessun dato viene ceduto a terzi o usato per scopi pubblicitari. Comunicazioni 100% confidenziali con protezione anti-bot integrata.
             </div>
           </li>
           <li>
             <span class="icon">💻</span>
             <div>
               <strong>Sviluppo &amp; Contributi Open Source:</strong><br>
-              Puoi aprire segnalazioni o richiedere pull request anche su
+              Puoi aprire issue tecniche o consultare il codice sorgente anche su
               <a href="https://github.com/trevinic/or-route" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">GitHub Repository</a>.
-            </div>
-          </li>
-          <li>
-            <span class="icon">🔒</span>
-            <div>
-              <strong>Riservatezza dei Dati:</strong><br>
-              Non condividiamo indirizzi o dettagli industriali con terze parti. Comunicazioni 100% confidenziali.
             </div>
           </li>
         </ul>
@@ -771,8 +756,8 @@
         <details class="faq-mini-item">
           <summary>Cosa succede dopo aver inviato il modulo?</summary>
           <p>
-            Il modulo invia una notifica istantanea all'indirizzo <strong>or.route2026@gmail.com</strong>.
-            Riceverai una copia di conferma e ti ricontatteremo direttamente all'indirizzo email che hai indicato.
+            Il modulo inoltra la tua notifica in tempo reale al nostro team tecnico.
+            Riceverai un riscontro dettagliato direttamente all'indirizzo email che hai indicato entro 24-48 ore lavorative.
           </p>
         </details>
       </div>
@@ -794,8 +779,8 @@
           Piattaforma gratuita e aperta dedicata all'applicazione della Ricerca Operativa industriale (Operational Research &amp; MILP Solvers) per la riduzione dei costi e delle emissioni delle flotte aziendali.
         </p>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <a href="mailto:or.route2026@gmail.com" class="btn btn-secondary btn-sm" style="font-size: 12px; text-decoration: none;">
-            ✉️ Scrivi a or.route2026@gmail.com
+          <a href="#contactForm" class="btn btn-secondary btn-sm" style="font-size: 12px; text-decoration: none;">
+            📝 Scrivi dal Modulo Web
           </a>
           <a href="index.html" class="btn btn-blue btn-sm" style="font-size: 12px; text-decoration: none;">
             🏠 Torna ai Solutori
@@ -821,7 +806,7 @@
     </div>
     <div class="footer-bottom">
       <div>&copy; 2026 OR-Route &mdash; Piattaforma Aperta di Ricerca Operativa per Flotte Aziendali e Servizi RSU.</div>
-      <div>Canale Supporto &amp; Suggerimenti Ufficiale: <a href="mailto:or.route2026@gmail.com" style="color:#38bdf8;">or.route2026@gmail.com</a></div>
+      <div>Canale Ufficiale di Supporto &amp; Suggerimenti Piattaforma &bull; Riscontro garantito entro 24-48h.</div>
     </div>
   </footer>
 
@@ -837,7 +822,6 @@
       element.classList.add('active');
       const radio = element.querySelector('input[type="radio"]');
       if (radio) radio.checked = true;
-      updateMailtoLink();
     }
 
     // Contatore caratteri per il messaggio
@@ -845,67 +829,15 @@
     const charCounter = document.getElementById('charCounter');
     msgInput.addEventListener('input', () => {
       charCounter.textContent = `${msgInput.value.length} caratteri`;
-      updateMailtoLink();
     });
 
-    // Aggiornamento dinamico del link mailto con i campi inseriti
     const userNameInput = document.getElementById('userName');
     const userEmailInput = document.getElementById('userEmail');
     const userCompanyInput = document.getElementById('userCompany');
     const modelSelect = document.getElementById('modelSelect');
     const formSubjectInput = document.getElementById('formSubject');
-    const btnMailto = document.getElementById('btnMailto');
 
-    [userNameInput, userEmailInput, userCompanyInput, modelSelect, formSubjectInput].forEach(inp => {
-      inp.addEventListener('input', updateMailtoLink);
-      inp.addEventListener('change', updateMailtoLink);
-    });
-
-    function updateMailtoLink() {
-      const targetEmail = "or.route2026@gmail.com";
-      const cat = selectedCategory || "Suggerimento";
-      const name = userNameInput.value.trim() || "[Nome non specificato]";
-      const email = userEmailInput.value.trim() || "[Email non specificata]";
-      const company = userCompanyInput.value.trim() || "N/D";
-      const model = modelSelect.value || "Generale";
-      const subjRaw = formSubjectInput.value.trim() || `Richiesta / Suggerimento OR-Route (${cat})`;
-      const fullSubject = `[OR-Route - ${cat}] ${subjRaw}`;
-      const msg = msgInput.value.trim() || "[Nessun testo aggiuntivo inserito]";
-
-      const bodyText = `Salve Team OR-Route,\n\n` +
-        `Invio una comunicazione tramite la piattaforma OR-Route:\n\n` +
-        `• Tipologia: ${cat}\n` +
-        `• Referente: ${name}\n` +
-        `• Email di risposta: ${email}\n` +
-        `• Azienda/Ente: ${company}\n` +
-        `• Modello di Riferimento: ${model}\n\n` +
-        `--- DETTAGLIO MESSAGGIO ---\n${msg}\n\n` +
-        `---------------------------\n` +
-        `Inviato da: ${name} (${email})\n` +
-        `Piattaforma OR-Route Ricerca Operativa`;
-
-      btnMailto.href = `mailto:${targetEmail}?subject=${encodeURIComponent(fullSubject)}&body=${encodeURIComponent(bodyText)}`;
-    }
-
-    // Copia email negli appunti
-    function copyEmailToClipboard() {
-      const email = "or.route2026@gmail.com";
-      const btn = document.getElementById('btnCopyEmail');
-      navigator.clipboard.writeText(email).then(() => {
-        btn.innerHTML = '<span>✅</span> Copiato!';
-        btn.style.borderColor = '#10b981';
-        btn.style.color = '#10b981';
-        setTimeout(() => {
-          btn.innerHTML = '<span>📋</span> Copia';
-          btn.style.borderColor = '#334155';
-          btn.style.color = '#f8fafc';
-        }, 2500);
-      }).catch(err => {
-        alert("Indirizzo email: " + email);
-      });
-    }
-
-    // Gestione Invio Form via AJAX con fallback robusto
+    // Gestione Invio Form via AJAX con protezione anti-spam bot
     const contactForm = document.getElementById('contactForm');
     const alertSuccess = document.getElementById('alertSuccess');
     const alertError = document.getElementById('alertError');
@@ -915,7 +847,14 @@
     contactForm.addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      // Validazione base
+      // Controllo trappola honeypot: se compilato è un bot automatico
+      const honeyField = contactForm.querySelector('input[name="_honey"]');
+      if (honeyField && honeyField.value.trim() !== "") {
+        console.warn("Rilevata compilazione bot automatica.");
+        return;
+      }
+
+      // Validazione base campi obbligatori
       const name = userNameInput.value.trim();
       const email = userEmailInput.value.trim();
       const subject = formSubjectInput.value.trim();
@@ -932,7 +871,7 @@
         return;
       }
 
-      // Validazione formato email semplice
+      // Validazione formato email
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(email)) {
         alert("Inserisci un indirizzo email valido per consentirci di risponderti.");
@@ -967,7 +906,7 @@
 
       let sentSuccessfully = false;
 
-      // 1. Tenta invio a backend locale /api/contact per backup su disco
+      // 1. Archiviazione di backup su backend locale /api/contact
       try {
         await fetch('/api/contact', {
           method: 'POST',
@@ -975,13 +914,13 @@
           body: JSON.stringify(payload)
         });
       } catch (backendErr) {
-        // Backend opzionale o offline: proseguiamo comunque con FormSubmit
-        console.warn("Backend locale non disponibile per archiviazione, procedo con FormSubmit:", backendErr);
+        console.warn("Backend locale non disponibile per archiviazione:", backendErr);
       }
 
-      // 2. Invio principale diretto verso or.route2026@gmail.com tramite FormSubmit AJAX
+      // 2. Invio protetto verso il canale di supporto con endpoint offuscato anti-crawler
       try {
-        const response = await fetch("https://formsubmit.co/ajax/or.route2026@gmail.com", {
+        const targetEndpoint = atob("aHR0cHM6Ly9mb3Jtc3VibWl0LmNvL2FqYXgvb3Iucm91dGUyMDI2QGdtYWlsLmNvbQ==");
+        const response = await fetch(targetEndpoint, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
@@ -991,16 +930,13 @@
         });
 
         if (response.ok) {
-          const resData = await response.json().catch(() => ({}));
           sentSuccessfully = true;
         } else {
           console.warn("FormSubmit ha risposto con codice:", response.status);
-          // Se la risposta AJAX ha restituito errore (es. primo invio con attivazione richiesta),
-          // proviamo l'invio form standard POST come fallback trasparente
           sentSuccessfully = false;
         }
       } catch (netErr) {
-        console.error("Errore fetch FormSubmit:", netErr);
+        console.error("Errore trasmissione:", netErr);
         sentSuccessfully = false;
       }
 
@@ -1016,17 +952,12 @@
           else el.classList.remove('active');
         });
         charCounter.textContent = "0 caratteri";
-        updateMailtoLink();
         alertSuccess.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
-        // Mostra alert di errore con link mailto visibile
         alertError.style.display = 'block';
         alertError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     });
-
-    // Inizializza il link mailto al caricamento
-    updateMailtoLink();
   </script>
 </body>
 </html>
