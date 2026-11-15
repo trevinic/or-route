@@ -9804,6 +9804,7 @@ document.addEventListener('keydown', function(e) {
 const MONETIZATION_CONFIG = {
   paypalUrl: 'https://www.paypal.com/paypalme/nicolatrevi',
   bmcUrl: 'https://buymeacoffee.com/ntrevi',
+  btcWallet: 'bc1pmws4xk33p32ym5dalx8yhldrpdkw2t642a5c2r5qhxeqvj0rsjzsqaneal',
   solanaWallet: 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn',
   ethPolygonWallet: '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09',
   ibanAddress: 'IT39Q0320502000000099239686',
@@ -9821,9 +9822,16 @@ function loadMonetizationConfig() {
 }
 
 function syncMonetizationFieldsUI() {
+  const btcAddr = MONETIZATION_CONFIG.btcWallet;
   const solanaAddr = MONETIZATION_CONFIG.solanaWallet;
   const ethPolyAddr = MONETIZATION_CONFIG.ethPolygonWallet;
   const ibanAddr = MONETIZATION_CONFIG.walletAddress;
+
+  const btcEl = document.getElementById('btcWalletDisplay');
+  if (btcEl) btcEl.innerText = btcAddr;
+
+  const inlineBtcEl = document.getElementById('inlineBtcDisplay');
+  if (inlineBtcEl) inlineBtcEl.innerText = btcAddr;
 
   const solEl = document.getElementById('solanaWalletDisplay');
   if (solEl) solEl.innerText = solanaAddr;
@@ -9941,7 +9949,10 @@ function copyWalletField(fieldType) {
   let textToCopy = '';
   let label = 'Valore';
 
-  if (fieldType === 'solana') {
+  if (fieldType === 'bitcoin' || fieldType === 'btc') {
+    textToCopy = MONETIZATION_CONFIG.btcWallet || 'bc1pmws4xk33p32ym5dalx8yhldrpdkw2t642a5c2r5qhxeqvj0rsjzsqaneal';
+    label = 'Wallet Bitcoin (BTC)';
+  } else if (fieldType === 'solana') {
     textToCopy = MONETIZATION_CONFIG.solanaWallet || 'FJzHjFJb55GeA2iNjLXaPrtHVkn2B4EwcwX5E2DTrshn';
     label = 'Wallet Solana (SOL)';
   } else if (fieldType === 'ethereum') {
