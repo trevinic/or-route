@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Foglio di Stile Personalizzato -->
-  <link rel="stylesheet" href="style.css?v=20261115_1100">
+  <link rel="stylesheet" href="style.css?v=20261115_1145">
 
   <!-- Libreria Cartografica Interattiva Leaflet GIS (OSM Stradario) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,79 +25,72 @@
 <body>
 
   <!-- =========================================================================
-       1. HEADER DELLA PIATTAFORMA
+       1. HEADER DELLA PIATTAFORMA (COMPATTO SU RIGA SINGOLA)
        ========================================================================= -->
   <header class="app-header">
     <div class="header-container">
-      <div class="logo-group" onclick="switchMainTab('tab-selector', null)" style="cursor: pointer;" title="Torna alla Landing Page Principale">
+      <div class="logo-group" onclick="switchMainTab('tab-selector', null)" style="cursor: pointer; flex-shrink: 0;" title="Torna alla Landing Page Principale">
         <div class="logo-badge">📐</div>
         <div class="logo-text">
           <h1>OR-<span class="highlight">Route</span></h1>
-          <div class="logo-sub">Ricerca Operativa & Algoritmi Matematici per Flotte Aziendali</div>
+          <div class="logo-sub">Ricerca Operativa &amp; Algoritmi Flotte</div>
         </div>
       </div>
-      <div class="header-meta" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <!-- Sezione 1: Navigazione Rapida & Selezione Modelli -->
-        <div style="display: flex; align-items: center; gap: 8px;">
+      <div class="header-meta">
+        <!-- Sezione 1: Navigazione Rapida & Selezione Modelli Compatta -->
+        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
           <button id="btnHeaderHome" class="btn-home active" onclick="switchMainTab('tab-selector', this)" title="Torna alla Landing Page Principale (3 Aree Operative)">
-            <span style="font-size: 15px;">🏠</span> Home
+            <span>🏠</span> Home
           </button>
 
-          <div class="header-model-selector" style="display: flex; align-items: center; gap: 8px;">
-            <label for="headerModelSelect" style="font-size: 12.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Modelli:</label>
+          <div class="header-model-selector">
+            <label for="headerModelSelect" style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;">Modelli:</label>
             <select id="headerModelSelect" class="header-select" onchange="switchModelFromDropdown(this.value)">
-              <option value="" disabled selected hidden>-- Scegli Modello --</option>
-              <option value="tab-cvrp">📦 1. CVRP (Consegne Merci & Corrieri)</option>
-              <option value="tab-vrptw">⏱️ 2. VRPTW (Finestre Orarie Tassative)</option>
-              <option value="tab-carp">🚛 3. CARP (Servizi Stradali & Rifiuti)</option>
-              <option value="tab-intermediate">🔋 4. WCVRPTW-IF / EV-VRP (Scarichi & Ricariche)</option>
-              <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri & Consegne Accoppiati)</option>
-              <option value="tab-mdvrp">🏢🏢 6. MDVRP (Multi-Deposito)</option>
-              <option value="tab-pcarp">📅 7. PCARP (Raccolta Settimanale Differenziata)</option>
-              <option value="tab-carptw">⏱️🛣️ 8. CARPTW (Finestre Orarie su Strade & ZTL)</option>
-              <option value="tab-carpif">♻️🛣️ 9. CARPIF (Scarichi Intermedi TMB/Discarica)</option>
-              <option value="tab-dcarp">⚡🛣️ 10. DCARP (Dynamic CARP: Compiti Virtuali)</option>
+              <option value="" disabled selected hidden>-- Modello --</option>
+              <option value="tab-cvrp">📦 1. CVRP (Merci)</option>
+              <option value="tab-vrptw">⏱️ 2. VRPTW (Orari)</option>
+              <option value="tab-carp">🚛 3. CARP (RSU/Strade)</option>
+              <option value="tab-intermediate">🔋 4. EV-VRP (Ricariche)</option>
+              <option value="tab-vrppd">📦🔄 5. VRPPD (Ritiri)</option>
+              <option value="tab-mdvrp">🏢 6. MDVRP (Depositi)</option>
+              <option value="tab-pcarp">📅 7. PCARP (Settimanale)</option>
+              <option value="tab-carptw">⏱️🛣️ 8. CARPTW (ZTL)</option>
+              <option value="tab-carpif">♻️ 9. CARPIF (Impianti)</option>
+              <option value="tab-dcarp">⚡ 10. DCARP (Dinamico)</option>
             </select>
           </div>
         </div>
 
         <!-- Divisore Visivo -->
-        <div style="height: 24px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
+        <div style="height: 20px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
 
         <!-- Sezione 2: Profilo Utente & Scenari Salvati (SQLite) -->
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex-shrink: 0;">
           <!-- Indicatore Scenario Attivo -->
-          <div id="headerActiveScenarioIndicator" style="display: none; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 12.5px; color: #10b981;">
-            <span>📌 Scenario:</span>
-            <strong id="headerActiveScenarioName">Predefinito</strong>
-            <button onclick="quickSaveActiveScenario()" title="Salva modifiche attuali in questo scenario" style="background:#10b981; color:#fff; border:none; border-radius:4px; padding:2px 7px; font-weight:700; cursor:pointer; font-size:11px; margin-left:4px;">💾 Salva</button>
-            <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Gestione Scenari Personali">?</button>
+          <div id="headerActiveScenarioIndicator" style="display: none; align-items: center; gap: 4px; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 8px; border-radius: 6px; font-size: 11.5px; color: #10b981; white-space: nowrap;">
+            <span>📌</span>
+            <strong id="headerActiveScenarioName" style="max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Predefinito</strong>
+            <button onclick="quickSaveActiveScenario()" title="Salva modifiche attuali in questo scenario" style="background:#10b981; color:#fff; border:none; border-radius:4px; padding:2px 6px; font-weight:700; cursor:pointer; font-size:10.5px;">💾</button>
           </div>
 
-          <div id="headerAuthContainer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <div id="headerAuthContainer" style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
             <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
-              👤 Accedi / Registrati
+              👤 Accedi
             </button>
             <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Login e Salvataggio Scenari">?</button>
           </div>
         </div>
 
         <!-- Divisore Visivo -->
-        <div style="height: 24px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
+        <div style="height: 20px; width: 1px; background: rgba(255, 255, 255, 0.16); margin: 0 2px; flex-shrink: 0;"></div>
 
-        <!-- Sezione 3: Strumenti Globali, FAQ, Partner & Buy Me a Coffee -->
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)" title="Calcola il risparmio economico e il Return on Investment">
+        <!-- Sezione 3: Strumenti Globali (Calcola ROI & FAQ) -->
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex-shrink: 0;">
+          <button class="btn btn-blue btn-sm" onclick="switchMainTab('tab-roi', null)" title="Calcola il risparmio economico, il ROI e consulta la Matrice Comparativa dei 10 Modelli">
             📊 Calcola ROI
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" title="Scopri convenzioni e offerte partner per la tua flotta">
-            🤝 Partner
           </button>
           <button class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-faq', null)" title="Consulta le FAQ e la documentazione tecnica">
             📚 FAQ
-          </button>
-          <button class="btn-coffee-header" onclick="openSupportCoffeeModal()" title="Sostieni il progetto gratuito con una donazione libera su PayPal o Portafoglio Digitale">
-            <span>☕</span> Offrimi un Caffè
           </button>
         </div>
       </div>
@@ -145,14 +138,6 @@
           <span class="landing-hero-pill">
             <span>🚀</span> Suite Cloud di Ricerca Operativa &bull; 100% Accesso Gratuito
           </span>
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="font-size: 12px;">
-              🔥 Convenzioni & Partner Flotta
-            </button>
-            <button type="button" class="btn-coffee-header" onclick="openSupportCoffeeModal()" style="font-size: 12px; padding: 5px 12px;">
-              ☕ Supporta il Progetto (PayPal / Wallet)
-            </button>
-          </div>
         </div>
 
         <h2 class="landing-hero-title">
@@ -442,6 +427,37 @@
       </div>
 
       <!-- =====================================================================
+           BARRA PARTNER & BUY ME A COFFEE (SOTTO LE 3 AREE DI SELEZIONE)
+           ===================================================================== -->
+      <div class="landing-partner-coffee-bar">
+        <div class="partner-coffee-item">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">🤝</div>
+            <div>
+              <div style="font-size: 14px; font-weight: 800; color: #f8fafc;">Partner &amp; Convenzioni Flotta Aziendale</div>
+              <div style="font-size: 12px; color: #94a3b8;">Telemetria GPS, Carte Carburante B2B, Ricambi Autocarri e Solutori Cloud dedicati</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="white-space: nowrap; font-weight: 700; border-color: rgba(56, 189, 248, 0.45); color: #38bdf8;">
+            🤝 Scopri i Partner &rarr;
+          </button>
+        </div>
+
+        <div class="partner-coffee-item coffee-accent">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(245, 158, 11, 0.16); border: 1px solid rgba(245, 158, 11, 0.45); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">☕</div>
+            <div>
+              <div style="font-size: 14px; font-weight: 800; color: #fbbf24;">Buy Me a Coffee &bull; Sostieni il Progetto</div>
+              <div style="font-size: 12px; color: #cbd5e1;">Donazione libera tramite <b>PayPal</b>, <b>Revolut</b>, <b>Satispay</b> o <b>Portafoglio Digitale</b></div>
+            </div>
+          </div>
+          <button type="button" class="btn-coffee-header" onclick="openSupportCoffeeModal()" style="white-space: nowrap;">
+            <span>☕</span> Offrimi un Caffè
+          </button>
+        </div>
+      </div>
+
+      <!-- =====================================================================
            SLOT GOOGLE ADSENSE IN-ARTICLE (TRA LE 3 AREE E LA GUIDA INTERATTIVA)
            ===================================================================== -->
       <div class="ad-container" style="margin: 0 0 26px 0;">
@@ -725,107 +741,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Matrice Comparativa dei 10 Modelli Matematici -->
-        <h3 id="wizardMatrixAnchor" style="font-size: 16px; margin: 24px 0 14px 0; color: var(--text-main);">
-          📊 Matrice Comparativa Completa dei 10 Modelli di Ricerca Operativa per Fleet Management
-        </h3>
-        <div class="table-responsive">
-          <table class="opt-table">
-            <thead>
-              <tr>
-                <th>Modello Matematico</th>
-                <th>Target Aziendale Tipico</th>
-                <th>Elemento Servito</th>
-                <th>Vincoli Chiave</th>
-                <th>Risparmio Medio</th>
-                <th style="text-align: center;">Accesso Diretto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><b>📦 1. CVRP</b></td>
-                <td>Corrieri, Food &amp; Beverage, Forniture B2B</td>
-                <td>Nodi discreti (Clienti)</td>
-                <td>Portata veicoli, sottogiri MTZ</td>
-                <td><span class="code-tag" style="color:#34d399;">18% - 24% km</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-cvrp', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>⏱️ 2. VRPTW</b></td>
-                <td>GDO, Farmaceutico, Tecnici a Domicilio</td>
-                <td>Nodi discreti con orari</td>
-                <td>Finestre temporali [a_i, b_i], tempi sosta</td>
-                <td><span class="code-tag" style="color:#38bdf8;">22% - 30% tempi</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-vrptw', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>🚛 3. CARP</b></td>
-                <td>Igiene Urbana RSU, Pulizia Strade, Neve</td>
-                <td>Archi / Tratte viarie</td>
-                <td>Eliminazione passaggi a vuoto, Single-Commodity Flow</td>
-                <td><span class="code-tag" style="color:#fbbf24;">25% - 35% deadhead</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carp', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>🔋 4. EV-VRP / IF</b></td>
-                <td>Flotte Elettriche, Smaltimento con Tappe</td>
-                <td>Nodi intermedi multipli</td>
-                <td>Ripristino portata/batteria agli impianti intermedi</td>
-                <td><span class="code-tag" style="color:#ec4899;">Ottimizzazione cicli</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-intermediate', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>📦🔄 5. VRPPD</b></td>
-                <td>Corrieri Espresso, Ritiri &amp; Consegne Accoppiati</td>
-                <td>Coppie Ritiro-Consegna</td>
-                <td>Precedenza P_i &rarr; D_i, accoppiamento veicolo, carico dinamico</td>
-                <td><span class="code-tag" style="color:#a78bfa;">25% - 40% km</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-vrppd', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>🏢🏢 6. MDVRP</b></td>
-                <td>Aziende con più Magazzini, Depositi Distribuiti</td>
-                <td>Clienti da più depositi</td>
-                <td>Partenza e rientro nello stesso Home Depot, clusterizzazione ottimale</td>
-                <td><span class="code-tag" style="color:#06b6d4;">20% - 30% km flotta</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-mdvrp', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>📅 7. PCARP</b></td>
-                <td>Raccolta Differenziata Settimanale Lun-Sab</td>
-                <td>Archi multi-periodo</td>
-                <td>Calendario frazioni (Umido, Carta, Plastica, Vetro, Secco)</td>
-                <td><span class="code-tag" style="color:#34d399;">Bilanciamento 6gg</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-pcarp', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>⏱️🛣️ 8. CARPTW</b></td>
-                <td>Spazzamento &amp; RSU con Varchi ZTL / Scuole</td>
-                <td>Archi con fasce orarie</td>
-                <td>Sincronizzazione cronologica vie e rispetto tassativo ZTL</td>
-                <td><span class="code-tag" style="color:#38bdf8;">0% violazioni ZTL</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carptw', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>♻️🛣️ 9. CARPIF</b></td>
-                <td>Grandi Comuni con Scarichi Intermedi TMB</td>
-                <td>Archi + Impianti TMB</td>
-                <td>Svuotamenti multipli compattatore durante lo stesso turno</td>
-                <td><span class="code-tag" style="color:#fbbf24;">+40% autonomia turno</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carpif', null)">Apri &rarr;</button></td>
-              </tr>
-              <tr>
-                <td><b>⚡🛣️ 10. DCARP</b></td>
-                <td>Gestione Emergenze Real-Time &amp; Guasti Mezzi</td>
-                <td>Archi dinamici + GPS</td>
-                <td>Compiti virtuali e ricalcolo istantaneo su imprevisti stradali</td>
-                <td><span class="code-tag" style="color:#f97316;">Resilienza Real-Time</span></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-dcarp', null)">Apri &rarr;</button></td>
-              </tr>
-            </tbody>
-          </table>
         </div>
         </div>
       </div>
@@ -2431,6 +2346,112 @@
               </p>
               <a href="#partner-section" class="btn btn-primary btn-sm">Scopri le Offerte Partner Flotta ➔</a>
             </div>
+          </div>
+        </div>
+
+        <!-- Matrice Comparativa dei 10 Modelli Matematici (Spostata nella Pagina Calcola ROI) -->
+        <div style="margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border-color);">
+          <h3 id="wizardMatrixAnchor" style="font-size: 16.5px; margin: 0 0 14px 0; color: var(--text-main);">
+            📊 Matrice Comparativa Completa dei 10 Modelli di Ricerca Operativa per Fleet Management &amp; Impatto ROI
+          </h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+            Confronta il risparmio medio chilometrico, l'abbattimento dei transiti a vuoto (<i>deadheading</i>) e i benefici operativi garantiti da ciascuno dei 10 modelli matematici della suite:
+          </p>
+          <div class="table-responsive">
+            <table class="opt-table">
+              <thead>
+                <tr>
+                  <th>Modello Matematico</th>
+                  <th>Target Aziendale Tipico</th>
+                  <th>Elemento Servito</th>
+                  <th>Vincoli Chiave</th>
+                  <th>Risparmio Medio</th>
+                  <th style="text-align: center;">Accesso Diretto</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>📦 1. CVRP</b></td>
+                  <td>Corrieri, Food &amp; Beverage, Forniture B2B</td>
+                  <td>Nodi discreti (Clienti)</td>
+                  <td>Portata veicoli, sottogiri MTZ</td>
+                  <td><span class="code-tag" style="color:#34d399;">18% - 24% km</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-cvrp', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>⏱️ 2. VRPTW</b></td>
+                  <td>GDO, Farmaceutico, Tecnici a Domicilio</td>
+                  <td>Nodi discreti con orari</td>
+                  <td>Finestre temporali [a_i, b_i], tempi sosta</td>
+                  <td><span class="code-tag" style="color:#38bdf8;">22% - 30% tempi</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-vrptw', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>🚛 3. CARP</b></td>
+                  <td>Igiene Urbana RSU, Pulizia Strade, Neve</td>
+                  <td>Archi / Tratte viarie</td>
+                  <td>Eliminazione passaggi a vuoto, Single-Commodity Flow</td>
+                  <td><span class="code-tag" style="color:#fbbf24;">25% - 35% deadhead</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carp', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>🔋 4. EV-VRP / IF</b></td>
+                  <td>Flotte Elettriche, Smaltimento con Tappe</td>
+                  <td>Nodi intermedi multipli</td>
+                  <td>Ripristino portata/batteria agli impianti intermedi</td>
+                  <td><span class="code-tag" style="color:#ec4899;">Ottimizzazione cicli</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-intermediate', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>📦🔄 5. VRPPD</b></td>
+                  <td>Corrieri Espresso, Ritiri &amp; Consegne Accoppiati</td>
+                  <td>Coppie Ritiro-Consegna</td>
+                  <td>Precedenza P_i &rarr; D_i, accoppiamento veicolo, carico dinamico</td>
+                  <td><span class="code-tag" style="color:#a78bfa;">25% - 40% km</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-vrppd', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>🏢🏢 6. MDVRP</b></td>
+                  <td>Aziende con più Magazzini, Depositi Distribuiti</td>
+                  <td>Clienti da più depositi</td>
+                  <td>Partenza e rientro nello stesso Home Depot, clusterizzazione ottimale</td>
+                  <td><span class="code-tag" style="color:#06b6d4;">20% - 30% km flotta</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-mdvrp', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>📅 7. PCARP</b></td>
+                  <td>Raccolta Differenziata Settimanale Lun-Sab</td>
+                  <td>Archi multi-periodo</td>
+                  <td>Calendario frazioni (Umido, Carta, Plastica, Vetro, Secco)</td>
+                  <td><span class="code-tag" style="color:#34d399;">Bilanciamento 6gg</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-pcarp', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>⏱️🛣️ 8. CARPTW</b></td>
+                  <td>Spazzamento &amp; RSU con Varchi ZTL / Scuole</td>
+                  <td>Archi con fasce orarie</td>
+                  <td>Sincronizzazione cronologica vie e rispetto tassativo ZTL</td>
+                  <td><span class="code-tag" style="color:#38bdf8;">0% violazioni ZTL</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carptw', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>♻️🛣️ 9. CARPIF</b></td>
+                  <td>Grandi Comuni con Scarichi Intermedi TMB</td>
+                  <td>Archi + Impianti TMB</td>
+                  <td>Svuotamenti multipli compattatore durante lo stesso turno</td>
+                  <td><span class="code-tag" style="color:#fbbf24;">+40% autonomia turno</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-carpif', null)">Apri &rarr;</button></td>
+                </tr>
+                <tr>
+                  <td><b>⚡🛣️ 10. DCARP</b></td>
+                  <td>Gestione Emergenze Real-Time &amp; Guasti Mezzi</td>
+                  <td>Archi dinamici + GPS</td>
+                  <td>Compiti virtuali e ricalcolo istantaneo su imprevisti stradali</td>
+                  <td><span class="code-tag" style="color:#f97316;">Resilienza Real-Time</span></td>
+                  <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" onclick="switchMainTab('tab-dcarp', null)">Apri &rarr;</button></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -4384,7 +4405,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
   </footer>
 
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1100"></script>
+  <script src="app.js?v=20261115_1145"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>
@@ -4814,12 +4835,6 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
       </div>
     </div>
   </div>
-
-  <!-- Widget Fluttuante "Buy Me a Coffee / Donazione Libera" -->
-  <button type="button" class="floating-coffee-widget" onclick="openSupportCoffeeModal()" title="Sostieni OR-Route con un caffè su PayPal o Portafoglio Digitale">
-    <span class="coffee-cup-icon">☕</span>
-    <span>Offrimi un Caffè</span>
-  </button>
 
   <!-- Modal "Buy Me a Coffee" & Donazioni Libere (PayPal / Portafoglio Digitale / Config) -->
   <div id="modalSupportCoffee" class="modal-overlay" style="display: none; z-index: 12500;">

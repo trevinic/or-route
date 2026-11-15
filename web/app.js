@@ -8754,23 +8754,23 @@ function updateAuthUI() {
     const count = State.userScenarios ? State.userScenarios.length : 0;
     container.innerHTML = `
       <div class="user-badge" title="Accesso effettuato con l'account ${State.currentUser.username}">
-        <span style="color: #38bdf8; font-size: 14px;">👤</span>
+        <span style="color: #38bdf8; font-size: 12px;">👤</span>
         <strong style="color: #38bdf8;">${State.currentUser.username}</strong>
       </div>
       <button class="btn btn-secondary btn-sm" onclick="openScenariosModal()" title="Visualizza, carica o elimina le configurazioni salvate">
-        📁 I Miei Scenari (<span id="userScenarioCount">${count}</span>)
+        📁 Scenari (<span id="userScenarioCount">${count}</span>)
       </button>
       <button class="btn btn-green btn-sm" onclick="openSaveScenarioModal()" title="Salva la configurazione attuale o aggiorna lo scenario aperto">
-        💾 Salva Scenario
+        💾 Salva
       </button>
-      <button class="btn btn-outline btn-sm" onclick="handleLogout()" title="Disconnetti account" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4); padding: 5px 10px;">
+      <button class="btn btn-outline btn-sm" onclick="handleLogout()" title="Disconnetti account" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4); padding: 4px 8px;">
         🚪 Esci
       </button>
     `;
   } else {
     container.innerHTML = `
       <button class="btn btn-blue btn-sm" onclick="openAuthModal('login')" title="Accedi per salvare e gestire i tuoi scenari personali">
-        👤 Accedi / Registrati
+        👤 Accedi
       </button>
       <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('login-scenarios')" title="Guida su Login e Salvataggio Scenari">?</button>
     `;
@@ -9994,6 +9994,17 @@ function copyWalletField(fieldType) {
 // FUNZIONI AREA 1: APERTURA E SCROLL ALLA GUIDA WIZARD
 // ==========================================
 function openAndScrollToWizard(sectionTarget = 'step1') {
+  if (sectionTarget === 'matrix') {
+    switchMainTab('tab-roi', null);
+    setTimeout(() => {
+      const matrixEl = document.getElementById('wizardMatrixAnchor');
+      if (matrixEl) {
+        matrixEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    return;
+  }
+
   const content = document.getElementById('wizardCollapsibleContent');
   const btnToggle = document.getElementById('btnToggleWizardBody');
   if (content && content.style.display === 'none') {
@@ -10003,7 +10014,6 @@ function openAndScrollToWizard(sectionTarget = 'step1') {
 
   let anchorId = 'wizardStep1Anchor';
   if (sectionTarget === 'fleet') anchorId = 'wizardFleetAnchor';
-  else if (sectionTarget === 'matrix') anchorId = 'wizardMatrixAnchor';
 
   const targetEl = document.getElementById(anchorId) || document.getElementById('wizardGuideContainer');
   if (targetEl) {

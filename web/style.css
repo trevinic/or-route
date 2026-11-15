@@ -83,15 +83,15 @@ body::after {
   z-index: 0;
 }
 
-/* Header & Top Navigation */
+/* Header & Top Navigation (Compatto su Riga Singola) */
 header.app-header {
   position: sticky;
   top: 0;
   z-index: 1000;
   backdrop-filter: blur(14px);
-  background: rgba(14, 22, 38, 0.88);
+  background: rgba(14, 22, 38, 0.92);
   border-bottom: 1px solid var(--border-color);
-  padding: 14px 28px;
+  padding: 8px 18px;
 }
 
 .header-container {
@@ -100,35 +100,39 @@ header.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 10px;
 }
 
 .logo-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .logo-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  font-size: 17px;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+  flex-shrink: 0;
 }
 
 .logo-text h1 {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .logo-text h1 span.highlight {
@@ -138,20 +142,42 @@ header.app-header {
 }
 
 .logo-sub {
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .logo-sub {
+    display: none;
+  }
 }
 
 .header-meta {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.header-meta::-webkit-scrollbar {
+  display: none;
+}
+
+.header-meta .btn-sm {
+  padding: 5px 9px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  gap: 4px;
 }
 
 .header-model-selector {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .header-select {
@@ -159,9 +185,12 @@ header.app-header {
   border: 1px solid rgba(56, 189, 248, 0.45);
   color: #f8fafc;
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 5px 8px;
+  width: 158px;
+  max-width: 158px;
+  text-overflow: ellipsis;
   border-radius: var(--radius-sm);
   outline: none;
   cursor: pointer;
@@ -184,11 +213,11 @@ header.app-header {
 .btn-home {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  font-size: 13px;
-  padding: 6px 14px;
+  font-size: 12px;
+  padding: 5px 10px;
   border-radius: var(--radius-sm);
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(56, 189, 248, 0.45);
@@ -196,6 +225,7 @@ header.app-header {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
 }
 
 .btn-home:hover {
@@ -1222,13 +1252,14 @@ footer.app-footer {
 .user-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: rgba(56, 189, 248, 0.12);
   border: 1px solid rgba(56, 189, 248, 0.35);
-  padding: 5px 12px;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   color: #e2e8f0;
+  white-space: nowrap;
 }
 
 /* =========================================================================
@@ -1473,7 +1504,7 @@ footer.app-footer {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 22px;
-  margin-bottom: 26px;
+  margin-bottom: 16px;
   align-items: stretch;
 }
 
@@ -1481,6 +1512,50 @@ footer.app-footer {
   .landing-3areas-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Barra Partner & Buy Me a Coffee posizionata sotto la riga delle 3 aree */
+.landing-partner-coffee-bar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 960px) {
+  .landing-partner-coffee-bar {
+    grid-template-columns: 1fr;
+  }
+}
+
+.partner-coffee-item {
+  background: linear-gradient(135deg, rgba(19, 29, 49, 0.95) 0%, rgba(12, 19, 34, 0.98) 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.32);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.partner-coffee-item:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.16);
+}
+
+.partner-coffee-item.coffee-accent {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 65%),
+              linear-gradient(135deg, rgba(19, 29, 49, 0.95) 0%, rgba(12, 19, 34, 0.98) 100%);
+}
+
+.partner-coffee-item.coffee-accent:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.22);
 }
 
 .landing-area-card {
