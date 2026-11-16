@@ -424,6 +424,8 @@
               </button>
             </div>
             <input type="file" id="landingSessionFileInput" accept=".json,application/json" style="display: none;" onchange="handleSessionFileImport(event)">
+            <input type="file" id="fileImportFleet" accept=".xlsx,.xls,.csv,.tsv,.txt" style="display: none;" onchange="handleFleetFileImport(event)">
+            <input type="file" id="fileImportStreets" accept=".xlsx,.xls,.csv,.tsv,.txt" style="display: none;" onchange="handleStreetsFileImport(event)">
           </div>
         </div>
 
@@ -639,6 +641,12 @@
             <button class="btn btn-secondary btn-sm" onclick="loadWizardFleetPreset('single_type')">
               🚐 Monotipo Standard
             </button>
+            <button type="button" class="btn btn-secondary btn-sm" style="border-color: #34d399; color: #34d399;" onclick="triggerFleetFileImport()" title="Carica l'intera flotta da file esterno (.xlsx, .xls, .csv, .txt tabulato)">
+              📁 Carica Flotta da File
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="downloadFleetTemplate('csv')" title="Scarica template flotta di esempio (.csv)">
+              📥 Template Flotta (.csv)
+            </button>
           </div>
 
           <!-- Tabella Costruttore Flotta Eterogenea -->
@@ -791,9 +799,15 @@
               </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #38bdf8;">🏢 Clienti & Richiesta Merci (kg)</h4>
-              <span id="cvrpCustomerCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- clienti</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <h4 style="font-size: 14px; color: #38bdf8; margin: 0;">🏢 Clienti & Richiesta Merci (kg)</h4>
+                <span id="cvrpCustomerCount" class="code-tag" style="color: #38bdf8; font-size: 11.5px;">-- clienti</span>
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; border-color: #38bdf8; color: #38bdf8;" onclick="triggerStreetsFileImport()" title="Carica clienti/destinazioni da file Excel/CSV/TXT">📁 Carica da File</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;" onclick="downloadStreetsTemplate('csv')" title="Scarica template clienti/utenze (.csv)">📥 Template</button>
+              </div>
             </div>
             <div class="table-responsive" style="max-height: 230px; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
               <table class="opt-table">
@@ -811,11 +825,15 @@
             </div>
 
             <!-- Tabella Flotta CVRP: Portata & Costi Fissi/Variabili -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #34d399;">🚐 Flotta Mezzi: Portata & Costi Fissi</h4>
-              <button class="btn btn-secondary btn-sm" onclick="addCvrpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
-                + Aggiungi Veicolo
-              </button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <h4 style="font-size: 14px; color: #34d399; margin: 0;">🚐 Flotta Mezzi: Portata & Costi Fissi</h4>
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; border-color: #34d399; color: #34d399;" onclick="triggerFleetFileImport()" title="Carica flotta da file Excel/CSV/TXT">📁 Carica da File</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;" onclick="downloadFleetTemplate('csv')" title="Scarica template flotta (.csv)">📥 Template</button>
+                <button class="btn btn-secondary btn-sm" onclick="addCvrpVehicleRow()" style="font-size: 11.5px; padding: 4px 10px;">
+                  + Aggiungi Veicolo
+                </button>
+              </div>
             </div>
             <div class="table-responsive" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
               <table class="opt-table">
@@ -1236,10 +1254,23 @@
 
           <!-- Colonna Destra Configurazione: Tabella Strade & Tabella Flotta Compattatori -->
           <div>
-            <!-- Intestazione Strade con Filtro di Ricerca e Distinzione Zone Residenziali -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; color: #38bdf8; display: flex; align-items: center;"><span>🛣️ Rete Stradale &amp; Domanda Rifiuti (kg)</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('nodes-explained')" title="Cosa sono i Nodi e le Vie?">?</button></h4>
-              <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
+            <!-- Intestazione Strade con Filtro di Ricerca, Distinzione Zone Residenziali e Caricamento File -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <h4 style="font-size: 14px; color: #38bdf8; display: flex; align-items: center; margin: 0;">
+                  <span>🛣️ Rete Stradale &amp; Domanda Rifiuti (kg)</span>
+                  <button type="button" class="help-faq-btn" onclick="openFaqHelpModal('streets-file-import')" title="Guida all'importazione file Excel/CSV/TXT delle utenze e tratte viarie">?</button>
+                </h4>
+                <span id="carpStreetsCount" class="code-tag" style="font-size: 11.5px; color: #38bdf8;">-- tratte</span>
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 9px; border-color: #38bdf8; color: #38bdf8;" onclick="triggerStreetsFileImport()" title="Carica file esterno (.xlsx, .xls, .csv, .txt tabulato) con utenze e vie">
+                  📁 Carica da File (Excel / CSV / TXT)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 9px;" onclick="downloadStreetsTemplate('csv')" title="Scarica template di esempio con campi preimpostati (CSV / Excel)">
+                  📥 Template Utenze (.csv)
+                </button>
+              </div>
             </div>
             
             <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
@@ -1268,9 +1299,15 @@
             <!-- Tabella Flotta Compattatori RSU (Specifiche, Operatori & Costi) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
               <h4 style="font-size: 14px; color: #34d399; display: flex; align-items: center; margin: 0;">
-                <span>🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('fleet-config')" title="Guida sulla Flotta e Costi Mezzi">?</button>
+                <span>🚛 Flotta Mezzi: Specifiche Portata & Costo Fisso</span><button type="button" class="help-faq-btn" onclick="openFaqHelpModal('fleet-file-import')" title="Guida all'importazione file Excel/CSV/TXT della flotta">?</button>
               </h4>
-              <div style="display: flex; gap: 6px; align-items: center;">
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 9px; border-color: #34d399; color: #34d399;" onclick="triggerFleetFileImport()" title="Carica l'intera flotta da file esterno (.xlsx, .xls, .csv, .txt tabulato)">
+                  📁 Carica Flotta da File (Excel / CSV / TXT)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 9px;" onclick="downloadFleetTemplate('csv')" title="Scarica template flotta di esempio (CSV / Excel)">
+                  📥 Template Flotta (.csv)
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="addCarpVehicleRow()" style="font-size: 11px; padding: 4px 10px;">
                   + Aggiungi Compattatore
                 </button>
@@ -3145,8 +3182,8 @@
                 <li><b>Secco Residuo / Indifferenziato</b>: ~25–32% a livello nazionale, soggetto a fortissima contrazione nei comuni a tariffa puntuale.</li>
               </ul>
 
-              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🍇 2. Il Caso Studio Reale: Comune di Conegliano (Bacino Sinistra Piave / Savno)</h4>
-              Il Comune di Conegliano e il bacino di igiene urbana della Sinistra Piave (gestione Savno) costituiscono un'eccellenza e un caso studio europeo di riferimento:
+              <h4 style="color: #38bdf8; font-size: 14px; margin-bottom: 8px;">🍇 2. Il Caso Studio Reale: Comune di Conegliano (Bacino Sinistra Piave)</h4>
+              Il Comune di Conegliano e il bacino di igiene urbana della Sinistra Piave costituiscono un'eccellenza e un caso studio europeo di riferimento:
               <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
                 <li><b>Tariffa Puntuale (PAYT - Pay-As-You-Throw)</b>: l'impiego di mastelli domiciliari con trasponder RFID addebitati al singolo svuotamento incentiva la massima riduzione del secco indifferenziato.</li>
                 <li><b>Raccolta Differenziata al vertice (>86%)</b>: a Conegliano il secco residuo è crollato a meno di <b>35–45 kg/ab/anno</b>, ribaltando la logica classica di raccolta.</li>
@@ -3366,6 +3403,231 @@
                 <li><b>Impatto Economico</b>: nella gestione manuale il deadheading costituisce fino al 35% del chilometraggio totale, sprecando gasolio e ore-lavoro.</li>
                 <li><b>Ottimizzazione Euleriana</b>: il modello CARP risolve una variante avanzata del <i>Chinese Postman Problem</i> capacitato, minimizzando la duplicazione degli archi e garantendo la chiusura del circuito al minor costo possibile.</li>
               </ul>
+            </div>
+          </details>
+
+          <!-- FAQ 22: Importazione Flotta da File Esterno -->
+          <details class="faq-item" id="faq-fleet-file-import">
+            <summary class="faq-question">
+              <span>22. 📁🚛 Come importare la Flotta Mezzi da file esterno (Excel .xlsx/.xls, CSV o file di testo tabulato) e quali sono i campi richiesti?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              OR-Route consente di caricare istantaneamente l'intera flotta aziendale da qualsiasi foglio di calcolo gestionale o ERP (file Excel <code>.xlsx</code> / <code>.xls</code>, file separati da virgola o punto e virgola <code>.csv</code>, o file di testo tabulato <code>.tsv</code> / <code>.txt</code>).<br><br>
+              
+              <h4 style="color: #34d399; font-size: 13.5px; margin-bottom: 6px;">📋 Specifiche e Colonne del File Flotta:</h4>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">
+                I nomi delle colonne sono flessibili e non sensibili a maiuscole/minuscole. Puoi utilizzare sia la denominazione italiana che inglese (accetta spazi o underscore <code>_</code>):
+              </p>
+              <div style="overflow-x: auto; margin-bottom: 12px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 6px;">
+                  <thead>
+                    <tr style="background: rgba(52, 211, 153, 0.15); color: #34d399; text-align: left;">
+                      <th style="padding: 7px 9px;">Nome Colonna (Header)</th>
+                      <th style="padding: 7px 9px;">Obbligatorio</th>
+                      <th style="padding: 7px 9px;">Descrizione &amp; Unità di Misura</th>
+                      <th style="padding: 7px 9px;">Valore Default / Esempio</th>
+                      <th style="padding: 7px 9px;">Modelli Compatibili</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">nome</td>
+                      <td style="padding: 6px 9px; color: #34d399;">Sì</td>
+                      <td style="padding: 6px 9px;">Identificativo o matricola mezzo (accetta anche <i>veicolo, name, vehicle</i>)</td>
+                      <td style="padding: 6px 9px;"><code>Compattatore_1</code>, <code>Daily_B1</code></td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">portata_kg</td>
+                      <td style="padding: 6px 9px; color: #34d399;">Sì</td>
+                      <td style="padding: 6px 9px;">Portata utile in kg (oppure colonna <code>portata_qt</code> in quintali)</td>
+                      <td style="padding: 6px 9px;"><code>4500</code> (o 45.0 qt)</td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">operatori</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Numero addetti a bordo: 1 (solo autista) o 2 (autista + operatore)</td>
+                      <td style="padding: 6px 9px;"><code>1</code> (default)</td>
+                      <td style="padding: 6px 9px;">CARP, PCARP, CARPTW, Wizard</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">costo_autista_h</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Tariffa oraria operatore (€/ora)</td>
+                      <td style="padding: 6px 9px;"><code>22.0</code> €/h</td>
+                      <td style="padding: 6px 9px;">CARP, Wizard</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">costo_mezzo_giorno</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Ammortamento e canone fisso giornaliero mezzo (€/giorno)</td>
+                      <td style="padding: 6px 9px;"><code>40.0</code> €/g</td>
+                      <td style="padding: 6px 9px;">CARP, Wizard</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">costo_fisso</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Costo fisso turno (€). Se omesso, calcolato automaticamente con formula: <code>(autista × op × 5h) + mezzo</code></td>
+                      <td style="padding: 6px 9px;"><code>150.0</code> €</td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">costo_km</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Costo chilometrico carburante e usura (€/km)</td>
+                      <td style="padding: 6px 9px;"><code>1.20</code> €/km</td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">batteria_kwh</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Capacità batteria veicolo in kWh</td>
+                      <td style="padding: 6px 9px;"><code>60.0</code> kWh</td>
+                      <td style="padding: 6px 9px;">EV-VRP (Elettrico)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">deposito_base</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Identificativo o nome del deposito di rimessaggio assegnato</td>
+                      <td style="padding: 6px 9px;"><code>DEP_1</code></td>
+                      <td style="padding: 6px 9px;">MDVRP (Multi-Deposito)</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">categoria</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Descrizione libera (es. "Compattatore 3 assi 26t", "Furgone patente B ZTL")</td>
+                      <td style="padding: 6px 9px;">Testo libero</td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="downloadFleetTemplate('csv')">📥 Scarica Template Flotta (.csv)</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="triggerFleetFileImport()">📁 Carica Flotta Subito</button>
+              </div>
+            </div>
+          </details>
+
+          <!-- FAQ 23: Importazione Rete Stradale, Utenze e Clienti -->
+          <details class="faq-item" id="faq-streets-file-import">
+            <summary class="faq-question">
+              <span>23. 📁🛣️ Come importare la Rete Stradale, Utenze e Clienti da file esterno (Excel .xlsx/.xls, CSV, TXT tabulato) e come adattare i campi per CARP e gli altri modelli?</span>
+              <span class="faq-arrow" style="font-size: 11px; color: #38bdf8;">▼</span>
+            </summary>
+            <div class="faq-answer">
+              OR-Route permette di importare anagrafiche territoriali (elenchi vie comunali, numeri civici, utenze Tari/RSU o punti di consegna merci clienti) direttamente da file Excel o file di testo tabulato, integrandosi nativamente con banche dati GIS comunali, fogli gestionali o export ERP.<br><br>
+              
+              <h4 style="color: #38bdf8; font-size: 13.5px; margin-bottom: 6px;">📋 Specifiche e Colonne del File Territoriale:</h4>
+              <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">
+                Il parser riconosce automaticamente la prima riga di intestazione indipendentemente da maiuscole o accenti:
+              </p>
+              <div style="overflow-x: auto; margin-bottom: 12px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 6px;">
+                  <thead>
+                    <tr style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; text-align: left;">
+                      <th style="padding: 7px 9px;">Campo (Header)</th>
+                      <th style="padding: 7px 9px;">Obbligatorio</th>
+                      <th style="padding: 7px 9px;">Descrizione &amp; Formato</th>
+                      <th style="padding: 7px 9px;">Esempio Valore</th>
+                      <th style="padding: 7px 9px;">Uso nei Modelli</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">numero_utenze</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Numero di utenze, mastelli o famiglie servite lungo la via o al civico</td>
+                      <td style="padding: 6px 9px;"><code>42</code> (default 1)</td>
+                      <td style="padding: 6px 9px;">CARP, PCARP, CARPTW, KPI</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">indirizzo</td>
+                      <td style="padding: 6px 9px; color: #38bdf8;">Sì</td>
+                      <td style="padding: 6px 9px;">Denominazione della via o indirizzo completo del punto/civico (accetta anche <i>via, street, address, denominazione</i>)</td>
+                      <td style="padding: 6px 9px;"><code>Via XX Settembre 14</code></td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">cap</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Codice di Avviamento Postale a 5 cifre</td>
+                      <td style="padding: 6px 9px;"><code>31015</code></td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">comune</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Nome del comune o territorio di appartenenza</td>
+                      <td style="padding: 6px 9px;"><code>Conegliano</code></td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">provincia</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Sigla provincia a 2 lettere</td>
+                      <td style="padding: 6px 9px;"><code>TV</code></td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">stato</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Stato o nazione</td>
+                      <td style="padding: 6px 9px;"><code>Italia</code></td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">latitudine</td>
+                      <td style="padding: 6px 9px; color: #38bdf8;">Consigliato</td>
+                      <td style="padding: 6px 9px;">Coordinata GPS WGS84 decimale (supporta punto o virgola decimale)</td>
+                      <td style="padding: 6px 9px;"><code>45.94523</code></td>
+                      <td style="padding: 6px 9px;">Rendering Mappa GIS &amp; Geometria</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">longitudine</td>
+                      <td style="padding: 6px 9px; color: #38bdf8;">Consigliato</td>
+                      <td style="padding: 6px 9px;">Coordinata GPS WGS84 decimale (supporta punto o virgola decimale)</td>
+                      <td style="padding: 6px 9px;"><code>12.24156</code></td>
+                      <td style="padding: 6px 9px;">Rendering Mappa GIS &amp; Geometria</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">kg_di_carico</td>
+                      <td style="padding: 6px 9px; color: #38bdf8;">Sì</td>
+                      <td style="padding: 6px 9px;">Domanda di rifiuto o merce in kg (accetta anche <i>carico_kg, demand_kg</i> o <i>carico_qt</i> in quintali)</td>
+                      <td style="padding: 6px 9px;"><code>310</code> kg (o 3.1 qt)</td>
+                      <td style="padding: 6px 9px;">Tutti i Modelli</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">giorni</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Giorni di raccolta separati da virgola (es. "Lunedì, Giovedì")</td>
+                      <td style="padding: 6px 9px;"><code>Lunedì, Giovedì</code></td>
+                      <td style="padding: 6px 9px;">PCARP (Periodico)</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 6px 9px; font-weight: 700; color: #fff;">finestra_inizio / fine</td>
+                      <td style="padding: 6px 9px; color: #94a3b8;">No</td>
+                      <td style="padding: 6px 9px;">Fascia oraria di accesso consentita (orario HH:MM o minuti da inizio turno)</td>
+                      <td style="padding: 6px 9px;"><code>06:00</code> / <code>08:30</code></td>
+                      <td style="padding: 6px 9px;">CARPTW, VRPTW</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h4 style="color: #38bdf8; font-size: 13.5px; margin-bottom: 6px;">🔄 Adattamento Automatico nei Diversi Modelli:</h4>
+              <ul style="margin: 6px 0 12px 20px; line-height: 1.6;">
+                <li><b>Nei Modelli ad Archi (CARP, PCARP, CARPTW)</b>: ogni riga viene interpretata come <b>tratta viaria</b> di raccolta continua porta a porta. Il sistema crea i nodi topologici estremi (o legge le colonne opzionali <code>u, v</code>), stima la lunghezza metrica e i costi di transito/servizio, disegna la tratta sulla mappa Leaflet e abilita il solutore per il giro minimo continuo con raccordi al cantiere deposito.</li>
+                <li><b>Nei Modelli a Nodi (CVRP, VRPTW, EV-VRP, VRPPD, MDVRP)</b>: ogni riga viene convertita in un <b>punto di consegna / ritiro (Cliente)</b> con le coordinate geografiche GPS indicate, la domanda di merce in kg e gli eventuali orari di apertura della banchina di scarico.</li>
+              </ul>
+
+              <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="downloadStreetsTemplate('csv')">📥 Scarica Template Vie &amp; Utenze (.csv)</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="triggerStreetsFileImport()">📁 Carica Vie/Utenze Subito</button>
+              </div>
             </div>
           </details>
 </div>
@@ -4404,8 +4666,11 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
     </div>
   </footer>
 
+  <!-- Libreria SheetJS per lettura ed esportazione Excel .xlsx / .xls -->
+  <script src="xlsx.full.min.js"></script>
+
   <!-- Script Funzionalità -->
-  <script src="app.js?v=20261115_1458"></script>
+  <script src="app.js?v=20261116_1500"></script>
 
   <!-- Funzioni ausiliarie per il Modal OSM con Gestione Deposito -->
   <script>

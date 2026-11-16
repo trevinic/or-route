@@ -17,8 +17,8 @@
 * **🌍 Geocodifica & Mappe OpenStreetMap Internazionali**: download automatico della viabilità reale per qualsiasi comune o territorio in Italia, Europa e nel mondo, con geocodifica Nominatim e coordinate GPS decimali.
 * **🗺️ Mappe GIS Interattive & Canvas**: rendering con tratteggio a colori per ciascun veicolo, frecce animate di percorrenza e controllo strati satellitari ortofoto.
 * **💰 Calcolatore ROI & Emissioni ESG (Scope 1)**: stima dei risparmi annui di carburante e calcolo delle tonnellate di $CO_2$ evitate secondo lo standard internazionale GHG Protocol (fattore 2,65 kg $CO_2$/l).
-* **💾 Sovranità dei Dati**: salvataggio locale, esportazione e importazione in formato JSON senza lock-in di fornitori esterni.
-* **📚 Dispensa Teorica & 21 FAQ**: formulazioni matematiche rigorose MILP, bibliografia scientifica ufficiale e manuale d'uso operativo in 5 fasi.
+* **💾 Sovranità dei Dati & Import File Esterni**: salvataggio locale, esportazione JSON e caricamento istantaneo di intere flotte aziendali e reti stradali/utenze da file esterni (Excel `.xlsx`/`.xls`, `.csv`, `.txt` tabulato).
+* **📚 Dispensa Teorica & 23 FAQ**: formulazioni matematiche rigorose MILP, bibliografia scientifica ufficiale e manuale d'uso operativo in 5 fasi.
 
 ---
 

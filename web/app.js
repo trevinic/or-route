@@ -9738,6 +9738,31 @@ const FAQ_HELP_TOPICS = {
       • Il <b>Raccordo R0</b> è il tragitto stradale effettivo tra la sede aziendale e la prima via del comune: comporta consumo di tempo e carburante (domanda = 0 kg).<br>
       • Il solutore minimizza rigorosamente tutti i chilometri a vuoto garantendo la chiusura euleriana del circuito.
     `
+  },
+  'fleet-file-import': {
+    title: 'Importazione Flotta da File Esterno',
+    subtitle: 'Caricamento Rapido da Excel (.xlsx/.xls), CSV o Testo Tabulato (.txt/.tsv)',
+    faqId: 'faq-fleet-file-import',
+    text: `
+      <b>Specifiche del File Flotta:</b><br>
+      • Puoi caricare l'intera flotta da qualsiasi file Excel (<code>.xlsx</code>, <code>.xls</code>), CSV (con <code>,</code> o <code>;</code>) o testo tabulato (<code>.txt</code>, <code>.tsv</code>).<br>
+      • <b>Campi principali</b>: <code>nome</code> (es. Compattatore_1), <code>portata_kg</code> (es. 4500), <code>operatori</code> (1 o 2), <code>costo_autista_h</code> (default 22 €/h), <code>costo_mezzo_giorno</code> (default 40 €/g), <code>costo_fisso</code> (opzionale), <code>costo_km</code> (default 1.20 €/km).<br>
+      • <b>Campi avanzati</b>: <code>batteria_kwh</code> (per EV-VRP elettrico), <code>deposito_base</code> (per MDVRP multi-deposito).<br>
+      • Clicca sul pulsante <i>📥 Template Flotta (.csv)</i> per scaricare un foglio precompilato d'esempio pronto all'uso.
+    `
+  },
+  'streets-file-import': {
+    title: 'Importazione Rete Stradale, Utenze & Clienti',
+    subtitle: 'Caricamento Anagrafiche da Excel (.xlsx/.xls), CSV o Testo Tabulato (.txt/.tsv)',
+    faqId: 'faq-streets-file-import',
+    text: `
+      <b>Specifiche del File Utenze / Territorio:</b><br>
+      • Importa il tuo database di vie, civici o clienti direttamente nel modello attivo.<br>
+      • <b>Campi definiti</b>: <code>numero_utenze</code>, <code>indirizzo</code>, <code>cap</code>, <code>comune</code>, <code>provincia</code>, <code>stato</code>, <code>latitudine</code>, <code>longitudine</code>, <code>kg_di_carico</code>.<br>
+      • <b>Adattamento automatico</b>: nei modelli CARP ogni riga diventa una tratta di raccolta continua; nei modelli a nodi (CVRP, VRPTW, EV-VRP) ogni riga diventa un punto di consegna/ritiro con coordinate GPS.<br>
+      • Supporta anche <code>giorni</code> (PCARP), <code>finestra_inizio / finestra_fine</code> (VRPTW, CARPTW).<br>
+      • Clicca sul pulsante <i>📥 Template Utenze (.csv)</i> per scaricare il modello d'esempio.
+    `
   }
 };
 
@@ -10318,4 +10343,653 @@ window.addEventListener('DOMContentLoaded', () => {
   loadMonetizationConfig();
   updateLandingArea3SessionUI();
 });
+
+
+
+
+// =========================================================================
+// CARICAMENTO & IMPORTAZIONE FILE ESTERNI (EXCEL .XLSX/.XLS, CSV, TXT TABULATO)
+// PER FLOTTA MEZZI E RETE STRADALE / DOMANDA UTENZE (CARP & MODELLI A NODI)
+// =========================================================================
+
+function normalizeKey(k) {
+  return String(k || '')
+    .trim()
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+function normalizeRowKeys(row) {
+  const norm = {};
+  for (const [key, val] of Object.entries(row)) {
+    norm[normalizeKey(key)] = typeof val === 'string' ? val.trim() : val;
+  }
+  return norm;
+}
+
+function parseDelimitedText(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('#'));
+  if (lines.length < 2) return [];
+
+  const headerLine = lines[0];
+  const tabs = (headerLine.match(/\t/g) || []).length;
+  const semis = (headerLine.match(/;/g) || []).length;
+  const commas = (headerLine.match(/,/g) || []).length;
+
+  let delim = ',';
+  if (tabs > semis && tabs > commas) delim = '\t';
+  else if (semis >= commas && semis > 0) delim = ';';
+
+  function splitRow(rowText, sep) {
+    const res = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < rowText.length; i++) {
+      const c = rowText[i];
+      if (c === '"') {
+        if (inQuotes && rowText[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (c === sep && !inQuotes) {
+        res.push(cur.trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    res.push(cur.trim());
+    return res;
+  }
+
+  const headers = splitRow(headerLine, delim).map(h => normalizeKey(h));
+  const rows = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cells = splitRow(lines[i], delim);
+    if (cells.length === 0 || (cells.length === 1 && cells[0] === '')) continue;
+    const rowObj = {};
+    headers.forEach((h, idx) => {
+      rowObj[h] = cells[idx] !== undefined ? cells[idx] : '';
+    });
+    rows.push(rowObj);
+  }
+  return rows;
+}
+
+async function parseUploadedFile(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+  if ((ext === 'xlsx' || ext === 'xls') && typeof XLSX !== 'undefined') {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    return rawRows.map(row => normalizeRowKeys(row));
+  }
+
+  const text = await file.text();
+  return parseDelimitedText(text);
+}
+
+function triggerFleetFileImport() {
+  const inp = document.getElementById('fileImportFleet');
+  if (inp) {
+    inp.value = '';
+    inp.click();
+  }
+}
+
+function triggerStreetsFileImport() {
+  const inp = document.getElementById('fileImportStreets');
+  if (inp) {
+    inp.value = '';
+    inp.click();
+  }
+}
+
+function downloadFleetTemplate(format = 'csv') {
+  const headers = [
+    'nome', 'portata_kg', 'operatori', 'costo_autista_h', 'costo_mezzo_giorno',
+    'costo_fisso', 'costo_km', 'batteria_kwh', 'costo_kwh', 'consumo_kwh_km',
+    'deposito_base', 'categoria'
+  ];
+  const rows = [
+    ['Compattatore_1', 4500, 1, 22.0, 40.0, 150.0, 1.20, '', '', '', '', 'Compattatore 2 assi 4.5t'],
+    ['Compattatore_2', 6000, 2, 22.0, 50.0, 270.0, 1.35, '', '', '', '', 'Compattatore 3 assi pesante 6.0t'],
+    ['Furgone_PatenteB_1', 1200, 1, 20.0, 30.0, 130.0, 0.95, '', '', '', '', 'Furgone compatto ZTL / centro'],
+    ['Compattatore_EV_1', 3500, 1, 22.0, 60.0, 170.0, 0.80, 90, 0.38, 0.45, '', 'Compattatore 100% Elettrico 90kWh']
+  ];
+
+  if (format === 'xlsx' && typeof XLSX !== 'undefined') {
+    const data = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Flotta');
+    XLSX.writeFile(wb, 'template_flotta_or_route.xlsx');
+    showToast('📥 Template Flotta (.xlsx) scaricato con successo!');
+    return;
+  }
+
+  let csvContent = '\uFEFF' + headers.join(';') + '\n';
+  rows.forEach(r => {
+    csvContent += r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';') + '\n';
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template_flotta_or_route.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📥 Template Flotta (.csv) scaricato con successo!');
+}
+
+function downloadStreetsTemplate(format = 'csv') {
+  const headers = [
+    'numero_utenze', 'indirizzo', 'cap', 'comune', 'provincia', 'stato',
+    'latitudine', 'longitudine', 'kg_di_carico', 'giorni', 'finestra_inizio', 'finestra_fine'
+  ];
+  const rows = [
+    [42, 'Via XX Settembre 14', '31015', 'Conegliano', 'TV', 'Italia', 45.94523, 12.24156, 310, 'Lunedì, Giovedì', '06:00', '08:00'],
+    [68, 'Corso Giuseppe Mazzini 15', '31015', 'Conegliano', 'TV', 'Italia', 45.94781, 12.24320, 480, 'Lunedì, Giovedì', '07:00', '09:30'],
+    [25, 'Viale Brigata Bisagno 8', '31015', 'Conegliano', 'TV', 'Italia', 45.94310, 12.23940, 220, 'Martedì, Venerdì', '06:30', '10:00'],
+    [54, 'Via Madonna di Loreto 3', '31015', 'Conegliano', 'TV', 'Italia', 45.94605, 12.23950, 390, 'Lunedì, Giovedì', '08:00', '11:00'],
+    [18, 'Via Calpena 12', '31015', 'Conegliano', 'TV', 'Italia', 45.95110, 12.24820, 160, 'Mercoledì', '07:00', '12:00']
+  ];
+
+  if (format === 'xlsx' && typeof XLSX !== 'undefined') {
+    const data = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rete_Utenze');
+    XLSX.writeFile(wb, 'template_utenze_strade_or_route.xlsx');
+    showToast('📥 Template Utenze & Vie (.xlsx) scaricato con successo!');
+    return;
+  }
+
+  let csvContent = '\uFEFF' + headers.join(';') + '\n';
+  rows.forEach(r => {
+    csvContent += r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';') + '\n';
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template_utenze_strade_or_route.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📥 Template Utenze & Vie (.csv) scaricato con successo!');
+}
+
+async function handleFleetFileImport(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  try {
+    const rows = await parseUploadedFile(file);
+    if (!rows || rows.length === 0) {
+      showToast('⚠️ File vuoto o formato non valido. Verifica le intestazioni.');
+      return;
+    }
+
+    const parsedVehicles = rows.map((r, idx) => {
+      const name = r.nome || r.veicolo || r.name || r.vehicle || r.modello || r.tipologia || `Mezzo_${idx + 1}`;
+
+      let capKg = 4500;
+      if (r.portata_kg !== undefined && r.portata_kg !== '') {
+        capKg = parseFloat(String(r.portata_kg).replace(',', '.'));
+      } else if (r.portata !== undefined && r.portata !== '') {
+        capKg = parseFloat(String(r.portata).replace(',', '.'));
+      } else if (r.capacity_kg !== undefined && r.capacity_kg !== '') {
+        capKg = parseFloat(String(r.capacity_kg).replace(',', '.'));
+      } else if (r.capacity !== undefined && r.capacity !== '') {
+        capKg = parseFloat(String(r.capacity).replace(',', '.'));
+      } else if (r.portata_qt !== undefined && r.portata_qt !== '') {
+        capKg = parseFloat(String(r.portata_qt).replace(',', '.')) * 100.0;
+      }
+      if (isNaN(capKg) || capKg <= 0) capKg = 4500;
+
+      const crew = parseInt(r.operatori || r.equipaggio || r.crew_size || r.crew || r.num_operatori || 1) || 1;
+      const dRate = parseFloat(String(r.costo_autista_h || r.autista_ora || r.driver_rate || r.costo_ora || 22.0).replace(',', '.')) || 22.0;
+      const vDaily = parseFloat(String(r.costo_mezzo_giorno || r.mezzo_giorno || r.vehicle_daily || r.leasing_giorno || 40.0).replace(',', '.')) || 40.0;
+
+      let fCost = null;
+      if (r.costo_fisso !== undefined && r.costo_fisso !== '') {
+        fCost = parseFloat(String(r.costo_fisso).replace(',', '.'));
+      } else if (r.fixed_cost !== undefined && r.fixed_cost !== '') {
+        fCost = parseFloat(String(r.fixed_cost).replace(',', '.'));
+      }
+      if (fCost === null || isNaN(fCost)) {
+        fCost = (dRate * crew * 5.0) + vDaily;
+      }
+
+      const cKm = parseFloat(String(r.costo_km || r.costo_chilometrico || r.cost_per_km || 1.20).replace(',', '.')) || 1.20;
+      const batt = parseFloat(String(r.batteria_kwh || r.battery_kwh || 60).replace(',', '.')) || 60;
+      const kwhC = parseFloat(String(r.costo_kwh || r.kwh_cost || 0.38).replace(',', '.')) || 0.38;
+      const kwhKm = parseFloat(String(r.consumo_kwh_km || r.kwh_per_km || 0.45).replace(',', '.')) || 0.45;
+      const depot = r.deposito_base || r.home_depot || r.cantiere || '';
+      const desc = r.descrizione || r.categoria || r.description || r.category || `Portata ${(capKg/100).toFixed(1)} qt, ${crew} op.`;
+
+      return {
+        name,
+        capacity: capKg,
+        capacity_kg: capKg,
+        crew_size: crew,
+        driver_rate: dRate,
+        vehicle_daily: vDaily,
+        fixed_cost: fCost,
+        cost_per_km: cKm,
+        battery_kwh: batt,
+        kwh_cost: kwhC,
+        kwh_per_km: kwhKm,
+        home_depot: depot,
+        description: desc,
+        category: desc
+      };
+    });
+
+    const activeTab = State.activeTab || 'tab-carp';
+
+    // Aggiorna CARP
+    if (!State.carpConfig) State.carpConfig = { streets: [], vehicles: [] };
+    State.carpConfig.vehicles = parsedVehicles.map(v => ({
+      name: v.name,
+      capacity_kg: v.capacity_kg,
+      crew_size: v.crew_size,
+      driver_rate: v.driver_rate,
+      vehicle_daily: v.vehicle_daily,
+      fixed_cost: v.fixed_cost,
+      cost_per_km: v.cost_per_km,
+      description: v.description
+    }));
+
+    // Aggiorna anche gli altri modelli se attivi o presenti
+    if (State.cvrpConfig) {
+      State.cvrpConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, capacity: v.capacity, fixed_cost: v.fixed_cost, cost_per_km: v.cost_per_km }));
+    }
+    if (State.vrptwConfig) {
+      State.vrptwConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, capacity: v.capacity, fixed_cost: v.fixed_cost, cost_per_km: v.cost_per_km }));
+    }
+    if (State.evConfig) {
+      State.evConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, capacity: v.capacity, battery_kwh: v.battery_kwh, fixed_cost: v.fixed_cost, kwh_cost: v.kwh_cost, kwh_per_km: v.kwh_per_km }));
+    }
+    if (State.vrppdConfig) {
+      State.vrppdConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, capacity: v.capacity, fixed_cost: v.fixed_cost, cost_per_km: v.cost_per_km, description: v.description }));
+    }
+    if (State.mdvrpConfig) {
+      const firstDep = (State.mdvrpConfig.depots && State.mdvrpConfig.depots[0]) ? State.mdvrpConfig.depots[0].id : '';
+      State.mdvrpConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, home_depot: v.home_depot || firstDep, capacity: v.capacity, fixed_cost: v.fixed_cost, cost_per_km: v.cost_per_km }));
+    }
+    if (State.pcarpConfig) {
+      State.pcarpConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, capacity_kg: v.capacity_kg, fixed_cost: v.fixed_cost, cost_per_km: v.cost_per_km, description: v.description }));
+    }
+    if (State.carptwConfig) {
+      State.carptwConfig.vehicles = parsedVehicles.map(v => ({ name: v.name, capacity_kg: v.capacity_kg, fixed_cost: v.fixed_cost, cost_per_km: v.cost_per_km, description: v.description }));
+    }
+
+    if (typeof wizardAnswers !== 'undefined' && wizardAnswers.fleetCategories) {
+      wizardAnswers.fleetCategories = parsedVehicles.map(v => ({
+        name: v.name,
+        qty: 1,
+        capacity: v.capacity_kg,
+        driverRate: v.driver_rate,
+        crewSize: v.crew_size,
+        shiftHours: 7.0,
+        vehicleDaily: v.vehicle_daily,
+        costPerKm: v.cost_per_km,
+        calculatedFixedCost: v.fixed_cost
+      }));
+      if (typeof renderWizardFleetTable === 'function') renderWizardFleetTable();
+    }
+
+    if (activeTab === 'tab-carp') {
+      renderCarpTables();
+    } else if (activeTab === 'tab-cvrp') {
+      renderCvrpTables();
+    } else if (activeTab === 'tab-vrptw') {
+      renderVrptwTables();
+    } else if (activeTab === 'tab-intermediate') {
+      renderEvTables();
+    } else if (activeTab === 'tab-vrppd') {
+      renderVrppdTables();
+    } else if (activeTab === 'tab-mdvrp') {
+      renderMdvrpTables();
+    } else if (activeTab === 'tab-pcarp') {
+      renderPcarpTables();
+    } else if (activeTab === 'tab-carptw') {
+      renderCarptwTables();
+    } else {
+      renderCarpTables();
+    }
+
+    const totCap = parsedVehicles.reduce((acc, v) => acc + v.capacity_kg, 0);
+    showToast(`🚛 Flotta caricata con successo: ${parsedVehicles.length} veicoli (Portata totale: ${(totCap/100).toFixed(1)} qt / ${totCap.toLocaleString()} kg)!`);
+  } catch (err) {
+    console.error('Errore import flotta:', err);
+    showToast('❌ Errore durante la lettura del file flotta: ' + err.message);
+  } finally {
+    event.target.value = '';
+  }
+}
+
+async function handleStreetsFileImport(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  try {
+    const rows = await parseUploadedFile(file);
+    if (!rows || rows.length === 0) {
+      showToast('⚠️ File vuoto o privo di righe valide.');
+      return;
+    }
+
+    const activeTab = State.activeTab || 'tab-carp';
+    const isNodeModel = ['tab-cvrp', 'tab-vrptw', 'tab-intermediate', 'tab-vrppd', 'tab-mdvrp'].includes(activeTab);
+
+    if (isNodeModel) {
+      importRowsIntoNodeModel(rows, activeTab);
+    } else {
+      importRowsIntoCarpModel(rows, activeTab);
+    }
+  } catch (err) {
+    console.error('Errore import strade:', err);
+    showToast('❌ Errore durante l\'importazione delle tratte/utenze: ' + err.message);
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function importRowsIntoCarpModel(rows, activeTab) {
+  if (!State.carpConfig) {
+    State.carpConfig = {
+      name: 'CARP Servizio Stradale',
+      depot: { name: 'Sede / Deposito Aziendale', lat: 45.951391, lon: 12.312502, node_id: 0 },
+      nodes: [],
+      streets: [],
+      vehicles: []
+    };
+  }
+
+  const dep = State.carpConfig.depot || {};
+  const depLat = parseFloat(dep.lat || 45.951391);
+  const depLon = parseFloat(dep.lon || 12.312502);
+  const depName = dep.name || 'Sede / Deposito Aziendale';
+
+  const nodes = [{ id: 0, name: depName, lat: depLat, lon: depLon }];
+  const streets = [];
+  let totalKg = 0;
+  let totalUtenze = 0;
+
+  rows.forEach((r, idx) => {
+    const indirizzo = r.indirizzo || r.via || r.street || r.address || r.denominazione || r.nome_via || r.name || `Tratta_${idx + 1}`;
+    const utenze = parseInt(r.numero_utenze || r.utenze || r.civici || r.num_utenze || r.n_utenze || 1) || 1;
+    const cap = r.cap || r.codice_postale || r.zip || '';
+    const comune = r.comune || r.citta || r.city || '';
+    const prov = r.provincia || r.prov || '';
+    const stato = r.stato || r.paese || 'Italia';
+
+    let lat = parseFloat(String(r.latitudine || r.lat || r.latitude || '').replace(',', '.'));
+    let lon = parseFloat(String(r.longitudine || r.lon || r.lng || r.longitude || '').replace(',', '.'));
+
+    if (isNaN(lat) || isNaN(lon)) {
+      const angle = (idx / Math.max(1, rows.length)) * 2 * Math.PI;
+      const radiusKm = 0.5 + (idx * 0.05);
+      lat = depLat + (radiusKm / 111.0) * Math.sin(angle);
+      lon = depLon + (radiusKm / (111.0 * Math.cos(depLat * Math.PI / 180))) * Math.cos(angle);
+    }
+
+    let demandKg = 0;
+    if (r.kg_di_carico !== undefined && r.kg_di_carico !== '') demandKg = parseFloat(String(r.kg_di_carico).replace(',', '.'));
+    else if (r.carico_kg !== undefined && r.carico_kg !== '') demandKg = parseFloat(String(r.carico_kg).replace(',', '.'));
+    else if (r.demand_kg !== undefined && r.demand_kg !== '') demandKg = parseFloat(String(r.demand_kg).replace(',', '.'));
+    else if (r.domanda_kg !== undefined && r.domanda_kg !== '') demandKg = parseFloat(String(r.domanda_kg).replace(',', '.'));
+    else if (r.carico_qt !== undefined && r.carico_qt !== '') demandKg = parseFloat(String(r.carico_qt).replace(',', '.')) * 100.0;
+    else if (r.domanda_qt !== undefined && r.domanda_qt !== '') demandKg = parseFloat(String(r.domanda_qt).replace(',', '.')) * 100.0;
+    else if (r.kg !== undefined && r.kg !== '') demandKg = parseFloat(String(r.kg).replace(',', '.'));
+    else if (r.carico !== undefined && r.carico !== '') demandKg = parseFloat(String(r.carico).replace(',', '.'));
+    else demandKg = utenze * 8.5;
+    if (isNaN(demandKg) || demandKg < 0) demandKg = 0;
+
+    let u, v;
+    if (r.da_nodo !== undefined && r.a_nodo !== undefined && r.da_nodo !== '' && r.a_nodo !== '') {
+      u = parseInt(r.da_nodo);
+      v = parseInt(r.a_nodo);
+    } else if (r.u !== undefined && r.v !== undefined && r.u !== '' && r.v !== '') {
+      u = parseInt(r.u);
+      v = parseInt(r.v);
+    } else {
+      u = (idx * 2) + 1;
+      v = (idx * 2) + 2;
+    }
+
+    const nodeNameU = `${indirizzo} (Inizio)`;
+    const nodeNameV = `${indirizzo} (Fine)`;
+    const latU = lat - 0.0004;
+    const lonU = lon - 0.0004;
+    const latV = lat + 0.0004;
+    const lonV = lon + 0.0004;
+
+    if (!nodes.find(n => n.id === u)) nodes.push({ id: u, name: nodeNameU, lat: latU, lon: lonU });
+    if (!nodes.find(n => n.id === v)) nodes.push({ id: v, name: nodeNameV, lat: latV, lon: lonV });
+
+    let lengthM = 150 + (utenze * 8);
+    if (r.lunghezza_m !== undefined && r.lunghezza_m !== '') {
+      lengthM = parseFloat(String(r.lunghezza_m).replace(',', '.')) || lengthM;
+    } else if (r.lunghezza_km !== undefined && r.lunghezza_km !== '') {
+      lengthM = (parseFloat(String(r.lunghezza_km).replace(',', '.')) || 0.2) * 1000.0;
+    }
+    const lengthKm = lengthM / 1000.0;
+    const transitCost = Math.max(0.2, Math.round((lengthM / 100.0) * 10) / 10);
+    const serviceCost = Math.max(0.3, Math.round(transitCost * 1.5 * 10) / 10);
+
+    const desc = `${utenze} utenze servite | ${indirizzo}${cap ? ', ' + cap : ''} ${comune ? comune : ''} ${prov ? '(' + prov + ')' : ''}`;
+
+    const streetObj = {
+      id: `S${idx + 1}`,
+      name: indirizzo,
+      u: u,
+      v: v,
+      length_m: lengthM,
+      length_km: lengthKm,
+      transit_cost: transitCost,
+      service_cost: serviceCost,
+      demand_kg: demandKg,
+      utenze: utenze,
+      cap: cap,
+      comune: comune,
+      provincia: prov,
+      stato: stato,
+      lat1: latU,
+      lon1: lonU,
+      lat2: latV,
+      lon2: lonV,
+      geometry: [[latU, lonU], [latV, lonV]],
+      description: desc,
+      is_manual_overridden: true
+    };
+
+    if (r.giorni || r.giorno || r.days) {
+      streetObj.days = String(r.giorni || r.giorno || r.days).split(',').map(d => d.trim());
+    }
+    if (r.finestra_inizio || r.ready_time) {
+      streetObj.ready_time = String(r.finestra_inizio || r.ready_time).trim();
+    }
+    if (r.finestra_fine || r.due_time) {
+      streetObj.due_time = String(r.finestra_fine || r.due_time).trim();
+    }
+    if (r.tempo_servizio || r.service_time) {
+      streetObj.serv_min = parseInt(r.tempo_servizio || r.service_time) || 15;
+    }
+
+    streets.push(streetObj);
+    totalKg += demandKg;
+    totalUtenze += utenze;
+  });
+
+  if (streets.length > 0) {
+    const firstStreet = streets[0];
+    const r0DistKm = 1.2;
+    streets.unshift({
+      id: 'R0',
+      name: 'Raccordo Cantiere Deposito (Tratto Iniziale)',
+      u: 0,
+      v: firstStreet.u,
+      length_m: r0DistKm * 1000.0,
+      length_km: r0DistKm,
+      transit_cost: 1.2,
+      service_cost: 1.2,
+      demand_kg: 0.0,
+      description: 'Tratto di collegamento tra Sede Cantiere e prima via di raccolta',
+      geometry: [[depLat, depLon], [firstStreet.lat1, firstStreet.lon1]],
+      is_raccordo: true
+    });
+
+    for (let i = 1; i < streets.length; i++) {
+      const cur = streets[i];
+      if (i > 1) {
+        const prev = streets[i - 1];
+        streets.push({
+          id: `T_${prev.v}_${cur.u}`,
+          name: `Transito ${prev.name} -> ${cur.name}`,
+          u: prev.v,
+          v: cur.u,
+          length_m: 200.0,
+          length_km: 0.2,
+          transit_cost: 0.2,
+          service_cost: 0.2,
+          demand_kg: 0.0,
+          is_transit_only: true,
+          description: 'Collegamento di transito a vuoto (Deadheading)'
+        });
+      }
+      streets.push({
+        id: `T_${cur.v}_0`,
+        name: `Ritorno a Deposito da ${cur.name}`,
+        u: cur.v,
+        v: 0,
+        length_m: 1000.0,
+        length_km: 1.0,
+        transit_cost: 1.0,
+        service_cost: 1.0,
+        demand_kg: 0.0,
+        is_transit_only: true,
+        description: 'Tratta di rientro cantiere'
+      });
+    }
+  }
+
+  State.carpConfig.nodes = nodes;
+  State.carpConfig.streets = streets;
+  State.carpConfig.depot_node = 0;
+
+  if (activeTab === 'tab-pcarp' && State.pcarpConfig) {
+    State.pcarpConfig.streets = streets.filter(s => s.demand_kg > 0);
+    renderPcarpTables();
+  } else if (activeTab === 'tab-carptw' && State.carptwConfig) {
+    State.carptwConfig.streets = streets.filter(s => s.demand_kg > 0);
+    renderCarptwTables();
+  } else {
+    renderCarpTables();
+    if (typeof renderCarpLeafletMap === 'function') {
+      renderCarpLeafletMap(State.carpConfig, null);
+    }
+    if (typeof updateCarpFleetCapacitySummary === 'function') {
+      updateCarpFleetCapacitySummary();
+    }
+  }
+
+  try {
+    fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(State.carpConfig)
+    }).catch(() => {});
+  } catch (_) {}
+
+  const realStreetsCount = streets.filter(s => s.demand_kg > 0).length;
+  showToast(`🛣️ Rete stradale importata: ${realStreetsCount} tratte viarie (${totalUtenze} utenze, ${(totalKg/100).toFixed(1)} qt / ${totalKg.toLocaleString()} kg rifiuti)!`);
+}
+
+function importRowsIntoNodeModel(rows, activeTab) {
+  const modelKey = activeTab.replace('tab-', '');
+  let configKey = modelKey + 'Config';
+  if (activeTab === 'tab-intermediate') configKey = 'evConfig';
+
+  if (!State[configKey]) {
+    State[configKey] = {
+      name: `Scenario ${modelKey.toUpperCase()}`,
+      customers: [],
+      vehicles: []
+    };
+  }
+
+  const customers = rows.map((r, idx) => {
+    const indirizzo = r.indirizzo || r.via || r.street || r.address || r.denominazione || `Cliente_${idx + 1}`;
+    const utenze = parseInt(r.numero_utenze || r.utenze || r.civici || r.num_utenze || 1) || 1;
+    const cap = r.cap || r.codice_postale || r.zip || '';
+    const comune = r.comune || r.citta || r.city || '';
+    const prov = r.provincia || r.prov || '';
+    const stato = r.stato || r.paese || 'Italia';
+
+    let lat = parseFloat(String(r.latitudine || r.lat || r.latitude || '').replace(',', '.'));
+    let lon = parseFloat(String(r.longitudine || r.lon || r.lng || r.longitude || '').replace(',', '.'));
+    if (isNaN(lat)) lat = 45.438 + (idx * 0.01);
+    if (isNaN(lon)) lon = 10.690 + (idx * 0.01);
+
+    let demand = 0;
+    if (r.kg_di_carico !== undefined && r.kg_di_carico !== '') demand = parseFloat(String(r.kg_di_carico).replace(',', '.'));
+    else if (r.carico_kg !== undefined && r.carico_kg !== '') demand = parseFloat(String(r.carico_kg).replace(',', '.'));
+    else if (r.demand_kg !== undefined && r.demand_kg !== '') demand = parseFloat(String(r.demand_kg).replace(',', '.'));
+    else if (r.demand !== undefined && r.demand !== '') demand = parseFloat(String(r.demand).replace(',', '.'));
+    else if (r.carico_qt !== undefined && r.carico_qt !== '') demand = parseFloat(String(r.carico_qt).replace(',', '.')) * 100.0;
+    else demand = utenze * 10;
+    if (isNaN(demand) || demand <= 0) demand = 100;
+
+    const rTime = parseInt(r.finestra_inizio || r.ready_time || 0) || 0;
+    const dTime = parseInt(r.finestra_fine || r.due_time || 480) || 480;
+    const sTime = parseInt(r.tempo_servizio || r.service_time || 15) || 15;
+
+    return {
+      id: idx + 1,
+      name: `${indirizzo}${comune ? ' (' + comune + ')' : ''}`,
+      address: indirizzo,
+      cap,
+      comune,
+      provincia: prov,
+      stato,
+      lat,
+      lon,
+      demand,
+      demand_kg: demand,
+      utenze,
+      ready_time: rTime,
+      due_time: dTime,
+      service_time: sTime
+    };
+  });
+
+  State[configKey].customers = customers;
+
+  if (activeTab === 'tab-cvrp') renderCvrpTables();
+  else if (activeTab === 'tab-vrptw') renderVrptwTables();
+  else if (activeTab === 'tab-intermediate') renderEvTables();
+  else if (activeTab === 'tab-vrppd') renderVrppdTables();
+  else if (activeTab === 'tab-mdvrp') renderMdvrpTables();
+
+  const totDemand = customers.reduce((a, c) => a + c.demand, 0);
+  showToast(`📦 Importati con successo ${customers.length} clienti/punti consegna (${totDemand.toLocaleString()} kg domanda totale)!`);
+}
 
