@@ -159,6 +159,11 @@ function switchMainTab(tabId, btnElement) {
       try { State.leafletMaps[targetMapId].invalidateSize(); } catch (_) {}
     }
   }, 120);
+
+  // Riapplica la traduzione multilingua se la lingua attiva è inglese
+  if (typeof window.applyTranslationsToDOM === 'function' && typeof window.getLanguage === 'function' && window.getLanguage() === 'en') {
+    setTimeout(window.applyTranslationsToDOM, 40);
+  }
 }
 
 // ==========================================
