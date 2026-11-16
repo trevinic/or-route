@@ -524,23 +524,23 @@
       if (currentLang === 'it') {
         btnIT.classList.add('active');
         btnIT.style.background = 'rgba(56, 189, 248, 0.25)';
-        btnIT.style.color = '#38bdf8';
-        btnIT.style.borderColor = 'rgba(56, 189, 248, 0.5)';
+        btnIT.style.borderColor = 'rgba(56, 189, 248, 0.55)';
+        btnIT.style.opacity = '1';
 
         btnEN.classList.remove('active');
         btnEN.style.background = 'transparent';
-        btnEN.style.color = 'var(--text-muted)';
         btnEN.style.borderColor = 'transparent';
+        btnEN.style.opacity = '0.6';
       } else {
         btnEN.classList.add('active');
         btnEN.style.background = 'rgba(56, 189, 248, 0.25)';
-        btnEN.style.color = '#38bdf8';
-        btnEN.style.borderColor = 'rgba(56, 189, 248, 0.5)';
+        btnEN.style.borderColor = 'rgba(56, 189, 248, 0.55)';
+        btnEN.style.opacity = '1';
 
         btnIT.classList.remove('active');
         btnIT.style.background = 'transparent';
-        btnIT.style.color = 'var(--text-muted)';
         btnIT.style.borderColor = 'transparent';
+        btnIT.style.opacity = '0.6';
       }
     }
   }

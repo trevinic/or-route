@@ -98,10 +98,10 @@ header.app-header {
   max-width: 1560px;
   margin: 0 auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 10px;
+  gap: 30px;
 }
 
 .logo-group {
@@ -112,20 +112,20 @@ header.app-header {
 }
 
 .logo-badge {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 9px;
   background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 18px;
   box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
   flex-shrink: 0;
 }
 
 .logo-text h1 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.4px;
   display: flex;
@@ -142,7 +142,7 @@ header.app-header {
 }
 
 .logo-sub {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -156,10 +156,11 @@ header.app-header {
 .header-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  flex-shrink: 0;
 }
 
 .header-meta::-webkit-scrollbar {
@@ -167,16 +168,18 @@ header.app-header {
 }
 
 .header-meta .btn-sm {
-  padding: 5px 9px;
-  font-size: 11.5px;
+  padding: 6px 11px;
+  font-size: 12.5px;
   white-space: nowrap;
-  gap: 4px;
+  gap: 5px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .header-model-selector {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -185,17 +188,19 @@ header.app-header {
   border: 1px solid rgba(56, 189, 248, 0.45);
   color: #f8fafc;
   font-family: 'Outfit', sans-serif;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  padding: 5px 8px;
-  width: 158px;
-  max-width: 158px;
+  padding: 6px 10px;
+  width: 165px;
+  max-width: 165px;
   text-overflow: ellipsis;
   border-radius: var(--radius-sm);
   outline: none;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .header-select:hover, .header-select:focus {
@@ -213,11 +218,11 @@ header.app-header {
 .btn-home {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
-  font-size: 12px;
-  padding: 5px 10px;
+  font-size: 13px;
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(56, 189, 248, 0.45);
@@ -226,6 +231,53 @@ header.app-header {
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Selettore Lingua Bandiere Pure */
+.lang-switch-box {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 3px 5px;
+  gap: 4px;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.btn-lang {
+  width: 32px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  line-height: 1;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.btn-lang.active {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.btn-lang:not(.active) {
+  opacity: 0.6;
+}
+
+.btn-lang:not(.active):hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .btn-home:hover {
@@ -1252,14 +1304,15 @@ footer.app-footer {
 .user-badge {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  padding: 4px 8px;
+  gap: 5px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 5px 10px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 12.5px;
   color: #e2e8f0;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* =========================================================================
