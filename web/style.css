@@ -248,13 +248,11 @@ header.app-header {
 }
 
 .btn-lang {
-  width: 32px;
-  height: 28px;
+  width: 34px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
-  line-height: 1;
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
@@ -272,12 +270,22 @@ header.app-header {
 }
 
 .btn-lang:not(.active) {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .btn-lang:not(.active):hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.flag-icon-img {
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
 }
 
 .btn-home:hover {
