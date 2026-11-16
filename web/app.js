@@ -8572,23 +8572,36 @@ function openCarpDriverSheet(vName) {
   const title = document.getElementById('driverSheetTitle');
   const content = document.getElementById('driverSheetContent');
 
+  const isEn = (typeof window.getLanguage === 'function' && window.getLanguage() === 'en');
+
   if (title) {
-    title.innerHTML = `<span>📋</span> Foglio di Viaggio per l'Autista &mdash; <b>${vName}</b>`;
+    title.innerHTML = isEn
+      ? `<span>📋</span> Driver Route Sheet &mdash; <b>${vName}</b>`
+      : `<span>📋</span> Foglio di Viaggio per l'Autista &mdash; <b>${vName}</b>`;
   }
 
   let rowsHtml = '';
   let plainText = `====================================================\n`;
-  plainText += `🚛 FOGLIO DI VIAGGIO RACCOLTA RSU - ${vName}\n`;
-  plainText += `Base di Partenza e Rientro: ${depName}\n`;
-  plainText += `Carico Totale Previsto: ${(collected / 100.0).toFixed(1)} qt / ${(capacity / 100.0).toFixed(1)} qt (${satPct}%)\n`;
-  plainText += `Durata Stimata Turno: ${durFormatted}\n`;
-  plainText += `====================================================\n\n`;
-  plainText += `SEQUENZA ORDINATA DEL TRAGITTO DI RACCOLTA:\n\n`;
+  if (isEn) {
+    plainText += `🚛 MUNICIPAL WASTE COLLECTION DRIVER SHEET - ${vName}\n`;
+    plainText += `Base Depot: ${depName}\n`;
+    plainText += `Total Expected Payload: ${(collected / 100.0).toFixed(1)} qt / ${(capacity / 100.0).toFixed(1)} qt (${satPct}%)\n`;
+    plainText += `Estimated Shift Duration: ${durFormatted}\n`;
+    plainText += `====================================================\n\n`;
+    plainText += `ORDERED SEQUENCE OF COLLECTION ROUTE:\n\n`;
+  } else {
+    plainText += `🚛 FOGLIO DI VIAGGIO RACCOLTA RSU - ${vName}\n`;
+    plainText += `Base di Partenza e Rientro: ${depName}\n`;
+    plainText += `Carico Totale Previsto: ${(collected / 100.0).toFixed(1)} qt / ${(capacity / 100.0).toFixed(1)} qt (${satPct}%)\n`;
+    plainText += `Durata Stimata Turno: ${durFormatted}\n`;
+    plainText += `====================================================\n\n`;
+    plainText += `SEQUENZA ORDINATA DEL TRAGITTO DI RACCOLTA:\n\n`;
+  }
 
   let stepNum = 1;
   movements.forEach((m) => {
     const st = streetNameMap[`${m.u}-${m.v}`];
-    let sName = st ? st.name : `Tratta di collegamento`;
+    let sName = st ? st.name : (isEn ? `Connecting segment` : `Tratta di collegamento`);
     const isService = (m.type === 'SERVIZIO');
     const dirInfo = calculateMoveDirection(m.u, m.v);
     const dKg = parseFloat(m.demand_kg) || 0;
@@ -8596,19 +8609,35 @@ function openCarpDriverSheet(vName) {
     let actionBadge = '';
     let actionDesc = '';
     if (m.u === 0) {
-      sName = `Raccordo Cantiere ➔ Inizio Rete Stradale`;
-      actionBadge = `<span class="badge-tra" style="background:rgba(245,158,11,0.2); color:#fbbf24; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 PARTENZA CANTIERE</span>`;
-      actionDesc = `Immissione su viabilità comunale in direzione prima via di raccolta`;
+      sName = isEn ? `Depot Link ➔ Road Network Entrance` : `Raccordo Cantiere ➔ Inizio Rete Stradale`;
+      actionBadge = isEn
+        ? `<span class="badge-tra" style="background:rgba(245,158,11,0.2); color:#fbbf24; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 DEPOT DEPARTURE</span>`
+        : `<span class="badge-tra" style="background:rgba(245,158,11,0.2); color:#fbbf24; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 PARTENZA CANTIERE</span>`;
+      actionDesc = isEn
+        ? `Merging onto municipal roads toward first collection street`
+        : `Immissione su viabilità comunale in direzione prima via di raccolta`;
     } else if (m.v === 0) {
-      sName = `Raccordo Rientro ➔ Cantiere Deposito`;
-      actionBadge = `<span class="badge-tra" style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; font-weight:700;">🏠 RIENTRO DEPOSITO</span>`;
-      actionDesc = `Rientro alla sede operativa per pesatura e scarico rifiuti`;
+      sName = isEn ? `Return Link ➔ Operational Depot` : `Raccordo Rientro ➔ Cantiere Deposito`;
+      actionBadge = isEn
+        ? `<span class="badge-tra" style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; font-weight:700;">🏠 DEPOT RETURN</span>`
+        : `<span class="badge-tra" style="background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; font-weight:700;">🏠 RIENTRO DEPOSITO</span>`;
+      actionDesc = isEn
+        ? `Returning to operational depot for weighing and waste discharge`
+        : `Rientro alla sede operativa per pesatura e scarico rifiuti`;
     } else if (isService) {
-      actionBadge = `<span class="badge-rec" style="background:rgba(16,185,129,0.2); color:#34d399; padding:2px 6px; border-radius:4px; font-weight:700;">🟢 RACCOLTA ATTIVA</span>`;
-      actionDesc = `Svuotamento cassonetti / raccolta porta a porta lungo tutta la via`;
+      actionBadge = isEn
+        ? `<span class="badge-rec" style="background:rgba(16,185,129,0.2); color:#34d399; padding:2px 6px; border-radius:4px; font-weight:700;">🟢 ACTIVE COLLECTION</span>`
+        : `<span class="badge-rec" style="background:rgba(16,185,129,0.2); color:#34d399; padding:2px 6px; border-radius:4px; font-weight:700;">🟢 RACCOLTA ATTIVA</span>`;
+      actionDesc = isEn
+        ? `Bin emptying / curbside collection along entire street`
+        : `Svuotamento cassonetti / raccolta porta a porta lungo tutta la via`;
     } else {
-      actionBadge = `<span class="badge-tra" style="background:rgba(148,163,184,0.15); color:#94a3b8; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 TRANSITO DI COLLEGAMENTO</span>`;
-      actionDesc = `Tratto di transito veloce (nessun cassonetto da svuotare)`;
+      actionBadge = isEn
+        ? `<span class="badge-tra" style="background:rgba(148,163,184,0.15); color:#94a3b8; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 DEADHEAD TRANSIT</span>`
+        : `<span class="badge-tra" style="background:rgba(148,163,184,0.15); color:#94a3b8; padding:2px 6px; border-radius:4px; font-weight:700;">🟡 TRANSITO DI COLLEGAMENTO</span>`;
+      actionDesc = isEn
+        ? `Fast repositioning leg (no collection)`
+        : `Tratto di transito veloce (nessun cassonetto da svuotare)`;
     }
 
     rowsHtml += `
@@ -8633,37 +8662,37 @@ function openCarpDriverSheet(vName) {
     `;
 
     plainText += `${stepNum}. ${sName}\n`;
-    plainText += `   Senso di marcia: ${dirInfo.cardinal}\n`;
-    plainText += `   Azione: ${isService ? 'RACCOLTA (' + (dKg / 100.0).toFixed(1) + ' qt)' : 'Transito di collegamento'}\n\n`;
+    plainText += `   ${isEn ? 'Heading' : 'Senso di marcia'}: ${dirInfo.cardinal}\n`;
+    plainText += `   ${isEn ? 'Operation' : 'Azione'}: ${isService ? (isEn ? 'COLLECTION (' : 'RACCOLTA (') + (dKg / 100.0).toFixed(1) + ' qt)' : (isEn ? 'Deadhead transit' : 'Transito di collegamento')}\n\n`;
 
     stepNum++;
   });
 
-  plainText += `Totale Rifiuti Raccolti a Bordo: ${(collected / 100.0).toFixed(1)} qt\n`;
+  plainText += `${isEn ? 'Total Collected Waste on Board:' : 'Totale Rifiuti Raccolti a Bordo:'} ${(collected / 100.0).toFixed(1)} qt\n`;
   State._lastDriverSheetText = plainText;
 
   if (content) {
     content.innerHTML = `
       <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12.5px;">
-        <div>Base di Partenza: <b style="color:#e2e8f0;">${depName}</b></div>
-        <div>Carico Totale: <b style="color:#34d399;">${(collected / 100.0).toFixed(1)} qt</b> <small>(${satPct}% capienza)</small></div>
-        <div>Durata Stimata: <b style="color:#fbbf24;">${durFormatted}</b></div>
-        <div>Tappe Totali: <b style="color:#38bdf8;">${movements.length} tratte</b></div>
+        <div>${isEn ? 'Base Depot:' : 'Base di Partenza:'} <b style="color:#e2e8f0;">${depName}</b></div>
+        <div>${isEn ? 'Total Payload:' : 'Carico Totale:'} <b style="color:#34d399;">${(collected / 100.0).toFixed(1)} qt</b> <small>(${satPct}% ${isEn ? 'capacity' : 'capienza'})</small></div>
+        <div>${isEn ? 'Estimated Duration:' : 'Durata Stimata:'} <b style="color:#fbbf24;">${durFormatted}</b></div>
+        <div>${isEn ? 'Total Legs:' : 'Tappe Totali:'} <b style="color:#38bdf8;">${movements.length} ${isEn ? 'legs' : 'tratte'}</b></div>
       </div>
 
       <div style="margin-bottom: 10px; font-size: 12px; color: #94a3b8; background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 6px 10px; border-radius: 4px;">
-        ℹ️ <b>Istruzioni per l'Autista:</b> Segui rigorosamente la sequenza numerata delle vie e la direzione indicata. La sequenza è ottimizzata matematicamente per minimizzare il tempo a vuoto e le manovre.
+        ℹ️ <b>${isEn ? 'Driver Instructions:' : 'Istruzioni per l\'Autista:'}</b> ${isEn ? 'Rigorously follow the numbered sequence and indicated headings. The route is mathematically optimized to minimize deadheading and turnaround maneuvers.' : 'Segui rigorosamente la sequenza numerata delle vie e la direzione indicata. La sequenza è ottimizzata matematicamente per minimizzare il tempo a vuoto e le manovre.'}
       </div>
 
       <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 8px;">
         <table class="opt-table" style="font-size: 12px; width: 100%;">
           <thead>
             <tr style="background: rgba(56, 189, 248, 0.12);">
-              <th style="text-align: center;">Tappa</th>
-              <th>Via / Tratta Stradale</th>
-              <th>Direzione di Marcia</th>
-              <th>Tipo Operazione</th>
-              <th style="text-align: right;">Rifiuti Previsti</th>
+              <th style="text-align: center;">${isEn ? 'Step' : 'Tappa'}</th>
+              <th>${isEn ? 'Street / Road Segment' : 'Via / Tratta Stradale'}</th>
+              <th>${isEn ? 'Heading / Direction' : 'Direzione di Marcia'}</th>
+              <th>${isEn ? 'Operation Type' : 'Tipo Operazione'}</th>
+              <th style="text-align: right;">${isEn ? 'Expected Waste' : 'Rifiuti Previsti'}</th>
             </tr>
           </thead>
           <tbody>
@@ -10040,12 +10069,13 @@ function toggleWizardGuideBody() {
   const btn = document.getElementById('btnToggleWizardBody');
   if (!content) return;
 
+  const isEn = (typeof window.getLanguage === 'function' && window.getLanguage() === 'en');
   if (content.style.display === 'none') {
     content.style.display = 'block';
-    if (btn) btn.innerText = '🔼 Comprimi Guida';
+    if (btn) btn.innerText = isEn ? '🔼 Collapse Guide' : '🔼 Comprimi Guida';
   } else {
     content.style.display = 'none';
-    if (btn) btn.innerText = '🔽 Espandi Guida';
+    if (btn) btn.innerText = isEn ? '🔽 Expand Guide' : '🔽 Espandi Guida';
   }
 }
 
