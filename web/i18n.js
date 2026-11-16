@@ -938,7 +938,89 @@
   "formulazioni matematiche MILP (Mixed-Integer Linear Programming)": "exact MILP (Mixed-Integer Linear Programming) formulations",
   "dei modelli implementati nel software, e la": "of all models implemented in the software, and the",
   "bibliografia accademica ufficiale": "official academic bibliography",
-  "con i paper scientifici e gli strumenti open-source che rendono possibile l'ottimizzazione combinatoria avanzata.": "with foundational scientific papers and open-source tools powering our combinatorial optimization platform."
+  "con i paper scientifici e gli strumenti open-source che rendono possibile l'ottimizzazione combinatoria avanzata.": "with foundational scientific papers and open-source tools powering our combinatorial optimization platform.",
+  "Contatti, Assistenza & Suggerimenti — OR-Route": "Contact, Support & Feedback — OR-Route",
+  "⚡ I 10 Modelli": "⚡ The 10 Models",
+  "I 10 Modelli": "The 10 Models",
+  "Contatti, Richieste & Suggerimenti": "Contact, Inquiries & Feedback",
+  "Canale Diretto & Supporto Tecnico": "Direct Channel & Technical Support",
+  "Hai una": "Have an",
+  "Richiesta": "Inquiry",
+  "Suggerimento": "Suggestion",
+  "Il team di": "The team at",
+  "è a tua disposizione per supporto sui modelli matematici di Ricerca Operativa, nuove funzionalità desiderate, personalizzazioni industriali per la tua flotta o collaborazioni scientifiche.": "is at your disposal for support on Operations Research mathematical models, requested features, industrial fleet customizations, or academic research collaborations.",
+  "Modulo di Invio Richiesta": "Inquiry Submission Form",
+  "Campi obbligatori": "Required fields",
+  "Seleziona il Motivo del Contatto *": "Select Contact Reason *",
+  "Indica la tipologia per instradare la richiesta allo specialista più adatto.": "Indicate the type to route your inquiry to the most suitable specialist.",
+  "Il Tuo Nome e Cognome *": "Your Full Name *",
+  "Il Tuo Indirizzo Email *": "Your Email Address *",
+  "Riceverai qui la nostra risposta.": "You will receive our reply here.",
+  "Azienda, Ente o Università": "Company, Entity or University",
+  "Modello Matematico di Interesse (Opzionale)": "Mathematical Model of Interest (Optional)",
+  "Modello Matematico di Interesse": "Mathematical Model of Interest",
+  "(Opzionale)": "(Optional)",
+  "Oggetto del Messaggio *": "Message Subject *",
+  "Oggetto del Messaggio": "Message Subject",
+  "Descrizione Dettagliata della Richiesta o Suggerimento *": "Detailed Request Description or Suggestion *",
+  "Descrizione Dettagliata della Richiesta o Suggerimento": "Detailed Request Description or Suggestion",
+  "Più dettagli fornisci, più precisa sarà la risposta del nostro team.": "The more details you provide, the more precise our team's response will be.",
+  "0 caratteri": "0 characters",
+  "-- Tutti i Modelli / Piattaforma Generale --": "-- All Models / General Platform --",
+  "📦 1. CVRP (Merci e Logistica B2B)": "📦 1. CVRP (Freight & B2B Logistics)",
+  "⏱️ 2. VRPTW (Fasce Orarie Tassative)": "⏱️ 2. VRPTW (Strict Time Windows)",
+  "🚛 3. CARP (Servizi Stradali e RSU)": "🚛 3. CARP (Curbside Waste & Streets)",
+  "🔋 4. EV-VRP (Flotte Elettriche & Tappe)": "🔋 4. EV-VRP (Electric Fleets & Stops)",
+  "📦🔄 5. VRPPD (Pickup & Delivery)": "📦🔄 5. VRPPD (Pickup & Delivery)",
+  "🏬 6. MDVRP (Multi-Deposito e Rimesse)": "🏬 6. MDVRP (Multi-Depot & Hubs)",
+  "📅 7. PCARP (Periodico RSU)": "📅 7. PCARP (Periodic Waste)",
+  "⏱️🛣️ 8. CARPTW (Finestre Orarie ZTL)": "⏱️🛣️ 8. CARPTW (ZTL Time Windows)",
+  "♻️ 9. CARPIF (Impianti e Discariche)": "♻️ 9. CARPIF (Facilities & Dumps)",
+  "⚡ 10. DCARP (Guasti & Riassegnazione)": "⚡ 10. DCARP (Breakdowns & Dynamic Rerouting)",
+  "🗺️ Motore Cartografico GIS / OSM": "🗺️ GIS / OSM Map Engine",
+  "📊 Calcolatore ROI & Emissioni ESG": "📊 ROI & ESG Emissions Calculator",
+  "Dichiaro di aver preso visione dell'informativa e acconsento al trattamento dei dati personali forniti (nome ed email) esclusivamente per la ricezione e la gestione della risposta alla presente comunicazione, in conformità al GDPR.": "I declare that I have read the privacy policy and consent to the processing of personal data provided (name and email) exclusively for receiving and managing the response to this communication, in accordance with GDPR.",
+  "Messaggio inviato con successo!": "Message sent successfully!",
+  "La tua richiesta è stata trasmessa al team di supporto OR-Route. Ti risponderemo all'indirizzo email specificato nel più breve tempo possibile (entro 24-48h lavorative).": "Your request has been forwarded to the OR-Route support team. We will reply to the specified email address as soon as possible (within 24-48 business hours).",
+  "Impossibile inviare il messaggio.": "Unable to send message.",
+  "Si è verificato un problema di rete o blocco temporaneo. Per favore verifica la connessione e riprova tra qualche istante.": "A network issue or temporary lock occurred. Please verify your connection and try again in a moment.",
+  "Invio del messaggio in corso...": "Sending message...",
+  "Attendi un istante, stiamo trasmettendo la tua richiesta.": "Please wait a moment, we are transmitting your request.",
+  "Canale Protetto & Supporto": "Protected Channel & Support",
+  "Tutte le richieste e i suggerimenti inviati tramite questo modulo vengono inoltrati direttamente al team di Ricerca Operativa e sviluppo algoritmi.": "All inquiries and feedback submitted via this form are forwarded directly to the Operations Research and algorithm development team.",
+  "Tempo medio di risposta:": "Average response time:",
+  "Entro 24 – 48 ore lavorative all'indirizzo email specificato nel modulo.": "Within 24 – 48 business hours to the email address specified in the form.",
+  "Riservatezza & Protezione Spam:": "Confidentiality & Anti-Spam Protection:",
+  "Nessun dato viene ceduto a terzi o usato per scopi pubblicitari. Comunicazioni 100% confidenziali con protezione anti-bot integrata.": "No data is shared with third parties or used for advertising. 100% confidential communications with integrated anti-bot protection.",
+  "Sviluppo & Contributi Open Source:": "Open Source Development & Contributions:",
+  "Puoi aprire issue tecniche o consultare il codice sorgente anche su": "You can also open technical issues or explore source code on our",
+  "GitHub Repository": "GitHub Repository",
+  "Suggerimenti per la Community": "Community Suggestions",
+  "OR-Route cresce grazie alle esigenze concrete di fleet manager, ricercatori e autisti. Se proponi una nuova funzionalità, considera di includere:": "OR-Route grows through the practical needs of fleet managers, researchers, and drivers. When proposing a new feature, consider including:",
+  "Il contesto reale:": "The real-world context:",
+  "Tipo di merce trasportata, tipologia di veicoli o vincolo normativo.": "Type of cargo transported, vehicle categories, or regulatory constraints.",
+  "La formulazione desiderata:": "The desired objective:",
+  "Minimizzare chilometri, ore straordinario o veicoli impiegati.": "Minimizing kilometers, overtime hours, or number of active vehicles.",
+  "Esempi o dataset:": "Sample instances or datasets:",
+  "Pochi punti fittizi o città per validare il solutore MILP.": "A few coordinates or street segments to validate the MILP solver.",
+  "Domande Frequenti sui Contatti": "Frequently Asked Questions",
+  "Il servizio di supporto o suggerimento è gratuito?": "Is the support or feedback service free?",
+  "Sì! OR-Route è una piattaforma aperta e gratuita creata per democratizzare l'accesso agli algoritmi di Ricerca Operativa industriale. Tutti i suggerimenti e le richieste di chiarimento sui modelli sono benvenuti e gestiti liberamente.": "Yes! OR-Route is an open and free platform created to democratize access to industrial Operations Research solvers. All suggestions and model clarification requests are welcomed and handled free of charge.",
+  "Posso richiedere un algoritmo personalizzato per la mia flotta?": "Can I request a custom algorithm tailored to my fleet?",
+  "Certamente. Se la tua azienda ha vincoli specifici (es. ZTL orarie dinamiche, temperature controllate per surgelati, o trasbordi rimorchio-motrice), inviaci una descrizione dettagliata tramite questo form per valutare la fattibilità e la modellazione.": "Certainly. If your company has specific operational constraints (e.g. dynamic hourly curfews, multi-compartment temperature controls, or trailer swaps), send us a detailed description via this form to evaluate feasibility and mathematical modeling.",
+  "Cosa succede dopo aver inviato il modulo?": "What happens after submitting the form?",
+  "Il modulo inoltra la tua notifica in tempo reale al nostro team tecnico. Riceverai un riscontro dettagliato direttamente all'indirizzo email che hai indicato entro 24-48 ore lavorative.": "The form transmits your notification in real time to our technical team. You will receive a detailed response directly at your specified email address within 24-48 business hours.",
+  "OR-Route — Supporto & Contatti": "OR-Route — Support & Contact",
+  "📝 Scrivi dal Modulo Web": "📝 Write via Web Form",
+  "🏠 Torna ai Solutori": "🏠 Return to Solvers",
+  "⚡ Tutti i 10 Modelli di Ricerca Operativa": "⚡ All 10 Operations Research Models",
+  "Canale Ufficiale di Supporto & Suggerimenti Piattaforma • Riscontro garantito entro 24-48h.": "Official Support & Platform Feedback Channel • Guaranteed reply within 24-48h.",
+  "es. Ing. Marco Rossi": "e.g. John Doe",
+  "es. marco.rossi@azienda.it": "e.g. john.doe@company.com",
+  "es. Logistica Nord Srl, Università...": "e.g. Acme Logistics Ltd, University...",
+  "es. Suggerimento per l'introduzione di vincoli sul peso massimo per asse": "e.g. Suggestion to introduce axle load weight constraints",
+  "Motori & Solutori": "Engines & Solvers",
+  "© 2026 OR-Route — Piattaforma Aperta di Ricerca Operativa per Flotte Aziendali e Servizi RSU.": "© 2026 OR-Route — Open Operations Research Platform for Corporate Fleets and Municipal Waste Services."
 };
 
   // =========================================================================
@@ -1028,7 +1110,7 @@
     return currentLang;
   }
 
-  // Smart matcher con pulizia prefissi e suffissi
+  // Smart matcher con pulizia prefissi, suffissi e normalizzazione spazi
   function getMatch(text) {
     if (!text) return null;
     const trimmed = text.trim();
@@ -1037,15 +1119,19 @@
     // 1. Match Esatto
     if (DICT_IT_TO_EN[trimmed]) return DICT_IT_TO_EN[trimmed];
 
-    // 2. Match con rimozione punteggiatura / frecce finali
-    const stripped = trimmed.replace(/[:\s?…!\-➔→]+$/, '');
+    // 2. Match con normalizzazione spazi interni (\n, tab, doppi spazi)
+    const normalized = trimmed.replace(/\s+/g, ' ');
+    if (DICT_IT_TO_EN[normalized]) return DICT_IT_TO_EN[normalized];
+
+    // 3. Match con rimozione punteggiatura / frecce finali
+    const stripped = normalized.replace(/[:\s?…!\-➔→]+$/, '');
     if (DICT_IT_TO_EN[stripped]) {
-      const punct = trimmed.slice(stripped.length);
+      const punct = normalized.slice(stripped.length);
       return DICT_IT_TO_EN[stripped] + punct;
     }
 
-    // 3. Estrazione Emojis, icone, numeri puntati iniziali
-    const prefixMatch = trimmed.match(/^([\p{Extended_Pictographic}\u2600-\u27bf\u2300-\u23ff\u2b50-\u2b55\u200d\ufe0f\d+\.\s•\-➔→]+)(.*)$/u);
+    // 4. Estrazione Emojis, icone, numeri puntati iniziali
+    const prefixMatch = normalized.match(/^([\p{Extended_Pictographic}\u2600-\u27bf\u2300-\u23ff\u2b50-\u2b55\u200d\ufe0f\d+\.\s•\-➔→]+)(.*)$/u);
     if (prefixMatch) {
       const prefix = prefixMatch[1];
       const core = prefixMatch[2].trim();
@@ -1086,7 +1172,7 @@
         }
         const match = getMatch(trimmed);
         if (match) {
-          node.nodeValue = raw.replace(trimmed, match);
+          node.nodeValue = match;
         }
       } else if (lang === 'it') {
         if (node._origIt !== undefined) {
@@ -1255,13 +1341,54 @@
       }
     }
 
-    // 8. Contatti page
+    // 8. Contatti page (100% translation of title, hero, submit button, and textarea placeholder)
     if (window.location.pathname.includes('contatti')) {
-      const btnSub = document.getElementById('btnSubmit') || document.getElementById('btnSubmitContact');
+      if (currentLang === 'en') {
+        document.title = 'Contact, Support & Feedback — OR-Route';
+      } else {
+        document.title = 'Contatti, Assistenza & Suggerimenti — OR-Route';
+      }
+
+      // Hero Title H1
+      const contactH1 = document.querySelector('.contact-hero h1');
+      if (contactH1) {
+        if (contactH1._origHtml === undefined) contactH1._origHtml = contactH1.innerHTML;
+        contactH1.innerHTML = (currentLang === 'en')
+          ? 'Have an <span class="gradient-text">Inquiry</span> or a <span class="gradient-text">Suggestion</span>?'
+          : contactH1._origHtml;
+      }
+
+      // Hero Subtitle
+      const contactSub = document.querySelector('.contact-hero p.subtitle');
+      if (contactSub) {
+        if (contactSub._origHtml === undefined) contactSub._origHtml = contactSub.innerHTML;
+        contactSub.innerHTML = (currentLang === 'en')
+          ? 'The <strong>OR-Route</strong> team is at your disposal for support on Operations Research mathematical models, requested features, industrial fleet customizations, or academic collaborations.'
+          : contactSub._origHtml;
+      }
+
+      // Submit Button
+      const btnSub = document.getElementById('btnSubmitContact') || document.getElementById('btnSubmit');
       if (btnSub) {
         btnSub.innerHTML = (currentLang === 'en')
           ? '<span style="font-size: 18px;">✉️</span> Send Message'
           : '<span style="font-size: 18px;">✉️</span> Invia Messaggio';
+      }
+
+      // Textarea placeholder
+      const formMsg = document.getElementById('formMessage');
+      if (formMsg) {
+        if (formMsg._origPh === undefined) formMsg._origPh = formMsg.placeholder;
+        formMsg.placeholder = (currentLang === 'en')
+          ? "Clearly describe your request, reported issue, or feature suggestion for the platform:\n\n• What is your operational use case or logistics need?\n• Which constraints or algorithms would you like to see implemented?\n• Any relevant parameters (number of vehicles, stops, city)..."
+          : formMsg._origPh;
+      }
+
+      // Character counter
+      const charCounter = document.getElementById('charCounter');
+      if (charCounter && formMsg) {
+        const count = formMsg.value.length;
+        charCounter.textContent = (currentLang === 'en') ? `${count} characters` : `${count} caratteri`;
       }
     }
   }
