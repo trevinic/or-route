@@ -119,7 +119,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Foglio di Stile Personalizzato -->
-  <link rel="stylesheet" href="style.css?v=20261117_1720">
+  <link rel="stylesheet" href="style.css?v=20261117_1730">
 
   <!-- Libreria Cartografica Interattiva Leaflet GIS (OSM Stradario) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
@@ -216,12 +216,15 @@
         </div>
       </div>
 
-      <!-- Controlli Compatti per Smartphone (Visibili solo su Mobile <= 960px) -->
+      <!-- Controlli Compatti per Smartphone (Visibili solo su Mobile <= 960px): [Menu] -> [Home] -> [Lingue] -->
       <div class="mobile-header-actions">
-        <button type="button" class="btn-home" onclick="mobileNavTo('tab-selector')" title="Home" style="padding: 6px 10px; font-size: 13px;">
-          🏠
+        <button type="button" id="btnMobileMenuToggle" class="mobile-menu-trigger" onclick="toggleMobileDrawer(true)" aria-label="Apri menu di navigazione">
+          <span>☰</span> <span>Menu</span>
         </button>
-        <div class="lang-switch-box">
+        <button type="button" class="btn-home mobile-home-btn" onclick="mobileNavTo('tab-selector')" title="Home">
+          <span>🏠</span> <span>Home</span>
+        </button>
+        <div class="lang-switch-box mobile-lang-box">
           <button type="button" class="btn-lang" onclick="setLanguage('it')" title="Italiano">
             <img src="flag_it.svg" alt="IT" class="flag-icon-img" width="20" height="14">
           </button>
@@ -229,9 +232,6 @@
             <img src="flag_en.svg" alt="EN" class="flag-icon-img" width="20" height="14">
           </button>
         </div>
-        <button type="button" id="btnMobileMenuToggle" class="mobile-menu-trigger" onclick="toggleMobileDrawer(true)" aria-label="Apri menu di navigazione">
-          <span>☰</span> Menu
-        </button>
       </div>
     </div>
   </header>
