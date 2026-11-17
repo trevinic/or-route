@@ -441,21 +441,25 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/robots.txt":
             robots_path = os.path.join(WEB_DIR, "robots.txt")
             if os.path.exists(robots_path):
+                with open(robots_path, "rb") as f:
+                    data = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
-                with open(robots_path, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(data)
                 return
 
-        elif path == "/sitemap.xml":
+        elif path in ("/sitemap.xml", "/sitemap-main.xml"):
             sitemap_path = os.path.join(WEB_DIR, "sitemap.xml")
             if os.path.exists(sitemap_path):
+                with open(sitemap_path, "rb") as f:
+                    data = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/xml; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
-                with open(sitemap_path, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(data)
                 return
 
         seo_routes = {
