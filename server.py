@@ -365,6 +365,7 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         html_routes = {"/", "/index.html", "/contatti", "/contatti.html", "/contact", "/contact.html",
+                       "/privacy", "/privacy.html",
                        "/cvrp", "/vrptw", "/carp", "/ev-vrp", "/vrppd", "/mdvrp", "/pcarp", "/carptw", "/carpif", "/dcarp", "/faq"}
         if path in html_routes:
             self.send_response(200)
@@ -583,6 +584,17 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 ga_id = os.environ.get("GA_MEASUREMENT_ID", "").strip()
                 if ga_id:
                     html = html.replace('"G-XXXXXXXXXX"', json.dumps(ga_id))
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(html.encode("utf-8"))
+                return
+
+        elif path in ("/privacy", "/privacy.html", "/privacy-policy"):
+            privacy_path = os.path.join(WEB_DIR, "privacy.html")
+            if os.path.exists(privacy_path):
+                with open(privacy_path, "r", encoding="utf-8") as f:
+                    html = f.read()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()

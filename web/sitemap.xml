@@ -118,4 +118,11 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+
+  <!-- Informativa Privacy & Cookie Policy (GDPR) -->
+  <url>
+    <loc>https://or-route.com/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>
