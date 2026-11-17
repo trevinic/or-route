@@ -93,6 +93,7 @@
   "& Fogli di Viaggio Autista": "& Driver Route Sheets",
   "Salvataggio Sessioni Cloud": "Cloud Session Saving",
   "& Backup Locale (.json)": "& Local Backup (.json)",
+  "Calcolo ROI": "ROI Calculator",
   "Calcolo Risparmio ROI": "ROI Savings Calculator",
   "& Riduzione Emissioni $CO_2$": "& CO2 Emissions Reduction",
   "& Riduzione Emissioni CO2": "& CO2 Emissions Reduction",

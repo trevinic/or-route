@@ -797,6 +797,8 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 content_type = "image/png"
             elif local_file.endswith(".svg"):
                 content_type = "image/svg+xml"
+            elif local_file.endswith(".ico"):
+                content_type = "image/x-icon"
 
             self.send_response(200)
             self.send_header("Content-Type", content_type)
