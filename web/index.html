@@ -525,10 +525,11 @@
       </div>
 
       <!-- =====================================================================
-           BARRA PARTNER & BUY ME A COFFEE (SOTTO LE 3 AREE DI SELEZIONE)
+           BARRA PARTNER (IN STANDBY) & BUY ME A COFFEE (SOTTO LE 3 AREE DI SELEZIONE)
            ===================================================================== -->
-      <div class="landing-partner-coffee-bar">
-        <div class="partner-coffee-item">
+      <div class="landing-partner-coffee-bar" style="grid-template-columns: 1fr;">
+        <!-- [STANDBY PARTNER/AFFILIATI] Rimuovere display:none quando si attivano le affiliazioni -->
+        <div class="partner-coffee-item" style="display: none;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">🤝</div>
             <div>
@@ -4159,9 +4160,9 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
     </section>
 
     <!-- =========================================================================
-         5. SEZIONE COMMERCIALE: LINK REFERENZIALI & PARTNER DI AFFILIAZIONE
+         5. SEZIONE COMMERCIALE: LINK REFERENZIALI & PARTNER DI AFFILIAZIONE (IN STANDBY)
          ========================================================================= -->
-    <section id="partner-section" class="affiliate-section">
+    <section id="partner-section" class="affiliate-section" style="display: none;">
       <span class="affiliate-badge">🔥 Link Referenziali &amp; Convenzioni Partner per Flotte</span>
       
       <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 22px;">
@@ -4722,7 +4723,7 @@ min Z = ∑_{t=1}^{|T|} ∑_{k=1}^K [ c_f^k · y_k^t + ∑_{e ∈ R} c_e^s · x_
           <button type="button" class="btn-coffee-header" onclick="openSupportCoffeeModal()" style="font-size: 12px; padding: 6px 12px;">
             ☕ Offrimi un Caffè (PayPal / Wallet)
           </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="font-size: 12px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToPartnerSection()" style="font-size: 12px; display: none;">
             🤝 Partner &amp; Affiliazioni
           </button>
           <a href="contatti.html" class="btn btn-secondary btn-sm" style="font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
