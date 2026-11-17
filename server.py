@@ -358,6 +358,37 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+    def do_HEAD(self):
+        if not self.check_auth():
+            self.require_auth()
+            return
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path.rstrip("/") or "/"
+        html_routes = {"/", "/index.html", "/contatti", "/contatti.html", "/contact", "/contact.html",
+                       "/cvrp", "/vrptw", "/carp", "/ev-vrp", "/vrppd", "/mdvrp", "/pcarp", "/carptw", "/carpif", "/dcarp", "/faq"}
+        if path in html_routes:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            return
+        if path == "/robots.txt":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            return
+        if path == "/sitemap.xml":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/xml; charset=utf-8")
+            self.end_headers()
+            return
+        local_file = os.path.join(WEB_DIR, path.lstrip("/"))
+        if os.path.exists(local_file) and os.path.isfile(local_file):
+            self.send_response(200)
+            self.end_headers()
+            return
+        self.send_response(404)
+        self.end_headers()
+
     def do_GET(self):
         if not self.check_auth():
             self.require_auth()
@@ -407,24 +438,134 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             if self.proxy_to_oracle(ORACLE_BACKEND_URL):
                 return
 
-        if path in ("/", "/index.html"):
+        if path == "/robots.txt":
+            robots_path = os.path.join(WEB_DIR, "robots.txt")
+            if os.path.exists(robots_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                with open(robots_path, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+
+        elif path == "/sitemap.xml":
+            sitemap_path = os.path.join(WEB_DIR, "sitemap.xml")
+            if os.path.exists(sitemap_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/xml; charset=utf-8")
+                self.end_headers()
+                with open(sitemap_path, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+
+        seo_routes = {
+            "/cvrp": {
+                "tab": "tab-cvrp",
+                "title": "CVRP Ottimizzazione Percorsi Logistica & Corrieri — OR-Route",
+                "desc": "Solutore MILP gratuito per il Capacitated Vehicle Routing Problem (CVRP): ottimizza consegne, portate furgoni e km della flotta su mappa OpenStreetMap."
+            },
+            "/vrptw": {
+                "tab": "tab-vrptw",
+                "title": "VRPTW Ottimizzazione Consegne con Fasce Orarie Tassative — OR-Route",
+                "desc": "Pianifica rotte con vincoli di orario (Vehicle Routing Problem with Time Windows - VRPTW), slot di scarico GDO e tempi di servizio."
+            },
+            "/carp": {
+                "tab": "tab-carp",
+                "title": "CARP Ottimizzazione Raccolta Rifiuti Porta a Porta & Spazzamento — OR-Route",
+                "desc": "Modello Capacitated Arc Routing Problem (CARP) per igiene urbana RSU, raccolta rifiuti porta a porta e spazzamento stradale con grafo OpenStreetMap."
+            },
+            "/ev-vrp": {
+                "tab": "tab-intermediate",
+                "title": "EV-VRP Ottimizzazione Flotte Elettriche & Soste Ricarica/Scarico — OR-Route",
+                "desc": "Pianificazione matematica per veicoli commerciali elettrici (EV-VRP) con colonnine di ricarica intermedie e mezzi RSU con impianti intermedi."
+            },
+            "/vrppd": {
+                "tab": "tab-vrppd",
+                "title": "VRPPD Ottimizzazione Ritiri e Consegne Accoppiati (Pickup & Delivery) — OR-Route",
+                "desc": "Solutore Vehicle Routing Problem with Pickup and Delivery (VRPPD) con vincoli di accoppiamento veicolo e precedenza ritiro-consegna."
+            },
+            "/mdvrp": {
+                "tab": "tab-mdvrp",
+                "title": "MDVRP Ottimizzazione Flotte Multi-Deposito & Multi-Magazzino — OR-Route",
+                "desc": "Modello Multi-Depot Vehicle Routing Problem (MDVRP) per assegnare i clienti al polo logistico ottimale e pianificare flotte distribuite."
+            },
+            "/pcarp": {
+                "tab": "tab-pcarp",
+                "title": "PCARP Pianificazione Raccolta Differenziata Settimanale Multi-Giorno — OR-Route",
+                "desc": "Modello Periodic Capacitated Arc Routing Problem (PCARP) per calendari settimanali di raccolta differenziata porta a porta (Lun-Sab)."
+            },
+            "/carptw": {
+                "tab": "tab-carptw",
+                "title": "CARPTW Servizi Stradali con Finestre Orarie, ZTL e Scuole — OR-Route",
+                "desc": "Ottimizzazione archi stradali con vincoli orari tassativi (CARPTW) per centri storici, varchi ZTL, mercati rionali e zone scolastiche."
+            },
+            "/carpif": {
+                "tab": "tab-carpif",
+                "title": "CARPIF Igiene Urbana con Impianti Intermedi TMB e Discariche — OR-Route",
+                "desc": "Modello Arc Routing con Intermediate Facilities (CARPIF) per rotazioni multi-viaggio dei compattatori verso impianti TMB e stazioni di trasferimento."
+            },
+            "/dcarp": {
+                "tab": "tab-dcarp",
+                "title": "DCARP Routing Dinamico in Tempo Reale & Gestione Imprevisti Flotta — OR-Route",
+                "desc": "Algoritmo Dynamic CARP (DCARP) per ricalcolo istantaneo dei percorsi in caso di guasti meccanici, strade interrotte o chiamate urgenti."
+            },
+            "/faq": {
+                "tab": "tab-faq",
+                "title": "Dispensa Matematica MILP, Manuale Operativo & FAQ — OR-Route",
+                "desc": "Formulazioni matematiche MILP, guida pratica all'uso dei 10 modelli di Ricerca Operativa (CVRP, VRPTW, CARP, PCARP) e domande frequenti."
+            }
+        }
+
+        if path in ("/", "/index.html") or path.rstrip("/") in seo_routes:
             index_path = os.path.join(WEB_DIR, "index.html")
             if os.path.exists(index_path):
+                with open(index_path, "r", encoding="utf-8") as f:
+                    html = f.read()
+
+                ga_id = os.environ.get("GA_MEASUREMENT_ID", "").strip()
+                if ga_id:
+                    html = html.replace('"G-XXXXXXXXXX"', json.dumps(ga_id))
+
+                norm_path = path.rstrip("/")
+                if norm_path in seo_routes:
+                    route_meta = seo_routes[norm_path]
+                    site_url = os.environ.get("OR_ROUTE_SITE_URL", "https://or-route.com").rstrip("/")
+                    canonical_url = f"{site_url}{norm_path}"
+                    html = html.replace(
+                        "<title>OR-Route &mdash; Modelli di Ricerca Operativa &amp; Ottimizzazione Flotte Aziendali (CVRP, VRPTW, CARP)</title>",
+                        f"<title>{route_meta['title']}</title>"
+                    )
+                    html = html.replace(
+                        'content="Piattaforma di Ricerca Operativa e solutori matematici MILP per ottimizzare percorsi stradali, raccolta rifiuti RSU e logistica flotte aziendali (CVRP, VRPTW, CARP, PCARP, CARPTW, EV-VRP, VRPPD, MDVRP) su mappe OpenStreetMap."',
+                        f'content="{route_meta["desc"]}"'
+                    )
+                    html = html.replace(
+                        '<link rel="canonical" href="https://or-route.com/">',
+                        f'<link rel="canonical" href="{canonical_url}">\n  <script>window.__INITIAL_SEO_TAB__ = "{route_meta["tab"]}";</script>'
+                    )
+                    html = html.replace(
+                        '<meta property="og:url" content="https://or-route.com/">',
+                        f'<meta property="og:url" content="{canonical_url}">'
+                    )
+
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
-                with open(index_path, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(html.encode("utf-8"))
                 return
 
         elif path in ("/contatti", "/contatti.html", "/contact", "/contact.html"):
             contact_path = os.path.join(WEB_DIR, "contatti.html")
             if os.path.exists(contact_path):
+                with open(contact_path, "r", encoding="utf-8") as f:
+                    html = f.read()
+                ga_id = os.environ.get("GA_MEASUREMENT_ID", "").strip()
+                if ga_id:
+                    html = html.replace('"G-XXXXXXXXXX"', json.dumps(ga_id))
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
-                with open(contact_path, "rb") as f:
-                    self.wfile.write(f.read())
+                self.wfile.write(html.encode("utf-8"))
                 return
 
         elif path == "/api/config":

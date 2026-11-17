@@ -46,6 +46,14 @@ function showToast(message, duration = 3500) {
 // ==========================================
 // TAB SWITCHER
 // ==========================================
+function trackAnalyticsEvent(eventName, params) {
+  try {
+    if (typeof window.gtag === 'function' && window.OR_ROUTE_GA_ID && window.OR_ROUTE_GA_ID !== 'G-XXXXXXXXXX') {
+      window.gtag('event', eventName, params || {});
+    }
+  } catch (_) {}
+}
+
 function switchModelFromDropdown(tabId) {
   if (tabId) {
     switchMainTab(tabId, null);
@@ -54,6 +62,7 @@ function switchModelFromDropdown(tabId) {
 
 function switchMainTab(tabId, btnElement) {
   State.activeTab = tabId;
+  trackAnalyticsEvent('select_model', { model_tab: tabId });
   
   // Sincronizza il menù a tendina Modelli nella barra header
   const headerSelect = document.getElementById('headerModelSelect');
@@ -7924,8 +7933,25 @@ function renderDcarpLeafletMap(cfg, res) {
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof initAuth === 'function') initAuth();
+  const seoPathMap = {
+    '/cvrp': 'tab-cvrp',
+    '/vrptw': 'tab-vrptw',
+    '/carp': 'tab-carp',
+    '/ev-vrp': 'tab-intermediate',
+    '/vrppd': 'tab-vrppd',
+    '/mdvrp': 'tab-mdvrp',
+    '/pcarp': 'tab-pcarp',
+    '/carptw': 'tab-carptw',
+    '/carpif': 'tab-carpif',
+    '/dcarp': 'tab-dcarp',
+    '/faq': 'tab-faq'
+  };
+  const cleanPath = (window.location.pathname || '').replace(/\/+$/, '');
+  const seoTab = window.__INITIAL_SEO_TAB__ || seoPathMap[cleanPath];
   const hash = (window.location.hash || '').replace('#', '');
-  if (hash && document.getElementById(hash) && hash !== 'tab-selector' && hash !== 'tab-faq') {
+  if (seoTab && document.getElementById(seoTab)) {
+    switchMainTab(seoTab);
+  } else if (hash && document.getElementById(hash) && hash !== 'tab-selector' && hash !== 'tab-faq') {
     switchMainTab(hash);
   } else {
     switchMainTab('tab-selector');

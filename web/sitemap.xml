@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- Homepage Principale & Selettore Guidato Flotte -->
+  <url>
+    <loc>https://or-route.com/</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://or-route.com/" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 1. CVRP: Logistica Merci & Corrieri -->
+  <url>
+    <loc>https://or-route.com/cvrp</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/cvrp" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/cvrp?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 2. VRPTW: Consegne con Fasce Orarie Tassative -->
+  <url>
+    <loc>https://or-route.com/vrptw</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/vrptw" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/vrptw?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 3. CARP: Raccolta Rifiuti Porta a Porta & Servizi Stradali -->
+  <url>
+    <loc>https://or-route.com/carp</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/carp" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/carp?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 4. EV-VRP: Flotte Elettriche & Ricariche Intermedie -->
+  <url>
+    <loc>https://or-route.com/ev-vrp</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/ev-vrp" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/ev-vrp?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 5. VRPPD: Pickup & Delivery Accoppiati -->
+  <url>
+    <loc>https://or-route.com/vrppd</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/vrppd" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/vrppd?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 6. MDVRP: Multi-Deposito & Logistica Multi-Sede -->
+  <url>
+    <loc>https://or-route.com/mdvrp</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/mdvrp" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/mdvrp?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 7. PCARP: Raccolta Differenziata Settimanale Multi-Giorno -->
+  <url>
+    <loc>https://or-route.com/pcarp</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/pcarp" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/pcarp?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 8. CARPTW: Servizi Stradali con Finestre Orarie & ZTL -->
+  <url>
+    <loc>https://or-route.com/carptw</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/carptw" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/carptw?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 9. CARPIF: Igiene Urbana con Impianti Intermedi TMB/Discariche -->
+  <url>
+    <loc>https://or-route.com/carpif</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/carpif" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/carpif?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 10. DCARP: Routing Dinamico & Gestione Imprevisti Real-Time -->
+  <url>
+    <loc>https://or-route.com/dcarp</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/dcarp" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/dcarp?lang=en" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Dispensa Matematica MILP, Manuale Operativo & FAQ -->
+  <url>
+    <loc>https://or-route.com/faq</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/faq" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/faq?lang=en" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Pagina Contatti, Assistenza & Suggerimenti -->
+  <url>
+    <loc>https://or-route.com/contatti</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://or-route.com/contatti" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://or-route.com/contatti?lang=en" />
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

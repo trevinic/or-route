@@ -3,9 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OR-Route &mdash; Modelli di Ricerca Operativa per Flotte Aziendali</title>
-  <meta name="description" content="Piattaforma gratuita di Ricerca Operativa e algoritmi MILP per ottimizzare percorsi, costi carburante e pianificazione delle flotte aziendali (CVRP, VRPTW, CARP, EV-VRP).">
-  
+  <title>OR-Route &mdash; Modelli di Ricerca Operativa &amp; Ottimizzazione Flotte Aziendali (CVRP, VRPTW, CARP)</title>
+  <meta name="description" content="Piattaforma di Ricerca Operativa e solutori matematici MILP per ottimizzare percorsi stradali, raccolta rifiuti RSU e logistica flotte aziendali (CVRP, VRPTW, CARP, PCARP, CARPTW, EV-VRP, VRPPD, MDVRP) su mappe OpenStreetMap.">
+  <meta name="keywords" content="Ricerca Operativa, Operations Research, ottimizzazione percorsi flotte, CARP raccolta rifiuti, CVRP logistica, VRPTW finestre orarie, EV-VRP flotte elettriche, PCARP raccolta differenziata, CARPTW ZTL, MDVRP multi deposito, VRPPD pickup delivery, solutore MILP, OR-Route, OpenStreetMap routing">
+  <meta name="author" content="OR-Route Platform">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#0f172a">
+
+  <!-- Canonical & Internazionalizzazione (IT / EN) -->
+  <link rel="canonical" href="https://or-route.com/">
+  <link rel="alternate" hreflang="it" href="https://or-route.com/">
+  <link rel="alternate" hreflang="en" href="https://or-route.com/?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://or-route.com/">
+
+  <!-- Open Graph / LinkedIn / WhatsApp / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OR-Route">
+  <meta property="og:title" content="OR-Route — Piattaforma di Ricerca Operativa &amp; Ottimizzazione Flotte">
+  <meta property="og:description" content="Ottimizza percorsi logistici, raccolta rifiuti RSU e flotte elettriche con 10 modelli matematici MILP (CVRP, VRPTW, CARP, PCARP, EV-VRP, MDVRP) e grafo viario OpenStreetMap.">
+  <meta property="og:url" content="https://or-route.com/">
+  <meta property="og:locale" content="it_IT">
+  <meta property="og:locale:alternate" content="en_US">
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OR-Route — Ricerca Operativa &amp; Ottimizzazione Flotte Aziendali">
+  <meta name="twitter:description" content="10 solutori matematici MILP (CVRP, VRPTW, CARP, PCARP, EV-VRP, MDVRP, DCARP) con importazione stradario OpenStreetMap e calcolo ROI/CO2.">
+
+  <!-- Dati Strutturati Schema.org (JSON-LD: SoftwareApplication + FAQPage) per Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "OR-Route",
+        "url": "https://or-route.com/",
+        "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "Operations Research & Fleet Route Optimization",
+        "operatingSystem": "All (Web Browser)",
+        "inLanguage": ["it", "en"],
+        "description": "Piattaforma di Ricerca Operativa per l'ottimizzazione matematica dei percorsi di flotte logistiche, corrieri espresso e servizi comunali di igiene urbana (RSU) con 10 modelli MILP e cartografia OpenStreetMap.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        "featureList": [
+          "CVRP - Capacitated Vehicle Routing Problem per logistica e distribuzione merci",
+          "VRPTW - Vehicle Routing Problem with Time Windows per consegne con fasce orarie tassative",
+          "CARP - Capacitated Arc Routing Problem per raccolta rifiuti porta a porta e spazzamento stradale",
+          "EV-VRP / WCVRPTW-IF - Ottimizzazione flotte elettriche e soste di ricarica/scarico intermedio",
+          "VRPPD - Pickup and Delivery accoppiati nello stesso viaggio",
+          "MDVRP - Multi-Depot Vehicle Routing Problem per aziende multi-magazzino",
+          "PCARP - Pianificazione raccolta differenziata settimanale multi-giorno",
+          "CARPTW - Servizi stradali con finestre orarie ZTL e scolastiche",
+          "CARPIF - Igiene urbana con impianti intermedi TMB e stazioni di trasferimento",
+          "DCARP - Routing dinamico in tempo reale per emergenze, guasti e strade interrotte",
+          "Importazione automatica grafo stradale da OpenStreetMap e calcolo risparmio ROI ed emissioni CO2 (ESG Scope 1)"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Qual è la differenza tra CVRP (Node Routing) e CARP (Arc Routing)?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Nel CVRP (Capacitated Vehicle Routing Problem) la domanda è concentrata su punti specifici (clienti, negozi, magazzini) e le strade servono solo per spostarsi. Nel CARP (Capacitated Arc Routing Problem), tipico della raccolta rifiuti porta a porta, dello spazzamento stradale e dello sgombero neve, il servizio avviene lungo l'intero arco stradale."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Come scegliere il modello di Ricerca Operativa giusto per la propria flotta?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "OR-Route include un selettore guidato diagnostico che analizza se il servizio avviene su strade (CARP, PCARP, CARPTW, CARPIF, DCARP) o su clienti puntiformi (CVRP, VRPTW, EV-VRP, VRPPD, MDVRP), consigliando automaticamente il modello MILP più adatto e iniettando i dati della flotta aziendale."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "È possibile importare la rete stradale reale di qualsiasi città?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sì, OR-Route integra nativamente OpenStreetMap (OSMnx e Overpass API) per scaricare il grafo viario reale di qualsiasi comune o quartiere in Italia, Europa e nel mondo, oppure per importare elenchi di vie e clienti da file Excel (.xlsx) e CSV."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <!-- Google Fonts: Outfit (UI) & JetBrains Mono (Math/Code) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +108,21 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+
+  <!-- GOOGLE ANALYTICS 4 (GA4) - Inserisci il tuo Measurement ID G-XXXXXXXXXX o impostalo via env GA_MEASUREMENT_ID -->
+  <script>
+    window.OR_ROUTE_GA_ID = window.OR_ROUTE_GA_ID || "G-XXXXXXXXXX";
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    if (window.OR_ROUTE_GA_ID && window.OR_ROUTE_GA_ID !== "G-XXXXXXXXXX") {
+      var gaScript = document.createElement("script");
+      gaScript.async = true;
+      gaScript.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(window.OR_ROUTE_GA_ID);
+      document.head.appendChild(gaScript);
+      gtag("js", new Date());
+      gtag("config", window.OR_ROUTE_GA_ID, { anonymize_ip: true });
+    }
+  </script>
 
   <!-- GOOGLE ADSENSE INTEGRATION (Sostituisci ca-pub-XXXXXXXXXXXXXXXX con il tuo ID Editore) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>

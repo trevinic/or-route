@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /carp
+Allow: /cvrp
+Allow: /vrptw
+Allow: /ev-vrp
+Allow: /vrppd
+Allow: /mdvrp
+Allow: /pcarp
+Allow: /carptw
+Allow: /carpif
+Allow: /dcarp
+Allow: /faq
+Allow: /contatti
+Disallow: /api/
+
+Sitemap: https://or-route.com/sitemap.xml
