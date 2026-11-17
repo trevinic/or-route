@@ -54,6 +54,29 @@ function trackAnalyticsEvent(eventName, params) {
   } catch (_) {}
 }
 
+function toggleMobileDrawer(forceOpen) {
+  const drawer = document.getElementById('mobileNavDrawer');
+  const overlay = document.getElementById('mobileDrawerOverlay');
+  if (!drawer || !overlay) return;
+  const isOpen = typeof forceOpen === 'boolean' ? forceOpen : !drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } else {
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+function mobileNavTo(tabId) {
+  toggleMobileDrawer(false);
+  if (tabId) {
+    switchMainTab(tabId, null);
+  }
+}
+
 function switchModelFromDropdown(tabId) {
   if (tabId) {
     switchMainTab(tabId, null);

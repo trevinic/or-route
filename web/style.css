@@ -2004,3 +2004,298 @@ footer.app-footer {
   animation: wizardPulseHighlight 2s ease-out;
 }
 
+/* =========================================================================
+   OTTIMIZZAZIONE RESPONSIVE SMARTPHONE & MENU LATERALE A SCOMPARSA (DRAWER)
+   ========================================================================= */
+
+.mobile-header-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-menu-trigger {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(16, 185, 129, 0.18) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.mobile-drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+}
+
+.mobile-drawer-overlay.open {
+  display: block;
+}
+
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(330px, 88vw);
+  background: linear-gradient(180deg, #0f172a 0%, #090e1a 100%);
+  border-left: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: -12px 0 36px rgba(0, 0, 0, 0.65);
+  z-index: 2001;
+  transform: translateX(105%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobile-nav-drawer.open {
+  transform: translateX(0);
+}
+
+.mobile-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.mobile-drawer-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-drawer-body {
+  padding: 14px 16px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.mobile-drawer-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.mobile-drawer-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mobile-drawer-btn {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-drawer-btn.coffee-highlight {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.mobile-drawer-models-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-drawer-model-btn {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  color: #e2e8f0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Griglia sezione Buy Me a Coffee */
+.coffee-main-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 24px;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  /* Nasconde la barra orizzontale desktop e mostra il menu hamburger mobile */
+  .header-meta {
+    display: none !important;
+  }
+  .mobile-header-actions {
+    display: flex !important;
+  }
+  .coffee-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  header.app-header {
+    padding: 8px 12px !important;
+  }
+
+  .main-wrapper {
+    padding: 14px 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Tutti i blocchi principali perfettamente allineati alla stessa identica larghezza */
+  .landing-hero,
+  .landing-3areas-grid,
+  .landing-area-card,
+  .landing-partner-coffee-bar,
+  .partner-coffee-item,
+  .ad-container,
+  .card,
+  .coffee-support-section,
+  .grid-2col,
+  .grid-3col {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .grid-3col,
+  .grid-2col,
+  .landing-3areas-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .landing-hero {
+    padding: 20px 16px !important;
+  }
+
+  .landing-hero-title {
+    font-size: 23px !important;
+    line-height: 1.28 !important;
+  }
+
+  .landing-trust-strip {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .landing-trust-item {
+    font-size: 11.5px !important;
+    padding: 6px 8px !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+  }
+
+  .landing-area-card {
+    padding: 18px 16px !important;
+  }
+
+  /* Barra Buy Me a Coffee compatta: impilata verticalmente su smartphone */
+  .partner-coffee-item {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  .partner-coffee-item .btn-coffee-header,
+  .partner-coffee-item .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Sezione Buy Me a Coffee completa in fondo alla pagina */
+  .coffee-support-section {
+    padding: 18px 16px !important;
+  }
+
+  .coffee-support-section h2 {
+    font-size: 18.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  .coffee-tier-pills {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .coffee-tier-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+  }
+
+  .coffee-support-section .btn-paypal-donate,
+  .coffee-support-section .btn-coffee-header,
+  .coffee-support-section .btn-wallet-donate {
+    white-space: normal !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    padding: 10px 12px !important;
+  }
+
+  .footer-bottom {
+    flex-direction: column !important;
+    gap: 10px !important;
+    text-align: center !important;
+  }
+}
+
