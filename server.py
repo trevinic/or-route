@@ -371,7 +371,7 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             return
-        if path == "/robots.txt":
+        if path in ("/robots.txt", "/ads.txt"):
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
@@ -443,6 +443,23 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             if os.path.exists(robots_path):
                 with open(robots_path, "rb") as f:
                     data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
+        elif path == "/ads.txt":
+            ads_path = os.path.join(WEB_DIR, "ads.txt")
+            if os.path.exists(ads_path):
+                with open(ads_path, "r", encoding="utf-8") as f:
+                    txt = f.read()
+                pub_id = os.environ.get("ADSENSE_PUB_ID", "").strip()
+                if pub_id:
+                    clean_pub = pub_id.replace("ca-pub-", "pub-")
+                    txt = txt.replace("pub-XXXXXXXXXXXXXXXX", clean_pub)
+                data = txt.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
                 self.send_header("Content-Length", str(len(data)))
