@@ -15,19 +15,15 @@
   <meta property="og:description" content="Contatta il team di OR-Route per assistenza tecnica, consulenza su modelli di Ricerca Operativa (CARP, CVRP, VRPTW) e ottimizzazione flotte.">
   <meta property="og:url" content="https://or-route.com/contatti">
 
-  <!-- GOOGLE ANALYTICS 4 (GA4) -->
+  <!-- GOOGLE ANALYTICS 4 (GA4: G-YT9ZZNVBYD | Google Tag: GTM-5PGN5QN8) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YT9ZZNVBYD"></script>
   <script>
-    window.OR_ROUTE_GA_ID = window.OR_ROUTE_GA_ID || "G-XXXXXXXXXX";
+    window.OR_ROUTE_GA_ID = "G-YT9ZZNVBYD";
+    window.OR_ROUTE_GTM_ID = "GTM-5PGN5QN8";
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    if (window.OR_ROUTE_GA_ID && window.OR_ROUTE_GA_ID !== "G-XXXXXXXXXX") {
-      var gaScript = document.createElement("script");
-      gaScript.async = true;
-      gaScript.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(window.OR_ROUTE_GA_ID);
-      document.head.appendChild(gaScript);
-      gtag("js", new Date());
-      gtag("config", window.OR_ROUTE_GA_ID, { anonymize_ip: true });
-    }
+    gtag("js", new Date());
+    gtag("config", "G-YT9ZZNVBYD", { anonymize_ip: true });
   </script>
 
   <!-- Google Fonts: Outfit & JetBrains Mono -->
