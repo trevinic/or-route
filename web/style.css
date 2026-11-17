@@ -115,13 +115,13 @@ header.app-header {
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 3px 10px rgba(56, 189, 248, 0.28);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .logo-text h1 {
