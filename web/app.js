@@ -9894,7 +9894,7 @@ const MONETIZATION_CONFIG = {
   ethPolygonWallet: '0xfdEC2547D33ac2B16176c41BC81758cd22dA9e09',
   ibanAddress: 'IT39Q0320502000000099239686',
   walletAddress: 'IT39Q0320502000000099239686',
-  adsensePublisherId: 'ca-pub-XXXXXXXXXXXXXXXX',
+  adsensePublisherId: 'ca-pub-7594990329383062',
   selectedDonationEur: 5
 };
 
