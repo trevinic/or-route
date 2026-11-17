@@ -1,12 +1,14 @@
 # 📐 OR-Route &mdash; Piattaforma di Ricerca Operativa per Flotte Aziendali
 
+🌐 **Piattaforma Live Ufficiale:** **[https://or-route.com](https://or-route.com)**
+
+[![Live Demo](https://img.shields.io/badge/Web_App-or--route.com-10B981?style=flat&logo=googlechrome&logoColor=white)](https://or-route.com)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![PuLP MILP](https://img.shields.io/badge/PuLP-COIN--OR_CBC-FF6F00?style=flat)](https://github.com/coin-or/pulp)
 [![Docker Ready](https://img.shields.io/badge/Docker-Container_Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 [![OpenStreetMap](https://img.shields.io/badge/Maps-OpenStreetMap_%2F_OSMnx-7EBC6F?style=flat&logo=openstreetmap&logoColor=white)](https://www.openstreetmap.org/)
-[![License: Open](https://img.shields.io/badge/License-Open_Tools-10B981?style=flat)](#licenza)
 
-**OR-Route** è una piattaforma applicativa avanzata e aperta per l'ottimizzazione combinatoria e la pianificazione operativa delle flotte aziendali, corrieri espresso, distribuzione merci e servizi municipali di igiene urbana (raccolta rifiuti porta-a-porta e spazzamento stradale).
+**OR-Route** ([or-route.com](https://or-route.com)) è una piattaforma applicativa avanzata e aperta per l'ottimizzazione combinatoria e la pianificazione operativa delle flotte aziendali, corrieri espresso, distribuzione merci e servizi municipali di igiene urbana (raccolta rifiuti porta-a-porta e spazzamento stradale).
 
 ---
 
@@ -22,16 +24,20 @@
 
 ---
 
-## 📐 I 6 Modelli Matematici Implementati
+## 📐 I 10 Modelli Matematici Implementati
 
-| Modello | Formulazione Matematica | Settore di Applicazione Tipico |
-| :--- | :--- | :--- |
-| **1. CARP** | Single-Commodity Flow + Euristica Augmented Path-Scanning | Raccolta Rifiuti Porta a Porta (RSU), Spazzamento, Sgombero Neve |
-| **2. CVRP** | MILP con eliminazione sottogiri Miller-Tucker-Zemlin (MTZ) | Consegne merci, Logistica B2B, Distribuzione GDO e Farmaci |
-| **3. VRPTW** | MILP con Hard Time Windows e orizzonti temporali continui | Consegne con fasce orarie ZTL, orari di apertura banchina scarico |
-| **4. EV-VRP / WCVRPTW-IF** | Programmazione soste a impianti intermedi (IF) & Ricariche DC | Compattatori con scarico a discariche TMB, Flotte commerciali elettriche |
-| **5. VRPPD** | Accoppiamento origine/destinazione e carico dinamico continuo | Ritiri da fornitori e consegne dirette ai clienti nello stesso turno |
-| **6. MDVRP** | Assegnazione congiunta multi-deposito e vincoli di rimessa | Aziende multi-sito con 2 o più poli logistici o rimesse territoriali |
+| Modello | Link Diretto Piattaforma | Formulazione Matematica | Settore di Applicazione Tipico |
+| :--- | :--- | :--- | :--- |
+| **1. CVRP** | [or-route.com/cvrp](https://or-route.com/cvrp) | MILP con eliminazione sottogiri Miller-Tucker-Zemlin (MTZ) | Consegne merci, Logistica B2B, Distribuzione GDO e Farmaci |
+| **2. VRPTW** | [or-route.com/vrptw](https://or-route.com/vrptw) | MILP con Hard Time Windows e orizzonti temporali continui | Consegne con fasce orarie ZTL, orari di apertura banchina scarico |
+| **3. CARP** | [or-route.com/carp](https://or-route.com/carp) | Single-Commodity Flow + Euristica Augmented Path-Scanning | Raccolta Rifiuti Porta a Porta (RSU), Spazzamento, Sgombero Neve |
+| **4. EV-VRP** | [or-route.com/ev-vrp](https://or-route.com/ev-vrp) | Programmazione soste a impianti intermedi (IF) & Ricariche DC | Compattatori con scarico intermedio, Flotte commerciali elettriche |
+| **5. VRPPD** | [or-route.com/vrppd](https://or-route.com/vrppd) | Accoppiamento origine/destinazione e carico dinamico continuo | Ritiri da fornitori e consegne dirette ai clienti nello stesso turno |
+| **6. MDVRP** | [or-route.com/mdvrp](https://or-route.com/mdvrp) | Assegnazione congiunta multi-deposito e vincoli di rimessa | Aziende multi-sito con 2 o più poli logistici o rimesse territoriali |
+| **7. PCARP** | [or-route.com/pcarp](https://or-route.com/pcarp) | Programmazione multi-periodo (Lun-Sab) per frazioni RSU | Calendari settimanali di raccolta differenziata porta a porta |
+| **8. CARPTW** | [or-route.com/carptw](https://or-route.com/carptw) | Arc Routing con finestre temporali tassative sugli archi | Spazzamento e raccolta in ZTL, aree mercatali e zone scolastiche |
+| **9. CARPIF** | [or-route.com/carpif](https://or-route.com/carpif) | Arc Routing con Intermediate Facilities (TMB / Discariche) | Igiene urbana con rotazioni multi-viaggio verso impianti intermedi |
+| **10. DCARP** | [or-route.com/dcarp](https://or-route.com/dcarp) | Dynamic Arc Routing con Compiti Virtuali in tempo reale | Ricalcolo istantaneo per guasti meccanici, vie chiuse o urgenze |
 
 ---
 
