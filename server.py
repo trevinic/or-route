@@ -382,6 +382,11 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/xml; charset=utf-8")
             self.end_headers()
             return
+        if path == "/BingSiteAuth.xml":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/xml; charset=utf-8")
+            self.end_headers()
+            return
         local_file = os.path.join(WEB_DIR, path.lstrip("/"))
         if os.path.exists(local_file) and os.path.isfile(local_file):
             self.send_response(200)
@@ -469,8 +474,9 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(data)
                 return
 
-        elif path in ("/sitemap.xml", "/sitemap-main.xml"):
-            sitemap_path = os.path.join(WEB_DIR, "sitemap.xml")
+        elif path in ("/sitemap.xml", "/sitemap-main.xml", "/BingSiteAuth.xml"):
+            xml_name = "BingSiteAuth.xml" if path == "/BingSiteAuth.xml" else "sitemap.xml"
+            sitemap_path = os.path.join(WEB_DIR, xml_name)
             if os.path.exists(sitemap_path):
                 with open(sitemap_path, "rb") as f:
                     data = f.read()
