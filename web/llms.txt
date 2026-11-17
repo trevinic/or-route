@@ -1,0 +1,19 @@
+# OR-Route — Operations Research & Fleet Route Optimization Platform
+
+> OR-Route (https://or-route.com) è una piattaforma web gratuita e aperta di Ricerca Operativa (Operations Research) e ottimizzazione matematica MILP (COIN-OR CBC & PuLP) integrata con cartografia reale OpenStreetMap (OSMnx, Overpass, Nominatim, Leaflet) per flotte logistiche, corrieri espresso e servizi municipali di igiene urbana (raccolta rifiuti RSU e spazzamento stradale).
+
+## Modelli Matematici Disponibili Online
+
+- [Home & Selettore Guidato a 7 Domande](https://or-route.com/): Diagnostica interattiva e configuratore flotta eterogenea.
+- [1. CVRP — Capacitated Vehicle Routing Problem](https://or-route.com/cvrp): Ottimizzazione consegne merci da deposito centrale con vincoli di portata massima e formulazione MTZ.
+- [2. VRPTW — Vehicle Routing with Time Windows](https://or-route.com/vrptw): Consegne con finestre orarie tassative [a_i, b_i], slot di scarico GDO e tempi di servizio.
+- [3. CARP — Capacitated Arc Routing Problem](https://or-route.com/carp): Raccolta rifiuti porta a porta (RSU), spazzamento stradale e sgombero neve lungo gli archi del grafo viario.
+- [4. EV-VRP / WCVRPTW-IF — Electric & Intermediate Facilities VRP](https://or-route.com/ev-vrp): Flotte elettriche commerciali con ricariche intermedie e compattatori con impianti di scarico.
+- [5. VRPPD — Pickup and Delivery VRP](https://or-route.com/vrppd): Ritiri e consegne accoppiati nello stesso viaggio con vincoli di precedenza.
+- [6. MDVRP — Multi-Depot VRP](https://or-route.com/mdvrp): Ottimizzazione flotte distribuite su più magazzini o rimesse territoriali.
+- [7. PCARP — Periodic Capacitated Arc Routing Problem](https://or-route.com/pcarp): Pianificazione settimanale multi-giorno (Lun-Sab) della raccolta differenziata per frazione.
+- [8. CARPTW — Arc Routing with Time Windows](https://or-route.com/carptw): Servizi stradali con vincoli orari su vie soggette a ZTL, mercati rionali e orari scolastici.
+- [9. CARPIF — Arc Routing with Intermediate Facilities](https://or-route.com/carpif): Rotazioni multi-viaggio dei compattatori RSU verso impianti TMB, discariche e stazioni di trasferimento.
+- [10. DCARP — Dynamic Capacitated Arc Routing Problem](https://or-route.com/dcarp): Ricalcolo in tempo reale dell'itinerario per guasti meccanici, strade interrotte o emergenze.
+- [Dispensa Matematica MILP & FAQ](https://or-route.com/faq): Formulazioni matematiche complete, letteratura scientifica e guida operativa.
+- [Contatti & Assistenza](https://or-route.com/contatti): Supporto tecnico e consulenza per aziende di logistica e municipalizzate.

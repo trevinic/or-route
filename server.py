@@ -372,7 +372,7 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             return
-        if path in ("/robots.txt", "/ads.txt"):
+        if path in ("/robots.txt", "/ads.txt", "/llms.txt"):
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
@@ -439,8 +439,9 @@ class CARPRequestHandler(http.server.SimpleHTTPRequestHandler):
             if self.proxy_to_oracle(ORACLE_BACKEND_URL):
                 return
 
-        if path == "/robots.txt":
-            robots_path = os.path.join(WEB_DIR, "robots.txt")
+        if path in ("/robots.txt", "/llms.txt"):
+            txt_file = "robots.txt" if path == "/robots.txt" else "llms.txt"
+            robots_path = os.path.join(WEB_DIR, txt_file)
             if os.path.exists(robots_path):
                 with open(robots_path, "rb") as f:
                     data = f.read()
